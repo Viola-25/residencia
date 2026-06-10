@@ -8,6 +8,7 @@ import { ErrorBank } from './pages/ErrorBank'
 import { ApprovalRadar } from './pages/ApprovalRadar'
 import { StrategicPanel } from './pages/StrategicPanel'
 import { AIInsights } from './pages/AIInsights'
+import { Settings } from './pages/Settings'
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
           <Route path="/radar" element={<ApprovalRadar />} />
           <Route path="/estrategico" element={<StrategicPanel />} />
           <Route path="/ia" element={<AIInsights />} />
+          <Route path="/configuracoes" element={<Settings />} />
         </Route>
       </Routes>
     </BrowserRouter>

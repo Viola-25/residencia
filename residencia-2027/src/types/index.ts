@@ -113,6 +113,10 @@ export interface StudyConfig {
   first_exam_date: string
   yearly_goal: number
   weekly_goal: number
+  monthly_goal: number
+  mock_goal_per_week: number
+  daily_hours_goal: number
+  daily_questions_goal: number
 }
 
 export interface DashboardMetrics {

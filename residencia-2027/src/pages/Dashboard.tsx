@@ -11,6 +11,7 @@ import {
 import {
   BarChart,
   Bar,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -23,7 +24,7 @@ import {
 } from 'recharts'
 import { PageHeader } from '../components/PageHeader'
 import { StatCard } from '../components/StatCard'
-import type { DashboardMetrics } from '../types'
+
 import { useData } from '../hooks/useData'
 
 function getWeekLabel(weekStart: string): string {
@@ -91,7 +92,7 @@ export function Dashboard() {
     }))
   }, [areaPerformance])
 
-  const metrics: (DashboardMetrics & {}) = dashboardMetrics
+  const metrics = dashboardMetrics
 
   return (
     <div>
@@ -161,61 +162,73 @@ export function Dashboard() {
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
           <h3 className="mb-4 text-sm font-semibold text-zinc-200">Acerto por Semana</h3>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={weeklyChartData}>
-                <defs>
-                  <linearGradient id="hitRateGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                <XAxis dataKey="label" stroke="#71717a" fontSize={12} />
-                <YAxis
-                  stroke="#71717a"
-                  fontSize={12}
-                  domain={[0, 100]}
-                  tickFormatter={(v) => `${v}%`}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#18181b',
-                    border: '1px solid #27272a',
-                    borderRadius: '8px',
-                    color: '#e4e4e7',
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="hitRate"
-                  stroke="#8b5cf6"
-                  fill="url(#hitRateGradient)"
-                  strokeWidth={2}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            {weeklyChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={weeklyChartData}>
+                  <defs>
+                    <linearGradient id="hitRateGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                  <XAxis dataKey="label" stroke="#71717a" fontSize={12} />
+                  <YAxis
+                    stroke="#71717a"
+                    fontSize={12}
+                    domain={[0, 100]}
+                    tickFormatter={(v) => `${v}%`}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#18181b',
+                      border: '1px solid #27272a',
+                      borderRadius: '8px',
+                      color: '#e4e4e7',
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="hitRate"
+                    stroke="#8b5cf6"
+                    fill="url(#hitRateGradient)"
+                    strokeWidth={2}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-full items-center justify-center text-sm text-zinc-500">
+                Nenhum dado semanal ainda
+              </div>
+            )}
           </div>
         </div>
 
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
           <h3 className="mb-4 text-sm font-semibold text-zinc-200">Questões por Semana</h3>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={weeklyChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                <XAxis dataKey="label" stroke="#71717a" fontSize={12} />
-                <YAxis stroke="#71717a" fontSize={12} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#18181b',
-                    border: '1px solid #27272a',
-                    borderRadius: '8px',
-                    color: '#e4e4e7',
-                  }}
-                />
-                <Bar dataKey="questions" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {weeklyChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={weeklyChartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                  <XAxis dataKey="label" stroke="#71717a" fontSize={12} />
+                  <YAxis stroke="#71717a" fontSize={12} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#18181b',
+                      border: '1px solid #27272a',
+                      borderRadius: '8px',
+                      color: '#e4e4e7',
+                    }}
+                  />
+                  <Bar dataKey="questions" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-full items-center justify-center text-sm text-zinc-500">
+                Nenhum dado semanal ainda
+              </div>
+            )}
           </div>
         </div>
 
@@ -284,7 +297,7 @@ export function Dashboard() {
                   />
                   <Bar dataKey="hitRate" radius={[0, 4, 4, 0]}>
                     {areaChartData.map((entry, index) => (
-                      <rect key={index} fill={entry.fill} />
+                      <Cell key={index} fill={entry.fill} />
                     ))}
                   </Bar>
                 </BarChart>

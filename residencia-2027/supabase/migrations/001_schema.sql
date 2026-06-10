@@ -93,9 +93,25 @@ CREATE TABLE IF NOT EXISTS insights_cache (
 
 CREATE INDEX IF NOT EXISTS idx_insights_cache_generated ON insights_cache(generated_at);
 
+-- Add new goal columns to study_config if missing
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='study_config' AND column_name='monthly_goal') THEN
+    ALTER TABLE study_config ADD COLUMN monthly_goal INTEGER NOT NULL DEFAULT 800;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='study_config' AND column_name='mock_goal_per_week') THEN
+    ALTER TABLE study_config ADD COLUMN mock_goal_per_week INTEGER NOT NULL DEFAULT 1;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='study_config' AND column_name='daily_hours_goal') THEN
+    ALTER TABLE study_config ADD COLUMN daily_hours_goal INTEGER NOT NULL DEFAULT 4;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='study_config' AND column_name='daily_questions_goal') THEN
+    ALTER TABLE study_config ADD COLUMN daily_questions_goal INTEGER NOT NULL DEFAULT 40;
+  END IF;
+END $$;
+
 -- Insert default config if not exists
-INSERT INTO study_config (enamed_date, first_exam_date, yearly_goal, weekly_goal)
-SELECT '2026-10-18', '2026-10-25', 10000, 200
+INSERT INTO study_config (enamed_date, first_exam_date, yearly_goal, weekly_goal, monthly_goal, mock_goal_per_week, daily_hours_goal, daily_questions_goal)
+SELECT '2026-10-18', '2026-10-25', 10000, 200, 800, 1, 4, 40
 WHERE NOT EXISTS (SELECT 1 FROM study_config);
 
 -- Add new columns to existing tables if missing

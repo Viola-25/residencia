@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { AlertTriangle, Plus, Search } from 'lucide-react'
+import { AlertTriangle, Plus, Search, Trash2 } from 'lucide-react'
 import { PageHeader } from '../components/PageHeader'
 import { Badge } from '../components/Badge'
 import { useData } from '../hooks/useData'
@@ -32,7 +32,7 @@ const reasonBtnColors: Record<ErrorReason, string> = {
 }
 
 export function ErrorBank() {
-  const { errors, addError, toggleErrorReview } = useData()
+  const { errors, addError, toggleErrorReview, deleteError } = useData()
   const [form, setForm] = useState<ErrorEntryFormData>(initialForm)
   const [showForm, setShowForm] = useState(false)
   const [search, setSearch] = useState('')
@@ -163,6 +163,7 @@ export function ErrorBank() {
                     <th className="px-4 py-3">Motivo</th>
                     <th className="px-4 py-3">Revisão</th>
                     <th className="px-4 py-3">Data</th>
+                    <th className="px-4 py-3"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -197,12 +198,22 @@ export function ErrorBank() {
                       <td className="px-4 py-3 text-zinc-500">
                         {formatDateShort(err.created_at.split('T')[0])}
                       </td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => {
+                            if (confirm('Excluir este erro?')) deleteError(err.id)
+                          }}
+                          className="rounded p-1 text-zinc-600 transition-colors hover:bg-zinc-800 hover:text-rose-400"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                   {filtered.length === 0 && (
                     <tr>
                       <td
-                        colSpan={6}
+                        colSpan={7}
                         className="px-4 py-12 text-center text-sm text-zinc-500"
                       >
                         Nenhum erro encontrado

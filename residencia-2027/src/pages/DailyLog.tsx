@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { CalendarCheck, Plus, Moon, Zap } from 'lucide-react'
+import { CalendarCheck, Plus, Moon, Zap, Trash2 } from 'lucide-react'
 import { PageHeader } from '../components/PageHeader'
 import { StatCard } from '../components/StatCard'
 import { Badge } from '../components/Badge'
@@ -39,7 +39,7 @@ const registrationTypeColors: Record<string, string> = {
 }
 
 export function DailyLog() {
-  const { logs, dashboardMetrics, addDailyLog } = useData()
+  const { logs, dashboardMetrics, addDailyLog, deleteDailyLog } = useData()
   const [form, setForm] = useState<DailyLogFormData>(initialForm)
   const [showForm, setShowForm] = useState(false)
 
@@ -311,6 +311,7 @@ export function DailyLog() {
                 <th className="px-4 py-3">Flashcards</th>
                 <th className="px-4 py-3">Humor</th>
                 <th className="px-4 py-3">Energia</th>
+                <th className="px-4 py-3"></th>
               </tr>
             </thead>
             <tbody>
@@ -371,11 +372,21 @@ export function DailyLog() {
                     </span>
                   </td>
                   <td className="px-4 py-3">{log.energy_level}/10</td>
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => {
+                        if (confirm('Excluir este registro?')) deleteDailyLog(log.id)
+                      }}
+                      className="rounded p-1 text-zinc-600 transition-colors hover:bg-zinc-800 hover:text-rose-400"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </td>
                 </tr>
               ))}
               {logs.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-4 py-12 text-center text-sm text-zinc-500">
+                  <td colSpan={11} className="px-4 py-12 text-center text-sm text-zinc-500">
                     Nenhum registro encontrado. Clique em "Novo Registro" para começar.
                   </td>
                 </tr>

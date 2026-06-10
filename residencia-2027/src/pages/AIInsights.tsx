@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Sparkles, Lightbulb, TrendingUp, AlertCircle, Brain, RefreshCw } from 'lucide-react'
 import { PageHeader } from '../components/PageHeader'
 import { Badge } from '../components/Badge'
 import { useData } from '../hooks/useData'
 import { generateInsights, loadCachedInsights } from '../lib/groq'
-import type { AIInsight } from '../types'
+import type { AIInsight, MedicalArea } from '../types'
 
-const areaLabels: Record<string, string> = {
+const areaLabels: Record<MedicalArea, string> = {
   clinica_medica: 'Clínica Médica',
   cirurgia: 'Cirurgia',
   pediatria: 'Pediatria',
@@ -34,7 +34,7 @@ export function AIInsights() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const loadInsights = async () => {
+  const loadInsights = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -51,7 +51,7 @@ export function AIInsights() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [logs, mocks, errors, areaPerformance, config])
 
   useEffect(() => {
     const init = async () => {
@@ -63,7 +63,7 @@ export function AIInsights() {
       }
     }
     init()
-  }, [])
+  }, [loadInsights, logs.length, mocks.length])
 
   const suggestions = insights.filter(
     (i) => i.type === 'suggestion' || i.type === 'priority'
@@ -184,68 +184,68 @@ export function AIInsights() {
       )}
 
       {!loading && (
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
-            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-emerald-400">
-              <TrendingUp size={16} />
-              Relatório Semanal
-            </h3>
-            {weeklyReports.length > 0 ? (
-              <div className="space-y-3">
-                {weeklyReports.map((report, i) => (
-                  <div
-                    key={i}
-                    className="rounded-lg bg-zinc-800/30 p-3 text-sm text-zinc-300"
-                  >
-                    {report.description}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-lg bg-zinc-800/30 p-4 text-center text-sm text-zinc-500">
-                <p>Nenhum relatório semanal disponível.</p>
-                <p className="mt-1">
-                  Continue registrando para receber análises semanais.
-                </p>
-              </div>
-            )}
-          </div>
+        insights.length > 0 ? (
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+              <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-emerald-400">
+                <TrendingUp size={16} />
+                Relatório Semanal
+              </h3>
+              {weeklyReports.length > 0 ? (
+                <div className="space-y-3">
+                  {weeklyReports.map((report, i) => (
+                    <div
+                      key={i}
+                      className="rounded-lg bg-zinc-800/30 p-3 text-sm text-zinc-300"
+                    >
+                      {report.description}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-lg bg-zinc-800/30 p-4 text-center text-sm text-zinc-500">
+                  <p>Nenhum relatório semanal disponível.</p>
+                  <p className="mt-1">
+                    Continue registrando para receber análises semanais.
+                  </p>
+                </div>
+              )}
+            </div>
 
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
-            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-blue-400">
-              <TrendingUp size={16} />
-              Relatório Mensal
-            </h3>
-            {monthlyReports.length > 0 ? (
-              <div className="space-y-3">
-                {monthlyReports.map((report, i) => (
-                  <div
-                    key={i}
-                    className="rounded-lg bg-zinc-800/30 p-3 text-sm text-zinc-300"
-                  >
-                    {report.description}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-lg bg-zinc-800/30 p-4 text-center text-sm text-zinc-500">
-                <p>Nenhum relatório mensal disponível.</p>
-                <p className="mt-1">
-                  Acumule mais dados para análises mensais.
-                </p>
-              </div>
-            )}
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+              <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-blue-400">
+                <TrendingUp size={16} />
+                Relatório Mensal
+              </h3>
+              {monthlyReports.length > 0 ? (
+                <div className="space-y-3">
+                  {monthlyReports.map((report, i) => (
+                    <div
+                      key={i}
+                      className="rounded-lg bg-zinc-800/30 p-3 text-sm text-zinc-300"
+                    >
+                      {report.description}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-lg bg-zinc-800/30 p-4 text-center text-sm text-zinc-500">
+                  <p>Nenhum relatório mensal disponível.</p>
+                  <p className="mt-1">
+                    Acumule mais dados para análises mensais.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
-
-      {!loading && insights.length === 0 && !error && (
-        <div className="mt-8 rounded-xl border border-zinc-800 bg-zinc-900/50 p-8 text-center">
-          <Sparkles size={32} className="mx-auto text-zinc-600" />
-          <p className="mt-3 text-sm text-zinc-500">
-            Nenhum insight disponível. Clique em "Atualizar" para gerar análises.
-          </p>
-        </div>
+        ) : !error ? (
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-8 text-center">
+            <Sparkles size={32} className="mx-auto text-zinc-600" />
+            <p className="mt-3 text-sm text-zinc-500">
+              Nenhum insight disponível. Clique em "Atualizar" para gerar análises.
+            </p>
+          </div>
+        ) : null
       )}
     </div>
   )

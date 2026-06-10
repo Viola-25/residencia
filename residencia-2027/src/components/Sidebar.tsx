@@ -9,6 +9,7 @@ import {
   Brain,
   Sparkles,
   GraduationCap,
+  Settings as SettingsIcon,
 } from 'lucide-react'
 
 const navItems = [
@@ -20,6 +21,7 @@ const navItems = [
   { to: '/radar', icon: Target, label: 'Radar' },
   { to: '/estrategico', icon: Brain, label: 'Estratégico' },
   { to: '/ia', icon: Sparkles, label: 'IA Insights' },
+  { to: '/configuracoes', icon: SettingsIcon, label: 'Configurações' },
 ]
 
 interface SidebarProps {

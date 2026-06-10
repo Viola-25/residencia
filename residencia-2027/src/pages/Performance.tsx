@@ -2,6 +2,7 @@ import { BarChart3, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import {
   BarChart,
   Bar,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -89,7 +90,7 @@ export function Performance() {
                 />
                 <Bar dataKey="hitRate" radius={[4, 4, 0, 0]}>
                   {chartData.map((entry, index) => (
-                    <rect key={index} fill={entry.fill} />
+                    <Cell key={index} fill={entry.fill} />
                   ))}
                 </Bar>
               </BarChart>

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { FileText, Plus, TrendingUp, TrendingDown, Award } from 'lucide-react'
+import { FileText, Plus, TrendingUp, TrendingDown, Award, Trash2 } from 'lucide-react'
 import {
   LineChart,
   Line,
@@ -33,7 +33,7 @@ const initialForm: MockExamFormData = {
 }
 
 export function MockExams() {
-  const { mocks, addMockExam } = useData()
+  const { mocks, addMockExam, deleteMockExam } = useData()
   const [form, setForm] = useState<MockExamFormData>(initialForm)
   const [showForm, setShowForm] = useState(false)
 
@@ -367,6 +367,7 @@ export function MockExams() {
                 <th className="px-4 py-3">%</th>
                 <th className="px-4 py-3">Classificação</th>
                 <th className="px-4 py-3">Tempo</th>
+                <th className="px-4 py-3"></th>
               </tr>
             </thead>
             <tbody>
@@ -404,12 +405,22 @@ export function MockExams() {
                       ? `${Math.floor(mock.time_spent_minutes / 60)}h${mock.time_spent_minutes % 60}m`
                       : '-'}
                   </td>
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => {
+                        if (confirm('Excluir este simulado?')) deleteMockExam(mock.id)
+                      }}
+                      className="rounded p-1 text-zinc-600 transition-colors hover:bg-zinc-800 hover:text-rose-400"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </td>
                 </tr>
               ))}
               {mocks.length === 0 && (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={8}
                     className="px-4 py-12 text-center text-sm text-zinc-500"
                   >
                     Nenhum simulado cadastrado

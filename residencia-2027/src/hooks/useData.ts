@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import type {
   DailyLog,
@@ -36,6 +36,10 @@ const DEFAULT_CONFIG: StudyConfig = {
   first_exam_date: '2026-10-25',
   yearly_goal: 10000,
   weekly_goal: 200,
+  monthly_goal: 800,
+  mock_goal_per_week: 1,
+  daily_hours_goal: 4,
+  daily_questions_goal: 40,
 }
 
 export function useData() {
@@ -47,31 +51,29 @@ export function useData() {
   const [weeklySummaries] = useState<WeeklySummary[]>([])
   const [loading, setLoading] = useState(true)
 
-  const fetchData = useCallback(async () => {
-    try {
-      const [logsRes, mocksRes, errorsRes, areaRes, configRes] = await Promise.all([
-        supabase.from('daily_logs').select('*').order('date', { ascending: false }),
-        supabase.from('mock_exams').select('*').order('date', { ascending: false }),
-        supabase.from('error_bank').select('*').order('created_at', { ascending: false }),
-        supabase.from('area_performance').select('*'),
-        supabase.from('study_config').select('*').limit(1).single(),
-      ])
-
-      if (logsRes.data) setLogs(logsRes.data as DailyLog[])
-      if (mocksRes.data) setMocks(mocksRes.data as MockExam[])
-      if (errorsRes.data) setErrors(errorsRes.data as ErrorEntry[])
-      if (areaRes.data) setAreaPerformance(areaRes.data as AreaPerformance[])
-      if (configRes.data) setConfig(configRes.data as StudyConfig)
-    } catch {
-      // Using local state when Supabase is not configured
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
   useEffect(() => {
-    fetchData()
-  }, [fetchData])
+    ;(async () => {
+      try {
+        const [logsRes, mocksRes, errorsRes, areaRes, configRes] = await Promise.all([
+          supabase.from('daily_logs').select('*').order('date', { ascending: false }),
+          supabase.from('mock_exams').select('*').order('date', { ascending: false }),
+          supabase.from('error_bank').select('*').order('created_at', { ascending: false }),
+          supabase.from('area_performance').select('*'),
+          supabase.from('study_config').select('*').limit(1).single(),
+        ])
+
+        if (logsRes.data) setLogs(logsRes.data as DailyLog[])
+        if (mocksRes.data) setMocks(mocksRes.data as MockExam[])
+        if (errorsRes.data) setErrors(errorsRes.data as ErrorEntry[])
+        if (areaRes.data) setAreaPerformance(areaRes.data as AreaPerformance[])
+        if (configRes.data) setConfig(configRes.data as StudyConfig)
+      } catch {
+        // Using local state when Supabase is not configured
+      } finally {
+        setLoading(false)
+      }
+    })()
+  }, [])
 
   const addDailyLog = async (formData: DailyLogFormData) => {
     const areas_data: { area: MedicalArea; questions_done: number; correct: number }[] = []
@@ -216,6 +218,77 @@ export function useData() {
     } catch { /* local fallback */ }
   }
 
+  const subtractAreaPerformance = async (area: MedicalArea, questions_done: number, correct: number) => {
+    const existing = areaPerformance.find((a) => a.area === area)
+    if (!existing) return
+    const newQ = Math.max(0, existing.questions_done - questions_done)
+    const newC = Math.max(0, existing.correct - correct)
+    const hit_rate = newQ > 0 ? Math.round((newC / newQ) * 100 * 100) / 100 : 0
+    const updated: AreaPerformance = {
+      ...existing,
+      questions_done: newQ,
+      correct: newC,
+      hit_rate,
+      priority: getAreaPriority(hit_rate),
+    }
+    setAreaPerformance((prev) => prev.map((a) => (a.area === area ? updated : a)))
+    try {
+      await supabase.from('area_performance').upsert({
+        ...updated,
+        date: new Date().toISOString().split('T')[0],
+      })
+    } catch { /* local fallback */ }
+  }
+
+  const deleteDailyLog = async (id: string) => {
+    const log = logs.find((l) => l.id === id)
+    if (!log) return
+    for (const ad of log.areas_data) {
+      subtractAreaPerformance(ad.area, ad.questions_done, ad.correct)
+    }
+    setLogs((prev) => prev.filter((l) => l.id !== id))
+    try {
+      await supabase.from('daily_logs').delete().eq('id', id)
+    } catch { /* local fallback */ }
+  }
+
+  const deleteMockExam = async (id: string) => {
+    const exam = mocks.find((m) => m.id === id)
+    if (!exam) return
+    for (const ad of exam.areas_data) {
+      subtractAreaPerformance(ad.area, ad.questions_done, ad.correct)
+    }
+    setMocks((prev) => prev.filter((m) => m.id !== id))
+    try {
+      await supabase.from('mock_exams').delete().eq('id', id)
+    } catch { /* local fallback */ }
+  }
+
+  const deleteError = async (id: string) => {
+    setErrors((prev) => prev.filter((e) => e.id !== id))
+    try {
+      await supabase.from('error_bank').delete().eq('id', id)
+    } catch { /* local fallback */ }
+  }
+
+  const updateConfig = async (newConfig: Partial<StudyConfig>) => {
+    const updated = { ...config, ...newConfig }
+    setConfig(updated)
+    try {
+      await supabase.from('study_config').upsert({
+        enamed_date: updated.enamed_date,
+        first_exam_date: updated.first_exam_date,
+        yearly_goal: updated.yearly_goal,
+        weekly_goal: updated.weekly_goal,
+        monthly_goal: updated.monthly_goal,
+        mock_goal_per_week: updated.mock_goal_per_week,
+        daily_hours_goal: updated.daily_hours_goal,
+        daily_questions_goal: updated.daily_questions_goal,
+        id: config.id === 'default' ? undefined : config.id,
+      })
+    } catch { /* local fallback */ }
+  }
+
   const dashboardMetrics = ((): DashboardMetrics => {
     const sortedLogs = [...logs].sort((a, b) => a.date.localeCompare(b.date))
     return {
@@ -241,11 +314,14 @@ export function useData() {
 
     const growthAreas = areaPerformance.filter((a) => a.trend === 'up')
     const declineAreas = areaPerformance.filter((a) => a.trend === 'down')
+    const globalAvg = areaPerformance.length > 0
+      ? areaPerformance.reduce((s, a) => s + a.hit_rate, 0) / areaPerformance.length
+      : 0
     const mostGrowth = growthAreas.length > 0
-      ? { area: growthAreas[0].area, growth: Math.round(Math.random() * 15 + 2) }
+      ? { area: growthAreas[0].area, growth: Math.round(Math.abs(growthAreas[0].hit_rate - globalAvg) * 100) / 100 }
       : null
     const mostDecline = declineAreas.length > 0
-      ? { area: declineAreas[0].area, decline: Math.round(Math.random() * 10 + 1) }
+      ? { area: declineAreas[0].area, decline: Math.round(Math.abs(declineAreas[0].hit_rate - globalAvg) * 100) / 100 }
       : null
 
     return {
@@ -331,5 +407,9 @@ export function useData() {
     addError,
     toggleErrorReview,
     saveAreaPerformance,
+    deleteDailyLog,
+    deleteMockExam,
+    deleteError,
+    updateConfig,
   }
 }
