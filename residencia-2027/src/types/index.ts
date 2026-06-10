@@ -10,15 +10,24 @@ export type Mood = 'excelente' | 'bom' | 'medio' | 'ruim'
 
 export type ErrorReason = 'nao_sabia' | 'esqueci' | 'interpretacao' | 'pegadinha' | 'pressa'
 
+export type RegistrationType = 'questoes' | 'simulado' | 'revisao'
+
+export interface AreaDatum {
+  area: MedicalArea
+  questions_done: number
+  correct: number
+}
+
 export interface DailyLog {
   id: string
   date: string
+  registration_type: RegistrationType
   hours_studied: number
   questions_done: number
   hit_rate: number
+  areas_data: AreaDatum[]
   core_review_done: boolean
   flashcards_done: boolean
-  mock_exam_done: boolean
   notes: string | null
   mood: Mood
   energy_level: number
@@ -27,12 +36,11 @@ export interface DailyLog {
 
 export interface DailyLogFormData {
   date: string
+  registration_type: RegistrationType
   hours_studied: number
-  questions_done: number
-  hit_rate: number
+  areas: Record<MedicalArea, { questions_done: number; correct: number }>
   core_review_done: boolean
   flashcards_done: boolean
-  mock_exam_done: boolean
   notes: string
   mood: Mood
   energy_level: number
@@ -44,6 +52,7 @@ export interface MockExam {
   name: string
   total_score: number
   percentage: number
+  areas_data: AreaDatum[]
   ranking: number | null
   participants: number | null
   time_spent_minutes: number | null
@@ -53,8 +62,7 @@ export interface MockExam {
 export interface MockExamFormData {
   date: string
   name: string
-  total_score: number
-  percentage: number
+  areas: Record<MedicalArea, { questions_done: number; correct: number }>
   ranking: string
   participants: string
   time_spent_minutes: string
@@ -164,6 +172,12 @@ export const MOOD_OPTIONS: { value: Mood; label: string }[] = [
   { value: 'bom', label: 'Bom' },
   { value: 'medio', label: 'Médio' },
   { value: 'ruim', label: 'Ruim' },
+]
+
+export const REGISTRATION_TYPES: { value: RegistrationType; label: string }[] = [
+  { value: 'questoes', label: 'Rodada de Questões' },
+  { value: 'simulado', label: 'Simulado' },
+  { value: 'revisao', label: 'Revisão Núcleo' },
 ]
 
 export const ERROR_REASONS: { value: ErrorReason; label: string }[] = [

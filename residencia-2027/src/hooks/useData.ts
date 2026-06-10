@@ -74,10 +74,39 @@ export function useData() {
   }, [fetchData])
 
   const addDailyLog = async (formData: DailyLogFormData) => {
+    const areas_data: { area: MedicalArea; questions_done: number; correct: number }[] = []
+    let totalQuestions = 0
+    let totalCorrect = 0
+    for (const [area, data] of Object.entries(formData.areas)) {
+      if (data.questions_done > 0) {
+        areas_data.push({
+          area: area as MedicalArea,
+          questions_done: data.questions_done,
+          correct: data.correct,
+        })
+        totalQuestions += data.questions_done
+        totalCorrect += data.correct
+        saveAreaPerformance(area as MedicalArea, data.questions_done, data.correct)
+      }
+    }
+
+    const hit_rate = totalQuestions > 0
+      ? Math.round((totalCorrect / totalQuestions) * 100 * 100) / 100
+      : 0
+
     const newLog: DailyLog = {
       id: crypto.randomUUID(),
-      ...formData,
+      date: formData.date,
+      registration_type: formData.registration_type,
+      hours_studied: formData.hours_studied,
+      questions_done: totalQuestions,
+      hit_rate,
+      areas_data,
+      core_review_done: formData.core_review_done,
+      flashcards_done: formData.flashcards_done,
       notes: formData.notes || null,
+      mood: formData.mood,
+      energy_level: formData.energy_level,
       created_at: new Date().toISOString(),
     }
     setLogs((prev) => [newLog, ...prev])
@@ -87,12 +116,33 @@ export function useData() {
   }
 
   const addMockExam = async (formData: MockExamFormData) => {
+    const areas_data: { area: MedicalArea; questions_done: number; correct: number }[] = []
+    let totalQuestions = 0
+    let totalCorrect = 0
+    for (const [area, data] of Object.entries(formData.areas)) {
+      if (data.questions_done > 0) {
+        areas_data.push({
+          area: area as MedicalArea,
+          questions_done: data.questions_done,
+          correct: data.correct,
+        })
+        totalQuestions += data.questions_done
+        totalCorrect += data.correct
+        saveAreaPerformance(area as MedicalArea, data.questions_done, data.correct)
+      }
+    }
+
+    const percentage = totalQuestions > 0
+      ? Math.round((totalCorrect / totalQuestions) * 100 * 100) / 100
+      : 0
+
     const newMock: MockExam = {
       id: crypto.randomUUID(),
       date: formData.date,
       name: formData.name,
-      total_score: formData.total_score,
-      percentage: formData.percentage,
+      total_score: totalCorrect,
+      percentage,
+      areas_data,
       ranking: formData.ranking ? Number(formData.ranking) : null,
       participants: formData.participants ? Number(formData.participants) : null,
       time_spent_minutes: formData.time_spent_minutes ? Number(formData.time_spent_minutes) : null,

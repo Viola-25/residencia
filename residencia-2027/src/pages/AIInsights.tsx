@@ -1,10 +1,12 @@
-import { Sparkles, Lightbulb, TrendingUp, AlertCircle, Brain } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Sparkles, Lightbulb, TrendingUp, AlertCircle, Brain, RefreshCw } from 'lucide-react'
 import { PageHeader } from '../components/PageHeader'
 import { Badge } from '../components/Badge'
 import { useData } from '../hooks/useData'
-import type { MedicalArea } from '../types'
+import { generateInsights, loadCachedInsights } from '../lib/groq'
+import type { AIInsight } from '../types'
 
-const areaLabels: Record<MedicalArea, string> = {
+const areaLabels: Record<string, string> = {
   clinica_medica: 'Clínica Médica',
   cirurgia: 'Cirurgia',
   pediatria: 'Pediatria',
@@ -27,34 +29,100 @@ const badgePriority: Record<string, 'red' | 'yellow' | 'green' | 'blue'> = {
 }
 
 export function AIInsights() {
-  const { aiInsights } = useData()
+  const { logs, mocks, errors, areaPerformance, config } = useData()
+  const [insights, setInsights] = useState<AIInsight[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const weeklyReports = aiInsights.filter((i) => i.type === 'weekly')
-  const monthlyReports = aiInsights.filter((i) => i.type === 'monthly')
-  const suggestions = aiInsights.filter((i) => i.type === 'suggestion' || i.type === 'priority')
+  const loadInsights = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const result = await generateInsights({
+        logs,
+        mocks,
+        errors,
+        areaPerformance,
+        config,
+      })
+      setInsights(result)
+    } catch {
+      setError('Não foi possível gerar insights. Tente novamente.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    const init = async () => {
+      const cached = await loadCachedInsights()
+      if (cached && cached.length > 0) {
+        setInsights(cached)
+      } else if (logs.length > 0 || mocks.length > 0) {
+        loadInsights()
+      }
+    }
+    init()
+  }, [])
+
+  const suggestions = insights.filter(
+    (i) => i.type === 'suggestion' || i.type === 'priority'
+  )
+  const weeklyReports = insights.filter((i) => i.type === 'weekly')
+  const monthlyReports = insights.filter((i) => i.type === 'monthly')
 
   return (
     <div>
       <PageHeader
         title="Inteligência Artificial"
-        description="Análises e recomendações geradas automaticamente"
+        description="Análises e recomendações geradas pelo Groq IA"
         icon={Sparkles}
+        action={
+          <button
+            onClick={loadInsights}
+            disabled={loading}
+            className="flex items-center gap-2 rounded-lg bg-zinc-800 px-4 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+            {loading ? 'Analisando...' : 'Atualizar'}
+          </button>
+        }
       />
 
       <div className="mb-8 rounded-xl border border-violet-500/20 bg-violet-500/5 p-5">
         <div className="flex items-start gap-3">
           <Brain size={20} className="mt-0.5 text-violet-400" />
           <div>
-            <p className="text-sm font-medium text-violet-300">Assistente de Estudos IA</p>
+            <p className="text-sm font-medium text-violet-300">
+              Análise com Groq IA ({import.meta.env.VITE_GROQ_API_KEY ? 'conectado' : 'modo local'})
+            </p>
             <p className="mt-1 text-sm text-zinc-400">
-              Com base nos seus dados cadastrados, o sistema analisa padrões e gera recomendações
-              personalizadas para otimizar sua preparação.
+              Os insights são gerados com base nos seus dados reais usando o modelo
+              LLaMA 3.3 70B via Groq.
             </p>
           </div>
         </div>
       </div>
 
-      {suggestions.length > 0 && (
+      {loading && (
+        <div className="mb-8 rounded-xl border border-zinc-800 bg-zinc-900/50 p-8 text-center">
+          <Sparkles size={32} className="mx-auto animate-pulse text-violet-500" />
+          <p className="mt-3 text-sm font-medium text-zinc-300">
+            Analisando seus dados...
+          </p>
+          <p className="mt-1 text-xs text-zinc-500">
+            A IA está processando seus registros para gerar insights personalizados
+          </p>
+        </div>
+      )}
+
+      {error && (
+        <div className="mb-8 rounded-xl border border-rose-500/20 bg-rose-500/5 p-4 text-sm text-rose-400">
+          {error}
+        </div>
+      )}
+
+      {!loading && suggestions.length > 0 && (
         <div className="mb-8">
           <h3 className="mb-4 text-sm font-semibold text-zinc-200">
             Sugestões e Áreas Prioritárias
@@ -62,9 +130,7 @@ export function AIInsights() {
           <div className="grid gap-4">
             {suggestions.map((insight, i) => {
               const Icon = insightIcons[insight.type] || Lightbulb
-              const areaName = insight.area
-                ? areaLabels[insight.area as MedicalArea]
-                : null
+              const areaName = insight.area ? areaLabels[insight.area] : null
               return (
                 <div
                   key={i}
@@ -92,16 +158,18 @@ export function AIInsights() {
                         <h4 className="text-sm font-medium text-zinc-200">
                           {insight.title}
                         </h4>
-                        <Badge variant={badgePriority[insight.priority]}>
+                        <Badge
+                          variant={
+                            badgePriority[insight.priority] || 'blue'
+                          }
+                        >
                           {insight.priority === 'high'
                             ? 'Prioritário'
                             : insight.priority === 'medium'
                               ? 'Importante'
                               : 'Informativo'}
                         </Badge>
-                        {areaName && (
-                          <Badge variant="blue">{areaName}</Badge>
-                        )}
+                        {areaName && <Badge variant="blue">{areaName}</Badge>}
                       </div>
                       <p className="mt-1 text-sm text-zinc-400">
                         {insight.description}
@@ -115,56 +183,67 @@ export function AIInsights() {
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
-          <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-emerald-400">
-            <TrendingUp size={16} />
-            Relatório Semanal
-          </h3>
-          {weeklyReports.length > 0 ? (
-            <div className="space-y-3">
-              {weeklyReports.map((report, i) => (
-                <div key={i} className="rounded-lg bg-zinc-800/30 p-3 text-sm text-zinc-300">
-                  {report.description}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-lg bg-zinc-800/30 p-4 text-center text-sm text-zinc-500">
-              <p>Nenhum relatório semanal disponível ainda.</p>
-              <p className="mt-1">Continue registrando seus estudos para gerar relatórios automáticos.</p>
-            </div>
-          )}
-        </div>
+      {!loading && (
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-emerald-400">
+              <TrendingUp size={16} />
+              Relatório Semanal
+            </h3>
+            {weeklyReports.length > 0 ? (
+              <div className="space-y-3">
+                {weeklyReports.map((report, i) => (
+                  <div
+                    key={i}
+                    className="rounded-lg bg-zinc-800/30 p-3 text-sm text-zinc-300"
+                  >
+                    {report.description}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-lg bg-zinc-800/30 p-4 text-center text-sm text-zinc-500">
+                <p>Nenhum relatório semanal disponível.</p>
+                <p className="mt-1">
+                  Continue registrando para receber análises semanais.
+                </p>
+              </div>
+            )}
+          </div>
 
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
-          <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-blue-400">
-            <TrendingUp size={16} />
-            Relatório Mensal
-          </h3>
-          {monthlyReports.length > 0 ? (
-            <div className="space-y-3">
-              {monthlyReports.map((report, i) => (
-                <div key={i} className="rounded-lg bg-zinc-800/30 p-3 text-sm text-zinc-300">
-                  {report.description}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-lg bg-zinc-800/30 p-4 text-center text-sm text-zinc-500">
-              <p>Nenhum relatório mensal disponível ainda.</p>
-              <p className="mt-1">Acumule mais dados de estudos para gerar análises mensais.</p>
-            </div>
-          )}
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-blue-400">
+              <TrendingUp size={16} />
+              Relatório Mensal
+            </h3>
+            {monthlyReports.length > 0 ? (
+              <div className="space-y-3">
+                {monthlyReports.map((report, i) => (
+                  <div
+                    key={i}
+                    className="rounded-lg bg-zinc-800/30 p-3 text-sm text-zinc-300"
+                  >
+                    {report.description}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-lg bg-zinc-800/30 p-4 text-center text-sm text-zinc-500">
+                <p>Nenhum relatório mensal disponível.</p>
+                <p className="mt-1">
+                  Acumule mais dados para análises mensais.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
-      {aiInsights.length === 0 && (
+      {!loading && insights.length === 0 && !error && (
         <div className="mt-8 rounded-xl border border-zinc-800 bg-zinc-900/50 p-8 text-center">
           <Sparkles size={32} className="mx-auto text-zinc-600" />
           <p className="mt-3 text-sm text-zinc-500">
-            Nenhum insight disponível. Comece cadastrando seus estudos para receber
-            recomendações personalizadas.
+            Nenhum insight disponível. Clique em "Atualizar" para gerar análises.
           </p>
         </div>
       )}

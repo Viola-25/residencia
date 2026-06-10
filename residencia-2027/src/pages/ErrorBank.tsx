@@ -23,6 +23,14 @@ const reasonColors: Record<ErrorReason, 'red' | 'yellow' | 'blue' | 'zinc' | 'gr
   pressa: 'green',
 }
 
+const reasonBtnColors: Record<ErrorReason, string> = {
+  nao_sabia: 'border-red-500/20 bg-red-500/10 text-red-400',
+  esqueci: 'border-yellow-500/20 bg-yellow-500/10 text-yellow-400',
+  interpretacao: 'border-blue-500/20 bg-blue-500/10 text-blue-400',
+  pegadinha: 'border-zinc-500/20 bg-zinc-500/10 text-zinc-400',
+  pressa: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400',
+}
+
 export function ErrorBank() {
   const { errors, addError, toggleErrorReview } = useData()
   const [form, setForm] = useState<ErrorEntryFormData>(initialForm)
@@ -33,7 +41,12 @@ export function ErrorBank() {
 
   const filtered = useMemo(() => {
     return errors.filter((e) => {
-      if (search && !e.question.toLowerCase().includes(search.toLowerCase()) && !e.topic.toLowerCase().includes(search.toLowerCase())) return false
+      if (
+        search &&
+        !e.question.toLowerCase().includes(search.toLowerCase()) &&
+        !e.topic.toLowerCase().includes(search.toLowerCase())
+      )
+        return false
       if (filterReason !== 'all' && e.error_reason !== filterReason) return false
       if (filterReview === 'pending' && e.reviewed) return false
       if (filterReview === 'reviewed' && !e.reviewed) return false
@@ -100,7 +113,10 @@ export function ErrorBank() {
         <div className="lg:col-span-3">
           <div className="mb-4 flex flex-wrap gap-3">
             <div className="relative flex-1">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+              <Search
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"
+              />
               <input
                 type="text"
                 placeholder="Buscar por questão ou tema..."
@@ -111,7 +127,9 @@ export function ErrorBank() {
             </div>
             <select
               value={filterReason}
-              onChange={(e) => setFilterReason(e.target.value as ErrorReason | 'all')}
+              onChange={(e) =>
+                setFilterReason(e.target.value as ErrorReason | 'all')
+              }
               className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
             >
               <option value="all">Todos os motivos</option>
@@ -123,7 +141,9 @@ export function ErrorBank() {
             </select>
             <select
               value={filterReview}
-              onChange={(e) => setFilterReview(e.target.value as 'all' | 'pending' | 'reviewed')}
+              onChange={(e) =>
+                setFilterReview(e.target.value as 'all' | 'pending' | 'reviewed')
+              }
               className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
             >
               <option value="all">Todos</option>
@@ -153,10 +173,13 @@ export function ErrorBank() {
                     >
                       <td className="max-w-xs truncate px-4 py-3">{err.question}</td>
                       <td className="px-4 py-3 font-medium">{err.topic}</td>
-                      <td className="px-4 py-3 text-zinc-500">{err.subtopic || '-'}</td>
+                      <td className="px-4 py-3 text-zinc-500">
+                        {err.subtopic || '-'}
+                      </td>
                       <td className="px-4 py-3">
                         <Badge variant={reasonColors[err.error_reason]}>
-                          {ERROR_REASONS.find((r) => r.value === err.error_reason)?.label}
+                          {ERROR_REASONS.find((r) => r.value === err.error_reason)
+                            ?.label}
                         </Badge>
                       </td>
                       <td className="px-4 py-3">
@@ -178,7 +201,10 @@ export function ErrorBank() {
                   ))}
                   {filtered.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="px-4 py-12 text-center text-sm text-zinc-500">
+                      <td
+                        colSpan={6}
+                        className="px-4 py-12 text-center text-sm text-zinc-500"
+                      >
                         Nenhum erro encontrado
                       </td>
                     </tr>
@@ -196,22 +222,25 @@ export function ErrorBank() {
           className="mb-8 rounded-xl border border-zinc-800 bg-zinc-900/50 p-6"
         >
           <h3 className="mb-4 text-sm font-semibold text-zinc-200">Registrar Erro</h3>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-xs font-medium text-zinc-400">Questão</label>
-              <textarea
-                value={form.question}
-                onChange={(e) => setForm((f) => ({ ...f, question: e.target.value }))}
-                rows={2}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
-              />
-            </div>
+
+          <div className="mb-4">
+            <label className="mb-1 block text-xs font-medium text-zinc-400">Questão</label>
+            <textarea
+              value={form.question}
+              onChange={(e) => setForm((f) => ({ ...f, question: e.target.value }))}
+              rows={2}
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
+            />
+          </div>
+
+          <div className="mb-4 grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-medium text-zinc-400">Tema</label>
               <input
                 type="text"
                 value={form.topic}
                 onChange={(e) => setForm((f) => ({ ...f, topic: e.target.value }))}
+                placeholder="Ex: Cardiologia"
                 className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
               />
             </div>
@@ -221,25 +250,33 @@ export function ErrorBank() {
                 type="text"
                 value={form.subtopic}
                 onChange={(e) => setForm((f) => ({ ...f, subtopic: e.target.value }))}
+                placeholder="Ex: Insuficiência Cardíaca"
                 className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
               />
             </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-zinc-400">Motivo do Erro</label>
-              <select
-                value={form.error_reason}
-                onChange={(e) => setForm((f) => ({ ...f, error_reason: e.target.value as ErrorReason }))}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
-              >
-                {ERROR_REASONS.map((r) => (
-                  <option key={r.value} value={r.value}>
-                    {r.label}
-                  </option>
-                ))}
-              </select>
+          </div>
+
+          <div className="mb-4">
+            <label className="mb-2 block text-xs font-medium text-zinc-400">Motivo do Erro</label>
+            <div className="flex flex-wrap gap-2">
+              {ERROR_REASONS.map((r) => (
+                <button
+                  type="button"
+                  key={r.value}
+                  onClick={() => setForm((f) => ({ ...f, error_reason: r.value }))}
+                  className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+                    form.error_reason === r.value
+                      ? reasonBtnColors[r.value]
+                      : 'border-zinc-700 bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                  }`}
+                >
+                  {r.label}
+                </button>
+              ))}
             </div>
           </div>
-          <label className="mt-4 flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm text-zinc-300">
+
+          <label className="mb-4 flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm text-zinc-300">
             <input
               type="checkbox"
               checked={form.needs_review}
@@ -248,9 +285,11 @@ export function ErrorBank() {
             />
             Marcar para revisão futura
           </label>
+
           <button
             type="submit"
-            className="mt-4 rounded-lg bg-violet-600 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-500"
+            disabled={!form.question || !form.topic}
+            className="rounded-lg bg-violet-600 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Salvar Erro
           </button>
