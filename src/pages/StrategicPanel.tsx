@@ -17,8 +17,7 @@ const areaLabels: Record<MedicalArea, string> = {
   clinica_medica: 'Clínica Médica',
   cirurgia: 'Cirurgia',
   pediatria: 'Pediatria',
-  ginecologia: 'Ginecologia',
-  obstetricia: 'Obstetrícia',
+  ginecologia_obstetricia: 'Ginecologia e Obstetrícia',
   preventiva: 'Preventiva',
 }
 

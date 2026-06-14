@@ -2,8 +2,7 @@ export type MedicalArea =
   | 'clinica_medica'
   | 'cirurgia'
   | 'pediatria'
-  | 'ginecologia'
-  | 'obstetricia'
+  | 'ginecologia_obstetricia'
   | 'preventiva'
 
 export type Mood = 'excelente' | 'bom' | 'medio' | 'ruim'
@@ -76,6 +75,11 @@ export interface ErrorEntry {
   error_reason: ErrorReason
   needs_review: boolean
   reviewed: boolean
+  origem_atividade: string | null
+  nivel_confianca: 'baixo' | 'medio' | 'alto' | null
+  recorrencia: number
+  ultima_ocorrencia: string | null
+  sugestao_revisao: string | null
   created_at: string
 }
 
@@ -166,8 +170,7 @@ export const MEDICAL_AREAS: { value: MedicalArea; label: string }[] = [
   { value: 'clinica_medica', label: 'Clínica Médica' },
   { value: 'cirurgia', label: 'Cirurgia' },
   { value: 'pediatria', label: 'Pediatria' },
-  { value: 'ginecologia', label: 'Ginecologia' },
-  { value: 'obstetricia', label: 'Obstetrícia' },
+  { value: 'ginecologia_obstetricia', label: 'Ginecologia e Obstetrícia' },
   { value: 'preventiva', label: 'Preventiva' },
 ]
 

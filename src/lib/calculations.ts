@@ -1,4 +1,5 @@
-import type { DailyLog, MockExam, WeeklySummary, AreaPerformance, ApprovalScore } from '../types'
+import type { DailyLog, MockExam, WeeklySummary, AreaPerformance, ApprovalScore, MedicalArea, ErrorReason } from '../types'
+import { MEDICAL_AREAS } from '../types'
 
 export function calculateTotalQuestions(logs: DailyLog[]): number {
   return logs.reduce((sum, log) => sum + log.questions_done, 0)
@@ -181,4 +182,89 @@ export function getAreaPriority(hitRate: number): 'red' | 'yellow' | 'green' {
   if (hitRate < 70) return 'red'
   if (hitRate < 80) return 'yellow'
   return 'green'
+}
+
+export function calculateAreaPerformanceFromLogs(logs: DailyLog[]): AreaPerformance[] {
+  const areaMap = new Map<MedicalArea, { questions_done: number; correct: number }>()
+
+  for (const log of logs) {
+    if (log.areas_data && log.areas_data.length > 0) {
+      for (const ad of log.areas_data) {
+        const existing = areaMap.get(ad.area) || { questions_done: 0, correct: 0 }
+        existing.questions_done += ad.questions_done
+        existing.correct += ad.correct
+        areaMap.set(ad.area, existing)
+      }
+    } else if (log.questions_done > 0) {
+      const correct = Math.round(log.questions_done * (log.hit_rate / 100))
+      const area = 'clinica_medica' as MedicalArea
+      const existing = areaMap.get(area) || { questions_done: 0, correct: 0 }
+      existing.questions_done += log.questions_done
+      existing.correct += correct
+      areaMap.set(area, existing)
+    }
+  }
+
+  const areas = Array.from(areaMap.entries()).map(([area, data]) => {
+    const hit_rate = data.questions_done > 0
+      ? Math.round((data.correct / data.questions_done) * 100 * 100) / 100
+      : 0
+    return {
+      id: area,
+      area,
+      questions_done: data.questions_done,
+      correct: data.correct,
+      hit_rate,
+      trend: 'stable' as const,
+      priority: getAreaPriority(hit_rate),
+    }
+  })
+
+  return MEDICAL_AREAS.map(({ value }) => {
+    const existing = areas.find((a) => a.area === value)
+    return existing || {
+      id: value,
+      area: value,
+      questions_done: 0,
+      correct: 0,
+      hit_rate: 0,
+      trend: 'stable' as const,
+      priority: 'red' as const,
+    }
+  })
+}
+
+export function extractErrorsFromNotes(notes: string): { topic: string; error_reason: ErrorReason; nivel_confianca: 'baixo' | 'medio' | 'alto' }[] {
+  const results: { topic: string; error_reason: ErrorReason; nivel_confianca: 'baixo' | 'medio' | 'alto' }[] = []
+  const lower = notes.toLowerCase()
+
+  const patterns: { regex: RegExp; reason: ErrorReason }[] = [
+    { regex: /errei\s+(\w+(?:\s+\w+){0,3})/gi, reason: 'nao_sabia' },
+    { regex: /não\s*sei\s+(\w+(?:\s+\w+){0,3})/gi, reason: 'nao_sabia' },
+    { regex: /esqueci\s+(\w+(?:\s+\w+){0,3})/gi, reason: 'esqueci' },
+    { regex: /interpret[eaç]\w+\s+(\w+(?:\s+\w+){0,3})/gi, reason: 'interpretacao' },
+    { regex: /confundi\s+(\w+(?:\s+\w+){0,3})/gi, reason: 'interpretacao' },
+    { regex: /pegadinha\s+(\w+(?:\s+\w+){0,3})/gi, reason: 'pegadinha' },
+    { regex: /pressa\s+(\w+(?:\s+\w+){0,3})/gi, reason: 'pressa' },
+    { regex: /dificuldade\s+(\w+(?:\s+\w+){0,3})/gi, reason: 'nao_sabia' },
+    { regex: /revisar\s+(\w+(?:\s+\w+){0,3})/gi, reason: 'esqueci' },
+  ]
+
+  for (const { regex, reason } of patterns) {
+    let match: RegExpExecArray | null
+    const r = new RegExp(regex.source, 'gi')
+    while ((match = r.exec(lower)) !== null) {
+      const topic = match[1].trim()
+      if (topic && topic.length > 2) {
+        const hasContext = lower.includes('muito') || lower.includes('demais') || lower.includes('dificil')
+        results.push({
+          topic,
+          error_reason: reason,
+          nivel_confianca: hasContext ? 'baixo' : 'medio',
+        })
+      }
+    }
+  }
+
+  return results
 }

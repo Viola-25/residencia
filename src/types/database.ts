@@ -66,6 +66,11 @@ export interface Database {
           error_reason: string
           needs_review: boolean
           reviewed: boolean
+          origem_atividade: string | null
+          nivel_confianca: string | null
+          recorrencia: number
+          ultima_ocorrencia: string | null
+          sugestao_revisao: string | null
           created_at: string
         }
         Insert: {
@@ -76,6 +81,11 @@ export interface Database {
           error_reason: string
           needs_review?: boolean
           reviewed?: boolean
+          origem_atividade?: string | null
+          nivel_confianca?: string | null
+          recorrencia?: number
+          ultima_ocorrencia?: string | null
+          sugestao_revisao?: string | null
           created_at?: string
         }
       }

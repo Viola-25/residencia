@@ -1,11 +1,73 @@
 import Groq from 'groq-sdk'
 import { supabase } from './supabase'
-import type { DailyLog, MockExam, ErrorEntry, AreaPerformance, StudyConfig, AIInsight } from '../types'
+import type { DailyLog, MockExam, ErrorEntry, AreaPerformance, StudyConfig, AIInsight, ErrorReason } from '../types'
 
 const groq = new Groq({
   apiKey: import.meta.env.VITE_GROQ_API_KEY || '',
   dangerouslyAllowBrowser: true,
 })
+
+const ERROR_EXTRACTION_SYSTEM_PROMPT = `Você é um assistente que extrai erros de estudo de observações de estudantes de medicina.
+
+Analise o texto fornecido e extraia TODOS os erros, dificuldades, assuntos fracos, temas para revisão e conceitos confundidos mencionados.
+
+Responda APENAS com um array JSON. Se nada for encontrado, retorne array vazio [].
+Formato esperado:
+[
+  {
+    "topic": "nome do tema extraído",
+    "error_reason": "nao_sabia" | "esqueci" | "interpretacao" | "pegadinha" | "pressa",
+    "nivel_confianca": "baixo" | "medio" | "alto",
+    "sugestao_revisao": "sugestão curta de revisão ou null"
+  }
+]
+
+Regras:
+- topic: extraia o assunto específico (ex: "insuficiência cardíaca", "farmacologia", "cirurgia geral")
+- error_reason: classifique o motivo
+  - "nao_sabia": quando o aluno não sabia o conteúdo
+  - "esqueci": quando sabia mas esqueceu
+  - "interpretacao": quando errou por interpretação ou confusão
+  - "pegadinha": quando caiu em pegadinha
+  - "pressa": quando errou por pressa
+- nivel_confianca: "baixo" se parecer muito inseguro, "medio" normalmente, "alto" se parecer confiante
+- sugestao_revisao: gere uma sugestão prática de revisão ou null se não aplicável`
+
+export async function extractErrorsFromNotesAI(notes: string): Promise<{
+  topic: string
+  error_reason: ErrorReason
+  nivel_confianca: 'baixo' | 'medio' | 'alto'
+  sugestao_revisao: string | null
+}[]> {
+  const apiKey = import.meta.env.VITE_GROQ_API_KEY
+  if (!apiKey || !notes || notes.trim().length < 5) return []
+
+  try {
+    const completion = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        { role: 'system', content: ERROR_EXTRACTION_SYSTEM_PROMPT },
+        { role: 'user', content: `Texto do estudante: "${notes}"` },
+      ],
+      temperature: 0.1,
+      max_tokens: 1000,
+    })
+
+    const text = completion.choices[0]?.message?.content
+    if (!text) return []
+
+    const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
+    const parsed = JSON.parse(cleaned) as {
+      topic: string
+      error_reason: ErrorReason
+      nivel_confianca: 'baixo' | 'medio' | 'alto'
+      sugestao_revisao: string | null
+    }[]
+    return Array.isArray(parsed) ? parsed.slice(0, 10) : []
+  } catch {
+    return []
+  }
+}
 
 const SYSTEM_PROMPT = `Você é um assistente especializado em análise de desempenho para preparação de residência médica.
 
@@ -16,7 +78,7 @@ Com base nos dados de estudo fornecidos, gere insights em português no formato 
     "title": "título curto",
     "description": "descrição detalhada com análise e recomendação (máx 3 frases)",
     "priority": "low" | "medium" | "high",
-    "area": "clinica_medica" | "cirurgia" | "pediatria" | "ginecologia" | "obstetricia" | "preventiva" | null
+    "area": "clinica_medica" | "cirurgia" | "pediatria" | "ginecologia_obstetricia" | "preventiva" | null
   }
 ]
 

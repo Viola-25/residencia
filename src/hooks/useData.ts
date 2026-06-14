@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import type {
   DailyLog,
@@ -6,14 +6,11 @@ import type {
   MockExam,
   MockExamFormData,
   ErrorEntry,
-  ErrorEntryFormData,
   WeeklySummary,
   StudyConfig,
-  AreaPerformance,
   MedicalArea,
   DashboardMetrics,
   StrategicData,
-  AIInsight,
 } from '../types'
 import {
   calculateTotalQuestions,
@@ -22,13 +19,14 @@ import {
   calculateYearlyProgress,
   calculateWeeklyProgress,
   calculateEvolution,
-  getMockTrend,
   calculateCurrentStreak,
   calculateDaysWithoutStudy,
   calculateApprovalScore,
-  getAreaPriority,
+  calculateAreaPerformanceFromLogs,
+  extractErrorsFromNotes,
 } from '../lib/calculations'
 import { getDaysUntil, getCurrentWeekStart } from '../lib/dates'
+import { extractErrorsFromNotesAI } from '../lib/groq'
 
 const DEFAULT_CONFIG: StudyConfig = {
   id: 'default',
@@ -46,7 +44,6 @@ export function useData() {
   const [logs, setLogs] = useState<DailyLog[]>([])
   const [mocks, setMocks] = useState<MockExam[]>([])
   const [errors, setErrors] = useState<ErrorEntry[]>([])
-  const [areaPerformance, setAreaPerformance] = useState<AreaPerformance[]>([])
   const [config, setConfig] = useState<StudyConfig>(DEFAULT_CONFIG)
   const [weeklySummaries] = useState<WeeklySummary[]>([])
   const [loading, setLoading] = useState(true)
@@ -54,18 +51,16 @@ export function useData() {
   useEffect(() => {
     ;(async () => {
       try {
-        const [logsRes, mocksRes, errorsRes, areaRes, configRes] = await Promise.all([
+        const [logsRes, mocksRes, errorsRes, configRes] = await Promise.all([
           supabase.from('daily_logs').select('*').order('date', { ascending: false }),
           supabase.from('mock_exams').select('*').order('date', { ascending: false }),
           supabase.from('error_bank').select('*').order('created_at', { ascending: false }),
-          supabase.from('area_performance').select('*'),
           supabase.from('study_config').select('*').limit(1).single(),
         ])
 
         if (logsRes.data) setLogs(logsRes.data as DailyLog[])
         if (mocksRes.data) setMocks(mocksRes.data as MockExam[])
         if (errorsRes.data) setErrors(errorsRes.data as ErrorEntry[])
-        if (areaRes.data) setAreaPerformance(areaRes.data as AreaPerformance[])
         if (configRes.data) setConfig(configRes.data as StudyConfig)
       } catch {
         // Using local state when Supabase is not configured
@@ -74,6 +69,11 @@ export function useData() {
       }
     })()
   }, [])
+
+  const areaPerformance = useMemo(
+    () => calculateAreaPerformanceFromLogs(logs),
+    [logs]
+  )
 
   const addDailyLog = async (formData: DailyLogFormData) => {
     const areas_data: { area: MedicalArea; questions_done: number; correct: number }[] = []
@@ -88,7 +88,6 @@ export function useData() {
         })
         totalQuestions += data.questions_done
         totalCorrect += data.correct
-        saveAreaPerformance(area as MedicalArea, data.questions_done, data.correct)
       }
     }
 
@@ -115,6 +114,41 @@ export function useData() {
     try {
       await supabase.from('daily_logs').insert(newLog)
     } catch { /* local fallback */ }
+
+    // Auto-extract errors from notes (AI first, regex fallback)
+    if (formData.notes && formData.notes.trim().length > 0) {
+      const aiErrors = await extractErrorsFromNotesAI(formData.notes)
+      const extractedErrors = aiErrors.length > 0
+        ? aiErrors
+        : extractErrorsFromNotes(formData.notes).map((e) => ({ ...e, sugestao_revisao: null as string | null }))
+
+      for (const ext of extractedErrors) {
+        const existingSame = errors.find(
+          (e) => e.topic.toLowerCase() === ext.topic.toLowerCase() && e.origem_atividade === newLog.id
+        )
+        if (existingSame) continue
+
+        const newError: ErrorEntry = {
+          id: crypto.randomUUID(),
+          question: `[Auto: ${formData.date}] ${ext.topic}`,
+          topic: ext.topic,
+          subtopic: null,
+          error_reason: ext.error_reason,
+          needs_review: ext.nivel_confianca === 'baixo',
+          reviewed: false,
+          origem_atividade: newLog.id,
+          nivel_confianca: ext.nivel_confianca,
+          recorrencia: 1,
+          ultima_ocorrencia: formData.date,
+          sugestao_revisao: ext.sugestao_revisao,
+          created_at: new Date().toISOString(),
+        }
+        setErrors((prev) => [newError, ...prev])
+        try {
+          await supabase.from('error_bank').insert(newError)
+        } catch { /* local fallback */ }
+      }
+    }
   }
 
   const addMockExam = async (formData: MockExamFormData) => {
@@ -156,20 +190,6 @@ export function useData() {
     } catch { /* local fallback */ }
   }
 
-  const addError = async (formData: ErrorEntryFormData) => {
-    const newError: ErrorEntry = {
-      id: crypto.randomUUID(),
-      ...formData,
-      subtopic: formData.subtopic || null,
-      reviewed: false,
-      created_at: new Date().toISOString(),
-    }
-    setErrors((prev) => [newError, ...prev])
-    try {
-      await supabase.from('error_bank').insert(newError)
-    } catch { /* local fallback */ }
-  }
-
   const toggleErrorReview = async (id: string) => {
     setErrors((prev) =>
       prev.map((e) => (e.id === id ? { ...e, reviewed: !e.reviewed } : e))
@@ -187,65 +207,19 @@ export function useData() {
 
   const saveAreaPerformance = async (area: MedicalArea, questions_done: number, correct: number) => {
     const hit_rate = questions_done > 0 ? Math.round((correct / questions_done) * 100 * 100) / 100 : 0
-    const existing = areaPerformance.find((a) => a.area === area)
-    const newPerf: AreaPerformance = {
-      id: existing?.id || crypto.randomUUID(),
-      area,
-      questions_done: (existing?.questions_done || 0) + questions_done,
-      correct: (existing?.correct || 0) + correct,
-      hit_rate: 0,
-      trend: 'stable',
-      priority: getAreaPriority(hit_rate),
-    }
-    newPerf.hit_rate =
-      newPerf.questions_done > 0
-        ? Math.round((newPerf.correct / newPerf.questions_done) * 100 * 100) / 100
-        : 0
-
-    if (existing) {
-      const oldRate = existing.hit_rate
-      newPerf.trend = newPerf.hit_rate > oldRate ? 'up' : newPerf.hit_rate < oldRate ? 'down' : 'stable'
-      setAreaPerformance((prev) => prev.map((a) => (a.area === area ? newPerf : a)))
-    } else {
-      setAreaPerformance((prev) => [...prev, newPerf])
-    }
-
     try {
       await supabase.from('area_performance').upsert({
-        ...newPerf,
+        area,
+        questions_done,
+        correct,
+        hit_rate,
+        trend: 'stable',
         date: new Date().toISOString().split('T')[0],
-      })
-    } catch { /* local fallback */ }
-  }
-
-  const subtractAreaPerformance = async (area: MedicalArea, questions_done: number, correct: number) => {
-    const existing = areaPerformance.find((a) => a.area === area)
-    if (!existing) return
-    const newQ = Math.max(0, existing.questions_done - questions_done)
-    const newC = Math.max(0, existing.correct - correct)
-    const hit_rate = newQ > 0 ? Math.round((newC / newQ) * 100 * 100) / 100 : 0
-    const updated: AreaPerformance = {
-      ...existing,
-      questions_done: newQ,
-      correct: newC,
-      hit_rate,
-      priority: getAreaPriority(hit_rate),
-    }
-    setAreaPerformance((prev) => prev.map((a) => (a.area === area ? updated : a)))
-    try {
-      await supabase.from('area_performance').upsert({
-        ...updated,
-        date: new Date().toISOString().split('T')[0],
-      })
+      }, { onConflict: 'area' })
     } catch { /* local fallback */ }
   }
 
   const deleteDailyLog = async (id: string) => {
-    const log = logs.find((l) => l.id === id)
-    if (!log) return
-    for (const ad of log.areas_data) {
-      subtractAreaPerformance(ad.area, ad.questions_done, ad.correct)
-    }
     setLogs((prev) => prev.filter((l) => l.id !== id))
     try {
       await supabase.from('daily_logs').delete().eq('id', id)
@@ -253,11 +227,6 @@ export function useData() {
   }
 
   const deleteMockExam = async (id: string) => {
-    const exam = mocks.find((m) => m.id === id)
-    if (!exam) return
-    for (const ad of exam.areas_data) {
-      subtractAreaPerformance(ad.area, ad.questions_done, ad.correct)
-    }
     setMocks((prev) => prev.filter((m) => m.id !== id))
     try {
       await supabase.from('mock_exams').delete().eq('id', id)
@@ -337,59 +306,6 @@ export function useData() {
     }
   })()
 
-  const aiInsights = ((): AIInsight[] => {
-    const insights: AIInsight[] = []
-    const lowAreas = areaPerformance.filter((a) => a.priority === 'red')
-    for (const area of lowAreas) {
-      const global = calculateGlobalHitRate(logs)
-      const diff = Math.round((global - area.hit_rate) * 100) / 100
-      if (diff > 0) {
-        insights.push({
-          type: 'priority',
-          title: 'Área prioritária detectada',
-          description: `${area.area} apresenta desempenho ${diff.toFixed(1)}% inferior à média global. Recomenda-se aumentar o volume de questões desta área.`,
-          priority: 'high',
-          area: area.area,
-        })
-      }
-    }
-    if (dashboardMetrics.days_without_study > 2) {
-      insights.push({
-        type: 'suggestion',
-        title: 'Retomar rotina de estudos',
-        description: `Você está há ${dashboardMetrics.days_without_study} dias sem estudar. Que tal começar com uma revisão leve para retomar o ritmo?`,
-        priority: 'high',
-      })
-    }
-    if (mocks.length > 0) {
-      const trend = getMockTrend(mocks)
-      if (trend > 0) {
-        insights.push({
-          type: 'weekly',
-          title: 'Evolução positiva em simulados',
-          description: `Seus simulados apresentam tendência de crescimento de ${trend.toFixed(1)}%. Continue com a estratégia atual.`,
-          priority: 'medium',
-        })
-      } else if (trend < 0) {
-        insights.push({
-          type: 'monthly',
-          title: 'Atenção aos simulados',
-          description: `Seus simulados apresentam tendência de queda de ${Math.abs(trend).toFixed(1)}%. Reavalie sua estratégia de preparação.`,
-          priority: 'high',
-        })
-      }
-    }
-    if (insights.length === 0) {
-      insights.push({
-        type: 'suggestion',
-        title: 'Comece a registrar seus estudos',
-        description: 'Adicione seus registros diários, simulados e erros para receber insights personalizados.',
-        priority: 'medium',
-      })
-    }
-    return insights
-  })()
-
   return {
     loading,
     logs,
@@ -397,16 +313,12 @@ export function useData() {
     errors,
     areaPerformance,
     config,
-    weeklySummaries,
     dashboardMetrics,
     approvalScore,
     strategicData,
-    aiInsights,
     addDailyLog,
     addMockExam,
-    addError,
     toggleErrorReview,
-    saveAreaPerformance,
     deleteDailyLog,
     deleteMockExam,
     deleteError,

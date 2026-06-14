@@ -76,8 +76,7 @@ export function Dashboard() {
       clinica_medica: 'Clínica',
       cirurgia: 'Cirurgia',
       pediatria: 'Pediatria',
-      ginecologia: 'Ginecologia',
-      obstetricia: 'Obstetrícia',
+      ginecologia_obstetricia: 'G.O.',
       preventiva: 'Preventiva',
     }
     return areaPerformance.map((a) => ({
