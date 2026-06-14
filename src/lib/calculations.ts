@@ -184,16 +184,26 @@ export function getAreaPriority(hitRate: number): 'red' | 'yellow' | 'green' {
   return 'green'
 }
 
+const AREA_ALIAS: Record<string, MedicalArea> = {
+  ginecologia: 'ginecologia_obstetricia',
+  obstetricia: 'ginecologia_obstetricia',
+}
+
+function normalizeArea(area: string): MedicalArea {
+  return AREA_ALIAS[area] || (area as MedicalArea)
+}
+
 export function calculateAreaPerformanceFromLogs(logs: DailyLog[]): AreaPerformance[] {
   const areaMap = new Map<MedicalArea, { questions_done: number; correct: number }>()
 
   for (const log of logs) {
     if (log.areas_data && log.areas_data.length > 0) {
       for (const ad of log.areas_data) {
-        const existing = areaMap.get(ad.area) || { questions_done: 0, correct: 0 }
+        const normalized = normalizeArea(ad.area)
+        const existing = areaMap.get(normalized) || { questions_done: 0, correct: 0 }
         existing.questions_done += ad.questions_done
         existing.correct += ad.correct
-        areaMap.set(ad.area, existing)
+        areaMap.set(normalized, existing)
       }
     } else if (log.questions_done > 0) {
       const correct = Math.round(log.questions_done * (log.hit_rate / 100))

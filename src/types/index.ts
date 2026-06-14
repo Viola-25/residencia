@@ -33,6 +33,12 @@ export interface DailyLog {
   created_at: string
 }
 
+export interface InlineError {
+  topic: string
+  description: string
+  error_reason: ErrorReason
+}
+
 export interface DailyLogFormData {
   date: string
   registration_type: RegistrationType
@@ -43,6 +49,7 @@ export interface DailyLogFormData {
   notes: string
   mood: Mood
   energy_level: number
+  inline_errors?: InlineError[]
 }
 
 export interface MockExam {

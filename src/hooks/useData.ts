@@ -115,6 +115,32 @@ export function useData() {
       await supabase.from('daily_logs').insert(newLog)
     } catch { /* local fallback */ }
 
+    // Save inline errors
+    if (formData.inline_errors && formData.inline_errors.length > 0) {
+      for (const ie of formData.inline_errors) {
+        if (!ie.topic.trim()) continue
+        const newError: ErrorEntry = {
+          id: crypto.randomUUID(),
+          question: `[Registro: ${formData.date}] ${ie.description || ie.topic}`,
+          topic: ie.topic,
+          subtopic: null,
+          error_reason: ie.error_reason,
+          needs_review: false,
+          reviewed: false,
+          origem_atividade: newLog.id,
+          nivel_confianca: 'medio',
+          recorrencia: 1,
+          ultima_ocorrencia: formData.date,
+          sugestao_revisao: null,
+          created_at: new Date().toISOString(),
+        }
+        setErrors((prev) => [newError, ...prev])
+        try {
+          await supabase.from('error_bank').insert(newError)
+        } catch { /* local fallback */ }
+      }
+    }
+
     // Auto-extract errors from notes (AI first, regex fallback)
     if (formData.notes && formData.notes.trim().length > 0) {
       const aiErrors = await extractErrorsFromNotesAI(formData.notes)
