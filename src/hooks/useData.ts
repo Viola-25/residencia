@@ -260,6 +260,7 @@ export function useData() {
 
   const deleteDailyLog = async (id: string) => {
     setLogs((prev) => prev.filter((l) => l.id !== id))
+    setErrors((prev) => prev.filter((e) => e.origem_atividade !== id))
     try {
       await supabase.from('daily_logs').delete().eq('id', id)
     } catch { /* local fallback */ }
@@ -276,6 +277,46 @@ export function useData() {
     setErrors((prev) => prev.filter((e) => e.id !== id))
     try {
       await supabase.from('error_bank').delete().eq('id', id)
+    } catch { /* local fallback */ }
+  }
+
+  const updateDailyLog = async (id: string, formData: DailyLogFormData) => {
+    const areas_data: { area: MedicalArea; questions_done: number; correct: number }[] = []
+    let totalQuestions = 0
+    let totalCorrect = 0
+    for (const [area, data] of Object.entries(formData.areas)) {
+      if (data.questions_done > 0) {
+        areas_data.push({
+          area: area as MedicalArea,
+          questions_done: data.questions_done,
+          correct: data.correct,
+        })
+        totalQuestions += data.questions_done
+        totalCorrect += data.correct
+      }
+    }
+
+    const hit_rate = totalQuestions > 0
+      ? Math.round((totalCorrect / totalQuestions) * 100 * 100) / 100
+      : 0
+
+    const updated: Partial<DailyLog> = {
+      date: formData.date,
+      registration_type: formData.registration_type,
+      hours_studied: formData.hours_studied,
+      questions_done: totalQuestions,
+      hit_rate,
+      areas_data,
+      core_review_done: formData.core_review_done,
+      flashcards_done: formData.flashcards_done,
+      notes: formData.notes || null,
+      mood: formData.mood,
+      energy_level: formData.energy_level,
+    }
+
+    setLogs((prev) => prev.map((l) => (l.id === id ? { ...l, ...updated } : l)))
+    try {
+      await supabase.from('daily_logs').update(updated).eq('id', id)
     } catch { /* local fallback */ }
   }
 
@@ -360,6 +401,7 @@ export function useData() {
     addMockExam,
     toggleErrorReview,
     deleteDailyLog,
+    updateDailyLog,
     deleteMockExam,
     deleteError,
     updateConfig,
