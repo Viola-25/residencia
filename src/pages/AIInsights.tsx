@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Sparkles, Lightbulb, TrendingUp, AlertCircle, Brain, RefreshCw } from 'lucide-react'
 import { PageHeader } from '../components/PageHeader'
 import { Badge } from '../components/Badge'
 import { useData } from '../hooks/useData'
-import { generateInsights, loadCachedInsights } from '../lib/groq'
+import { generateInsights, loadCachedInsights, generateDailyErrorSummary, loadDailySummaryCache, saveDailySummaryCache } from '../lib/groq'
 import { AREA_LABELS } from '../types'
 import type { AIInsight } from '../types'
 
@@ -25,6 +25,33 @@ export function AIInsights() {
   const [insights, setInsights] = useState<AIInsight[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [dailySummary, setDailySummary] = useState<string | null>(null)
+  const [dailySummaryLoading, setDailySummaryLoading] = useState(false)
+  const [dailySummaryError, setDailySummaryError] = useState<string | null>(null)
+
+  const todayErrors = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0]
+    return errors.filter((e) => e.created_at && e.created_at.startsWith(today))
+  }, [errors])
+
+  const handleGenerateDailySummary = useCallback(async () => {
+    setDailySummaryLoading(true)
+    setDailySummaryError(null)
+    try {
+      const result = await generateDailyErrorSummary(todayErrors)
+      if (result) {
+        setDailySummary(result)
+        const today = new Date().toISOString().split('T')[0]
+        await saveDailySummaryCache(today, result)
+      } else {
+        setDailySummaryError('Não foi possível gerar o resumo. Tente novamente.')
+      }
+    } catch {
+      setDailySummaryError('Erro ao gerar resumo diário.')
+    } finally {
+      setDailySummaryLoading(false)
+    }
+  }, [todayErrors])
 
   const loadInsights = useCallback(async () => {
     setLoading(true)
@@ -56,6 +83,17 @@ export function AIInsights() {
     }
     init()
   }, [loadInsights, logs.length, mocks.length])
+
+  useEffect(() => {
+    const loadSummary = async () => {
+      const today = new Date().toISOString().split('T')[0]
+      const cached = await loadDailySummaryCache(today)
+      if (cached) {
+        setDailySummary(cached)
+      }
+    }
+    loadSummary()
+  }, [])
 
   const suggestions = insights.filter(
     (i) => i.type === 'suggestion' || i.type === 'priority'
@@ -94,6 +132,55 @@ export function AIInsights() {
             </p>
           </div>
         </div>
+      </div>
+
+      <div className="mb-8 rounded-xl border border-amber-500/20 bg-amber-500/5 p-5">
+        <div className="mb-3 flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-semibold text-amber-300">Resumo Diário de Erros</h3>
+            <p className="mt-1 text-xs text-zinc-500">
+              {todayErrors.length > 0
+                ? `Análise de ${todayErrors.length} erro(s) registrado(s) hoje`
+                : 'Nenhum erro registrado hoje'}
+            </p>
+          </div>
+          {!dailySummary && todayErrors.length > 0 && (
+            <button
+              onClick={handleGenerateDailySummary}
+              disabled={dailySummaryLoading}
+              className="shrink-0 rounded-lg bg-amber-600 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {dailySummaryLoading ? 'Gerando...' : 'Gerar Resumo do Dia'}
+            </button>
+          )}
+        </div>
+
+        {dailySummaryLoading && (
+          <div className="rounded-lg bg-zinc-800/30 p-4">
+            <Sparkles size={20} className="mx-auto animate-pulse text-amber-500" />
+            <p className="mt-2 text-center text-xs text-zinc-500">
+              Analisando seus erros do dia...
+            </p>
+          </div>
+        )}
+
+        {dailySummaryError && (
+          <div className="rounded-lg bg-rose-500/10 p-3 text-sm text-rose-400">
+            {dailySummaryError}
+          </div>
+        )}
+
+        {dailySummary && (
+          <div className="rounded-lg border border-amber-500/10 bg-zinc-800/30 p-4 text-sm text-zinc-300 leading-relaxed">
+            {dailySummary}
+          </div>
+        )}
+
+        {!dailySummary && !dailySummaryLoading && todayErrors.length === 0 && (
+          <div className="rounded-lg bg-zinc-800/30 p-4 text-center text-sm text-zinc-500">
+            Nenhum erro registrado hoje. Registre seus estudos no Diário para acompanhar seus erros.
+          </div>
+        )}
       </div>
 
       {loading && (

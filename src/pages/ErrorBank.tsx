@@ -237,7 +237,7 @@ export function ErrorBank() {
                   key={err.id}
                   className="border-b border-zinc-800/50 text-zinc-300 last:border-b-0 hover:bg-zinc-800/30"
                 >
-                  <td className="max-w-xs truncate px-4 py-3">{err.question}</td>
+                  <td className="max-w-xs break-words px-4 py-3" title={err.question}>{err.question}</td>
                   <td className="px-4 py-3 font-medium">{err.topic}</td>
                   <td className="px-4 py-3">
                     <span className={`font-medium ${err.recorrencia > 1 ? 'text-amber-400' : 'text-zinc-400'}`}>
@@ -264,7 +264,7 @@ export function ErrorBank() {
                   <td className="px-4 py-3 text-zinc-500">
                     {err.ultima_ocorrencia ? formatDateShort(err.ultima_ocorrencia) : formatDateShort(err.created_at.split('T')[0])}
                   </td>
-                  <td className="max-w-xs truncate px-4 py-3 text-xs text-zinc-500">
+                  <td className="max-w-xs break-words px-4 py-3 text-xs text-zinc-500" title={err.sugestao_revisao || ''}>
                     {err.sugestao_revisao || (err.recorrencia > 1 ? 'Rever com urgência' : err.needs_review ? 'Revisar' : '-')}
                   </td>
                   <td className="px-4 py-3">

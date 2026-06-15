@@ -123,6 +123,22 @@ export interface Database {
           user_id: string
         }
       }
+      daily_summary_cache: {
+        Row: {
+          id: string
+          summary: string
+          date: string
+          user_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          summary: string
+          date: string
+          user_id?: string
+          created_at?: string
+        }
+      }
       study_config: {
         Row: {
           id: string

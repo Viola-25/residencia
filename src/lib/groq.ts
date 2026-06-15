@@ -144,6 +144,12 @@ export async function extractErrorsFromNotesAI(notes: string): Promise<{
   }
 }
 
+const DAILY_ERROR_SUMMARY_PROMPT = `Você é um preceptor experiente orientando um interno de medicina do 11º semestre.
+
+Com base nos erros registrados pelo interno hoje, forneça um parágrafo ÚNICO, curto, direto e incisivo elucidando os principais conceitos errados, com foco exclusivo na correção de raciocínio clínico e prático.
+
+Seja objetivo e prático, como um preceptor à beira do leito. Aponte o que precisa ser revisto com urgência e dê direcionamentos claros. NÃO use formatação, NÃO liste tópicos — apenas um parágrafo contínuo.`
+
 const SYSTEM_PROMPT = `Você é um assistente especializado em análise de desempenho para preparação de residência médica.
 
 Com base nos dados de estudo fornecidos, gere insights em português no formato JSON:
@@ -201,6 +207,83 @@ async function saveInsights(insights: AIInsight[]): Promise<void> {
     await supabase.from('insights_cache').insert(rows)
   } catch {
     // cache is optional — app works without it
+  }
+}
+
+export async function loadDailySummaryCache(date: string): Promise<string | null> {
+  try {
+    const { data } = await supabase
+      .from('daily_summary_cache')
+      .select('summary')
+      .eq('date', date)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+
+    if (data && data.summary) {
+      return data.summary
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+export async function saveDailySummaryCache(date: string, summary: string): Promise<void> {
+  try {
+    const { data: existing } = await supabase
+      .from('daily_summary_cache')
+      .select('id')
+      .eq('date', date)
+
+    if (existing && existing.length > 0) {
+      await supabase
+        .from('daily_summary_cache')
+        .update({ summary, created_at: new Date().toISOString() })
+        .eq('date', date)
+    } else {
+      await supabase
+        .from('daily_summary_cache')
+        .insert({ summary, date })
+    }
+  } catch {
+    // cache is optional
+  }
+}
+
+export async function generateDailyErrorSummary(errors: ErrorEntry[]): Promise<string | null> {
+  if (errors.length === 0) return null
+
+  const apiKey = import.meta.env.VITE_GROQ_API_KEY
+  if (!apiKey) return null
+
+  const errorsText = errors
+    .map(
+      (e, i) =>
+        `${i + 1}. Tema: ${e.topic} | Erro: ${e.question.substring(0, 120)} | Motivo: ${e.error_reason}${e.sugestao_revisao ? ` | Sugestao: ${e.sugestao_revisao}` : ''}`
+    )
+    .join('\n')
+
+  try {
+    const completion = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        { role: 'system', content: DAILY_ERROR_SUMMARY_PROMPT },
+        {
+          role: 'user',
+          content: `Erros registrados hoje pelo interno:\n\n${errorsText}`,
+        },
+      ],
+      temperature: 0.3,
+      max_tokens: 500,
+    })
+
+    const text = completion.choices[0]?.message?.content
+    if (!text) return null
+
+    return text.trim()
+  } catch {
+    return null
   }
 }
 
