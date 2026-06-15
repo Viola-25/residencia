@@ -30,6 +30,8 @@ declare module 'lucide-react' {
   export const Clock: Icon
   export const Database: Icon
   export const FileText: Icon
+  export const Eye: Icon
+  export const EyeOff: Icon
   export const Filter: Icon
   export const Flag: Icon
   export const Globe: Icon
@@ -45,6 +47,7 @@ declare module 'lucide-react' {
   export const List: Icon
   export const Loader: Icon
   export const Loader2: Icon
+  export const LogIn: Icon
   export const LogOut: Icon
   export const Menu: Icon
   export const Minus: Icon
@@ -70,6 +73,7 @@ declare module 'lucide-react' {
   export const Trophy: Icon
   export const Tv: Icon
   export const User: Icon
+  export const UserPlus: Icon
   export const Users: Icon
   export const Video: Icon
   export const Volume2: Icon

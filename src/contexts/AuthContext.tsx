@@ -1,9 +1,13 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
-import type { User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 
+type UserShape = {
+  id: string
+  email: string | undefined
+}
+
 interface AuthContextType {
-  user: User | null
+  user: UserShape | null
   loading: boolean
   login: (email: string, password: string) => Promise<string | null>
   signup: (email: string, password: string) => Promise<string | null>
@@ -13,34 +17,35 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<UserShape | null>(null)
   const [loading, setLoading] = useState(true)
+  const auth = supabase.auth as any
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
+    auth.getSession().then(({ data: { session } }: any) => {
+      setUser(session?.user ? { id: session.user.id, email: session.user.email } : null)
       setLoading(false)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
+    const { data: { subscription } } = auth.onAuthStateChange((_event: string, session: any) => {
+      setUser(session?.user ? { id: session.user.id, email: session.user.email } : null)
     })
 
     return () => subscription.unsubscribe()
   }, [])
 
   const login = async (email: string, password: string): Promise<string | null> => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { error } = await auth.signInWithPassword({ email, password })
     return error?.message ?? null
   }
 
   const signup = async (email: string, password: string): Promise<string | null> => {
-    const { error } = await supabase.auth.signUp({ email, password })
+    const { error } = await auth.signUp({ email, password })
     return error?.message ?? null
   }
 
   const logout = async () => {
-    await supabase.auth.signOut()
+    await auth.signOut()
     setUser(null)
   }
 

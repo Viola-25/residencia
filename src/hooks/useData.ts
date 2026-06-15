@@ -7,6 +7,7 @@ import type {
   MockExam,
   MockExamFormData,
   ErrorEntry,
+  ErrorReason,
   WeeklySummary,
   StudyConfig,
   MedicalArea,
