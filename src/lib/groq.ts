@@ -175,7 +175,7 @@ export async function loadCachedInsights(): Promise<AIInsight[] | null> {
     const today = new Date().toISOString().split('T')[0]
     const { data } = await supabase
       .from('insights_cache')
-      .select('*')
+      .select('type,title,description,priority,area,generated_at')
       .gte('generated_at', today)
       .order('generated_at', { ascending: false })
 

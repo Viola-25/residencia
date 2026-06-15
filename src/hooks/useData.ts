@@ -55,22 +55,30 @@ export function useData() {
     if (!user) return
     ;(async () => {
       try {
-        const [logsRes, mocksRes, errorsRes, configRes] = await Promise.all([
+        const [logsRes, mocksRes, errorsRes] = await Promise.all([
           supabase.from('daily_logs').select('*').eq('user_id', user.id).order('date', { ascending: false }),
           supabase.from('mock_exams').select('*').eq('user_id', user.id).order('date', { ascending: false }),
           supabase.from('error_bank').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
-          supabase.from('study_config').select('*').eq('user_id', user.id).limit(1).single(),
         ])
-
         if (logsRes.data) setLogs(logsRes.data as DailyLog[])
         if (mocksRes.data) setMocks(mocksRes.data as MockExam[])
         if (errorsRes.data) setErrors(errorsRes.data as ErrorEntry[])
-        if (configRes.data) setConfig(configRes.data as StudyConfig)
       } catch {
         // Using local state when Supabase is not configured
-      } finally {
-        setLoading(false)
       }
+
+      try {
+        const configRes = await supabase
+          .from('study_config')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle()
+        if (configRes.data) setConfig(configRes.data as StudyConfig)
+      } catch {
+        // Using default config
+      }
+
+      setLoading(false)
     })()
   }, [user])
 
@@ -339,7 +347,7 @@ export function useData() {
     } catch { /* local fallback */ }
   }
 
-  const dashboardMetrics = ((): DashboardMetrics => {
+  const dashboardMetrics = useMemo((): DashboardMetrics => {
     const sortedLogs = [...logs].sort((a, b) => a.date.localeCompare(b.date))
     return {
       days_to_enamed: getDaysUntil(config.enamed_date),
@@ -353,14 +361,18 @@ export function useData() {
       current_streak: calculateCurrentStreak(sortedLogs),
       days_without_study: calculateDaysWithoutStudy(sortedLogs),
     }
-  })()
+  }, [logs, config])
 
-  const approvalScore = calculateApprovalScore(logs, mocks, weeklySummaries, areaPerformance)
+  const approvalScore = useMemo(
+    () => calculateApprovalScore(logs, mocks, weeklySummaries, areaPerformance),
+    [logs, mocks, weeklySummaries, areaPerformance]
+  )
 
-  const strategicData = ((): StrategicData => {
+  const strategicData = useMemo((): StrategicData => {
     const sorted = [...areaPerformance].sort((a, b) => b.hit_rate - a.hit_rate)
     const topStrengths = sorted.slice(0, 3).map((a) => ({ area: a.area, hit_rate: a.hit_rate }))
-    const topWeaknesses = sorted.reverse().slice(0, 3).map((a) => ({ area: a.area, hit_rate: a.hit_rate }))
+    const sortedAsc = [...areaPerformance].sort((a, b) => a.hit_rate - b.hit_rate)
+    const topWeaknesses = sortedAsc.slice(0, 3).map((a) => ({ area: a.area, hit_rate: a.hit_rate }))
 
     const growthAreas = areaPerformance.filter((a) => a.trend === 'up')
     const declineAreas = areaPerformance.filter((a) => a.trend === 'down')
@@ -385,7 +397,7 @@ export function useData() {
         ? weeklySummaries.reduce((best, w) => (w.questions_done > best.questions_done ? w : best))
         : null,
     }
-  })()
+  }, [areaPerformance, dashboardMetrics, weeklySummaries])
 
   return {
     loading,

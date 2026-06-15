@@ -36,9 +36,8 @@ export function Login() {
       } else {
         navigate('/', { replace: true })
       }
-    } catch (err: any) {
-      setError(err?.message ?? 'Erro inesperado')
-      console.error('[Login] handleSubmit exception:', err)
+    } catch {
+      setError('Erro inesperado')
     } finally {
       setSubmitting(false)
     }
