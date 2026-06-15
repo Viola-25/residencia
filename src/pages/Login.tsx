@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { GraduationCap, LogIn, UserPlus, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
 export function Login() {
-  const { login, signup } = useAuth()
+  const { user, loading: authLoading, login, signup } = useAuth()
+  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isSignup, setIsSignup] = useState(false)
@@ -11,6 +13,10 @@ export function Login() {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [successMsg, setSuccessMsg] = useState('')
+
+  useEffect(() => {
+    if (!authLoading && user) navigate('/', { replace: true })
+  }, [user, authLoading, navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -27,6 +33,8 @@ export function Login() {
         setError(err)
       } else if (isSignup) {
         setSuccessMsg('Conta criada! Verifique seu email para confirmar.')
+      } else {
+        navigate('/', { replace: true })
       }
     } catch (err: any) {
       setError(err?.message ?? 'Erro inesperado')
