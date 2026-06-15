@@ -35,7 +35,9 @@ export interface DailyLog {
 
 export interface InlineError {
   topic: string
-  description: string
+  enunciado: string
+  alternativa_selecionada: string
+  alternativa_certa: string
   error_reason: ErrorReason
 }
 

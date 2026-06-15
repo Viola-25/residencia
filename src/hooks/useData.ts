@@ -121,7 +121,7 @@ export function useData() {
         if (!ie.topic.trim()) continue
         const newError: ErrorEntry = {
           id: crypto.randomUUID(),
-          question: `[Registro: ${formData.date}] ${ie.description || ie.topic}`,
+          question: `[Registro: ${formData.date}] ${ie.enunciado || ie.topic}${ie.alternativa_selecionada ? ` | Selecionou: ${ie.alternativa_selecionada}` : ''}${ie.alternativa_certa ? ` | Correto: ${ie.alternativa_certa}` : ''}`,
           topic: ie.topic,
           subtopic: null,
           error_reason: ie.error_reason,

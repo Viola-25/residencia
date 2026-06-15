@@ -57,7 +57,7 @@ export function DailyLog() {
     : 0
 
   const addInlineError = () => {
-    setInlineErrors((prev) => [...prev, { topic: '', description: '', error_reason: 'nao_sabia' }])
+    setInlineErrors((prev) => [...prev, { topic: '', enunciado: '', alternativa_selecionada: '', alternativa_certa: '', error_reason: 'nao_sabia' }])
   }
 
   const updateInlineError = (index: number, field: keyof InlineError, value: string) => {
@@ -341,14 +341,30 @@ export function DailyLog() {
                       className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
                     />
                   </div>
-                  <div className="mb-2">
+                  <div className="mb-2 space-y-2">
                     <textarea
-                      value={err.description}
-                      onChange={(e) => updateInlineError(index, 'description', e.target.value)}
-                      rows={1}
-                      placeholder="Descreva o erro (opcional)"
+                      value={err.enunciado}
+                      onChange={(e) => updateInlineError(index, 'enunciado', e.target.value)}
+                      rows={2}
+                      placeholder="Enunciado da questão"
                       className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
                     />
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="text"
+                        value={err.alternativa_selecionada}
+                        onChange={(e) => updateInlineError(index, 'alternativa_selecionada', e.target.value)}
+                        placeholder="Alternativa que selecionou"
+                        className="w-full rounded-md border border-rose-500/30 bg-zinc-800 px-2 py-1.5 text-sm text-rose-300 focus:border-rose-500 focus:outline-none"
+                      />
+                      <input
+                        type="text"
+                        value={err.alternativa_certa}
+                        onChange={(e) => updateInlineError(index, 'alternativa_certa', e.target.value)}
+                        placeholder="Alternativa correta"
+                        className="w-full rounded-md border border-emerald-500/30 bg-zinc-800 px-2 py-1.5 text-sm text-emerald-300 focus:border-emerald-500 focus:outline-none"
+                      />
+                    </div>
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {ERROR_REASONS.map((r) => (
