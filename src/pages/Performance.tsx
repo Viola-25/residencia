@@ -24,27 +24,16 @@ import {
 import { PageHeader } from '../components/PageHeader'
 import { StatCard } from '../components/StatCard'
 import { Badge } from '../components/Badge'
+import { getWeekLabel } from '../lib/dates'
+import { AREA_LABELS } from '../types'
 import { useData } from '../hooks/useData'
 import { MEDICAL_AREAS } from '../types'
 import type { MedicalArea } from '../types'
-
-const areaLabels: Record<MedicalArea, string> = {
-  clinica_medica: 'Clínica Médica',
-  cirurgia: 'Cirurgia',
-  pediatria: 'Pediatria',
-  ginecologia_obstetricia: 'Ginecologia e Obstetrícia',
-  preventiva: 'Preventiva',
-}
 
 const priorityConfig = {
   red: { label: 'Prioridade Alta', badge: 'red' as const, border: 'border-red-500/20' },
   yellow: { label: 'Atenção', badge: 'yellow' as const, border: 'border-yellow-500/20' },
   green: { label: 'Bom Desempenho', badge: 'green' as const, border: 'border-emerald-500/20' },
-}
-
-function getWeekLabel(weekStart: string): string {
-  const d = new Date(weekStart + 'T00:00:00')
-  return `Sem ${d.getMonth() + 1}/${d.getDate()}`
 }
 
 export function Performance() {
@@ -64,7 +53,7 @@ export function Performance() {
   })
 
   const chartData = allAreas.map((a) => ({
-    name: areaLabels[a.area as MedicalArea].split(' ')[0],
+    name: AREA_LABELS[a.area as MedicalArea].split(' ')[0],
     hitRate: a.hit_rate,
     fill:
       a.hit_rate >= 80
@@ -278,7 +267,7 @@ export function Performance() {
                 <div className="mb-3 flex items-start justify-between">
                   <div>
                     <h3 className="text-sm font-semibold text-zinc-200">
-                      {areaLabels[area.area as MedicalArea]}
+                      {AREA_LABELS[area.area as MedicalArea]}
                     </h3>
                     <Badge variant={config.badge as 'red' | 'yellow' | 'green'}>
                       {config.label}

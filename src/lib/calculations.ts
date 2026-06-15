@@ -63,12 +63,12 @@ export function getMockTrend(mocks: MockExam[]): number {
 
 export function calculateCurrentStreak(logs: DailyLog[]): number {
   const sorted = [...logs].sort((a, b) => b.date.localeCompare(a.date))
+  if (sorted.length === 0) return 0
   let streak = 0
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const anchor = new Date(sorted[0].date + 'T00:00:00')
   for (let i = 0; i < sorted.length; i++) {
     const logDate = new Date(sorted[i].date + 'T00:00:00')
-    const expectedDate = new Date(today)
+    const expectedDate = new Date(anchor)
     expectedDate.setDate(expectedDate.getDate() - streak)
     const diff = Math.round(
       (logDate.getTime() - expectedDate.getTime()) / (1000 * 60 * 60 * 24)

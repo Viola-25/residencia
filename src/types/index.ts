@@ -183,6 +183,22 @@ export const MEDICAL_AREAS: { value: MedicalArea; label: string }[] = [
   { value: 'preventiva', label: 'Preventiva' },
 ]
 
+export const AREA_LABELS: Record<MedicalArea, string> = {
+  clinica_medica: 'Clínica Médica',
+  cirurgia: 'Cirurgia',
+  pediatria: 'Pediatria',
+  ginecologia_obstetricia: 'Ginecologia e Obstetrícia',
+  preventiva: 'Preventiva',
+}
+
+export const AREA_LABELS_SHORT: Record<MedicalArea, string> = {
+  clinica_medica: 'Clínica',
+  cirurgia: 'Cirurgia',
+  pediatria: 'Pediatria',
+  ginecologia_obstetricia: 'G.O.',
+  preventiva: 'Preventiva',
+}
+
 export const MOOD_OPTIONS: { value: Mood; label: string }[] = [
   { value: 'excelente', label: 'Excelente' },
   { value: 'bom', label: 'Bom' },

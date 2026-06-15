@@ -11,15 +11,8 @@ import {
 import { PageHeader } from '../components/PageHeader'
 import { Badge } from '../components/Badge'
 import { useData } from '../hooks/useData'
+import { AREA_LABELS } from '../types'
 import type { MedicalArea } from '../types'
-
-const areaLabels: Record<MedicalArea, string> = {
-  clinica_medica: 'Clínica Médica',
-  cirurgia: 'Cirurgia',
-  pediatria: 'Pediatria',
-  ginecologia_obstetricia: 'Ginecologia e Obstetrícia',
-  preventiva: 'Preventiva',
-}
 
 export function StrategicPanel() {
   const { strategicData } = useData()
@@ -67,7 +60,7 @@ export function StrategicPanel() {
             <div>
               <p className="text-lg font-bold text-zinc-100">
                 {strategicData.most_growth
-                  ? areaLabels[strategicData.most_growth.area].split(' ')[0]
+                  ? AREA_LABELS[strategicData.most_growth.area].split(' ')[0]
                   : '-'}
               </p>
               <p className="text-xs text-zinc-500">Maior crescimento</p>
@@ -76,13 +69,13 @@ export function StrategicPanel() {
         </div>
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-red-500/10 p-2">
-              <TrendingDown size={18} className="text-red-400" />
+            <div className="rounded-lg bg-rose-500/10 p-2">
+              <TrendingDown size={18} className="text-rose-400" />
             </div>
             <div>
               <p className="text-lg font-bold text-zinc-100">
                 {strategicData.most_decline
-                  ? areaLabels[strategicData.most_decline.area].split(' ')[0]
+                  ? AREA_LABELS[strategicData.most_decline.area].split(' ')[0]
                   : '-'}
               </p>
               <p className="text-xs text-zinc-500">Maior queda</p>
@@ -107,7 +100,7 @@ export function StrategicPanel() {
                   <div className="flex items-center gap-3">
                     <span className="text-xs text-zinc-600">{i + 1}º</span>
                     <span className="text-sm text-zinc-200">
-                      {areaLabels[s.area as MedicalArea]}
+                      {AREA_LABELS[s.area as MedicalArea]}
                     </span>
                   </div>
                   <Badge variant="green">{s.hit_rate}%</Badge>
@@ -136,7 +129,7 @@ export function StrategicPanel() {
                   <div className="flex items-center gap-3">
                     <span className="text-xs text-zinc-600">{i + 1}º</span>
                     <span className="text-sm text-zinc-200">
-                      {areaLabels[s.area as MedicalArea]}
+                      {AREA_LABELS[s.area as MedicalArea]}
                     </span>
                   </div>
                   <Badge variant="red">{s.hit_rate}%</Badge>
@@ -164,7 +157,7 @@ export function StrategicPanel() {
               </div>
               <div>
                 <p className="font-semibold text-zinc-100">
-                  {areaLabels[strategicData.most_growth.area as MedicalArea]}
+                  {AREA_LABELS[strategicData.most_growth.area as MedicalArea]}
                 </p>
                 <p className="text-sm text-emerald-400">
                   +{strategicData.most_growth.growth}% de evolução
@@ -190,7 +183,7 @@ export function StrategicPanel() {
               </div>
               <div>
                 <p className="font-semibold text-zinc-100">
-                  {areaLabels[strategicData.most_decline.area as MedicalArea]}
+                  {AREA_LABELS[strategicData.most_decline.area as MedicalArea]}
                 </p>
                 <p className="text-sm text-rose-400">
                   {strategicData.most_decline.decline}% de queda

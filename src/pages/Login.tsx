@@ -55,7 +55,7 @@ export function Login() {
           <p className="mt-1 text-sm text-zinc-500">Painel de Performance</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
+        <form onSubmit={handleSubmit} className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
           <h2 className="mb-6 text-sm font-semibold text-zinc-200">
             {isSignup ? 'Criar Conta' : 'Entrar'}
           </h2>

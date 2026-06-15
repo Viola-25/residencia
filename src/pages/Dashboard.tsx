@@ -24,13 +24,10 @@ import {
 } from 'recharts'
 import { PageHeader } from '../components/PageHeader'
 import { StatCard } from '../components/StatCard'
+import { getWeekLabel } from '../lib/dates'
+import { AREA_LABELS_SHORT } from '../types'
 
 import { useData } from '../hooks/useData'
-
-function getWeekLabel(weekStart: string): string {
-  const d = new Date(weekStart + 'T00:00:00')
-  return `Sem ${d.getMonth() + 1}/${d.getDate()}`
-}
 
 export function Dashboard() {
   const { dashboardMetrics, logs, mocks, areaPerformance, config } = useData()
@@ -72,15 +69,8 @@ export function Dashboard() {
   }, [mocks])
 
   const areaChartData = useMemo(() => {
-    const areaLabels: Record<string, string> = {
-      clinica_medica: 'Clínica',
-      cirurgia: 'Cirurgia',
-      pediatria: 'Pediatria',
-      ginecologia_obstetricia: 'G.O.',
-      preventiva: 'Preventiva',
-    }
     return areaPerformance.map((a) => ({
-      name: areaLabels[a.area] || a.area,
+      name: AREA_LABELS_SHORT[a.area] || a.area,
       hitRate: a.hit_rate,
       fill:
         a.hit_rate >= 80

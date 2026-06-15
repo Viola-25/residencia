@@ -21,6 +21,11 @@ export function formatDateShort(dateStr: string): string {
   return format(parseISO(dateStr), 'dd/MM/yyyy')
 }
 
+export function getWeekLabel(weekStart: string): string {
+  const d = new Date(weekStart + 'T00:00:00')
+  return `Sem ${d.getMonth() + 1}/${d.getDate()}`
+}
+
 export function isCurrentWeek(weekStart: string): boolean {
   const currentStart = getCurrentWeekStart()
   return weekStart === currentStart

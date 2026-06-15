@@ -115,7 +115,7 @@ export function ErrorBank() {
 
       <div className="mb-6 grid gap-6 lg:grid-cols-3">
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
-          <h3 className="mb-3 text-sm font-semibold text-zinc-200">Assuntos Mais Errados</h3>
+          <h3 className="mb-4 text-sm font-semibold text-zinc-200">Assuntos Mais Errados</h3>
           <div className="space-y-2">
             {topicStats.slice(0, 8).map((item, i) => (
               <div key={item.topic} className="flex items-center justify-between text-sm">
@@ -136,7 +136,7 @@ export function ErrorBank() {
         </div>
 
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
-          <h3 className="mb-3 text-sm font-semibold text-zinc-200">Ranking de Motivos</h3>
+          <h3 className="mb-4 text-sm font-semibold text-zinc-200">Ranking de Motivos</h3>
           <div className="space-y-2">
             {reasonRanking.map((item, i) => (
               <div key={item.reason} className="flex items-center justify-between text-sm">
@@ -154,7 +154,7 @@ export function ErrorBank() {
         </div>
 
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
-          <h3 className="mb-3 text-sm font-semibold text-zinc-200">Últimos Erros</h3>
+          <h3 className="mb-4 text-sm font-semibold text-zinc-200">Últimos Erros</h3>
           <div className="space-y-2">
             {lastErrors.map((e) => (
               <div key={e.id} className="flex items-center justify-between text-sm">

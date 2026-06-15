@@ -51,7 +51,7 @@ export function Settings() {
                 type="date"
                 value={form.enamed_date}
                 onChange={(e) => set('enamed_date', e.target.value)}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm text-zinc-200 outline-none transition-colors focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/30"
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
               />
             </div>
             <div>
@@ -60,7 +60,7 @@ export function Settings() {
                 type="date"
                 value={form.first_exam_date}
                 onChange={(e) => set('first_exam_date', e.target.value)}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm text-zinc-200 outline-none transition-colors focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/30"
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
               />
             </div>
           </div>
@@ -79,7 +79,7 @@ export function Settings() {
                 min={0}
                 value={form.daily_questions_goal}
                 onChange={(e) => set('daily_questions_goal', Number(e.target.value))}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm text-zinc-200 outline-none transition-colors focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30"
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
               />
             </div>
             <div>
@@ -89,7 +89,7 @@ export function Settings() {
                 min={0}
                 value={form.weekly_goal}
                 onChange={(e) => set('weekly_goal', Number(e.target.value))}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm text-zinc-200 outline-none transition-colors focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30"
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
               />
             </div>
             <div>
@@ -99,7 +99,7 @@ export function Settings() {
                 min={0}
                 value={form.monthly_goal}
                 onChange={(e) => set('monthly_goal', Number(e.target.value))}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm text-zinc-200 outline-none transition-colors focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30"
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
               />
             </div>
           </div>
@@ -126,7 +126,7 @@ export function Settings() {
                 step={0.5}
                 value={form.daily_hours_goal}
                 onChange={(e) => set('daily_hours_goal', Number(e.target.value))}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm text-zinc-200 outline-none transition-colors focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30"
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
               />
             </div>
             <div>
@@ -139,7 +139,7 @@ export function Settings() {
                 min={0}
                 value={form.mock_goal_per_week}
                 onChange={(e) => set('mock_goal_per_week', Number(e.target.value))}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm text-zinc-200 outline-none transition-colors focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30"
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
               />
             </div>
           </div>
@@ -148,7 +148,7 @@ export function Settings() {
         <div className="flex items-center gap-4">
           <button
             type="submit"
-            className="flex items-center gap-2 rounded-lg bg-violet-600 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-violet-500"
+            className="flex items-center gap-2 rounded-lg bg-violet-600 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Save size={16} />
             Salvar Configurações

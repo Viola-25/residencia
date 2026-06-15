@@ -414,7 +414,6 @@ export function DailyLog() {
                 <th className="px-4 py-3">Acertos</th>
                 <th className="px-4 py-3">%</th>
                 <th className="px-4 py-3">Revisão</th>
-                <th className="px-4 py-3">Flashcards</th>
                 <th className="px-4 py-3">Humor</th>
                 <th className="px-4 py-3">Energia</th>
                 <th className="px-4 py-3"></th>
@@ -464,13 +463,6 @@ export function DailyLog() {
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    {log.flashcards_done ? (
-                      <span className="text-emerald-400">Sim</span>
-                    ) : (
-                      <span className="text-zinc-600">Não</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
                     <span
                       className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${moodColors[log.mood]}`}
                     >
@@ -492,7 +484,7 @@ export function DailyLog() {
               ))}
               {logs.length === 0 && (
                 <tr>
-                  <td colSpan={11} className="px-4 py-12 text-center text-sm text-zinc-500">
+                  <td colSpan={10} className="px-4 py-12 text-center text-sm text-zinc-500">
                     Nenhum registro encontrado. Clique em "Novo Registro" para começar.
                   </td>
                 </tr>

@@ -62,7 +62,7 @@ export function ApprovalRadar() {
       />
 
       <div className="mb-8 grid gap-6 lg:grid-cols-2">
-        <div className="flex flex-col items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/50 p-8">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
           <div className="relative mb-4">
             <svg width="180" height="180" viewBox="0 0 180 180">
               <circle
@@ -112,7 +112,7 @@ export function ApprovalRadar() {
           <p className="mt-3 text-center text-sm text-zinc-500">{config.desc}</p>
         </div>
 
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
           <h3 className="mb-4 text-sm font-semibold text-zinc-200">Componentes do Score</h3>
           <div className="space-y-4">
             {Object.entries(approvalScore.components).map(([key, value]) => {
@@ -144,7 +144,7 @@ export function ApprovalRadar() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
         <h3 className="mb-4 text-sm font-semibold text-zinc-200">Interpretação do Score</h3>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {Object.entries(labelConfig).map(([label, cfg]) => (

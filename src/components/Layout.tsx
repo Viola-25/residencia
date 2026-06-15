@@ -1,13 +1,26 @@
 import { useState } from 'react'
-import { Outlet, useNavigate } from 'react-router-dom'
+import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { Menu, LogOut } from 'lucide-react'
 import { Sidebar } from './Sidebar'
 import { useAuth } from '../contexts/AuthContext'
+
+const pageTitles: Record<string, string> = {
+  '/': 'Painel de Performance',
+  '/diario': 'Diário de Estudos',
+  '/simulados': 'Simulados',
+  '/desempenho': 'Desempenho por Área',
+  '/erros': 'Banco de Erros',
+  '/radar': 'Radar de Aprovação',
+  '/estrategico': 'Painel Estratégico',
+  '/ia': 'Insights de IA',
+  '/configuracoes': 'Configurações',
+}
 
 export function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
 
   const handleLogout = async () => {
     await logout()
@@ -29,7 +42,7 @@ export function Layout() {
           <div className="flex items-center gap-2 text-sm text-zinc-500">
             <span className="hidden sm:inline">Residência 2027</span>
             <span className="hidden sm:inline">/</span>
-            <span className="text-zinc-400">Painel de Performance</span>
+            <span className="text-zinc-400">{pageTitles[location.pathname] || 'Residência 2027'}</span>
           </div>
           <div className="ml-auto flex items-center gap-3">
             <span className="text-xs text-zinc-500">{user?.email}</span>

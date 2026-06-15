@@ -7,30 +7,34 @@ export interface Database {
         Row: {
           id: string
           date: string
+          registration_type: string
           hours_studied: number
           questions_done: number
           hit_rate: number
+          areas_data: Json
           core_review_done: boolean
           flashcards_done: boolean
-          mock_exam_done: boolean
           notes: string | null
           mood: string
           energy_level: number
           created_at: string
+          user_id: string
         }
         Insert: {
           id?: string
           date: string
+          registration_type?: string
           hours_studied?: number
           questions_done?: number
           hit_rate?: number
+          areas_data?: Json
           core_review_done?: boolean
           flashcards_done?: boolean
-          mock_exam_done?: boolean
           notes?: string | null
           mood: string
           energy_level: number
           created_at?: string
+          user_id: string
         }
       }
       mock_exams: {
@@ -40,10 +44,12 @@ export interface Database {
           name: string
           total_score: number
           percentage: number
+          areas_data: Json
           ranking: number | null
           participants: number | null
           time_spent_minutes: number | null
           created_at: string
+          user_id: string
         }
         Insert: {
           id?: string
@@ -51,10 +57,12 @@ export interface Database {
           name: string
           total_score: number
           percentage: number
+          areas_data?: Json
           ranking?: number | null
           participants?: number | null
           time_spent_minutes?: number | null
           created_at?: string
+          user_id: string
         }
       }
       error_bank: {
@@ -72,6 +80,7 @@ export interface Database {
           ultima_ocorrencia: string | null
           sugestao_revisao: string | null
           created_at: string
+          user_id: string
         }
         Insert: {
           id?: string
@@ -87,6 +96,7 @@ export interface Database {
           ultima_ocorrencia?: string | null
           sugestao_revisao?: string | null
           created_at?: string
+          user_id: string
         }
       }
       area_performance: {
@@ -99,6 +109,7 @@ export interface Database {
           trend: string
           date: string
           created_at: string
+          user_id: string
         }
         Insert: {
           id?: string
@@ -109,6 +120,7 @@ export interface Database {
           trend?: string
           date: string
           created_at?: string
+          user_id: string
         }
       }
       study_config: {
@@ -118,7 +130,12 @@ export interface Database {
           first_exam_date: string
           yearly_goal: number
           weekly_goal: number
+          monthly_goal: number
+          mock_goal_per_week: number
+          daily_hours_goal: number
+          daily_questions_goal: number
           updated_at: string
+          user_id: string
         }
         Insert: {
           id?: string
@@ -126,7 +143,12 @@ export interface Database {
           first_exam_date: string
           yearly_goal?: number
           weekly_goal?: number
+          monthly_goal?: number
+          mock_goal_per_week?: number
+          daily_hours_goal?: number
+          daily_questions_goal?: number
           updated_at?: string
+          user_id: string
         }
       }
       weekly_summaries: {
@@ -139,6 +161,7 @@ export interface Database {
           hours_studied: number
           days_studied: number
           created_at: string
+          user_id: string
         }
         Insert: {
           id?: string
@@ -149,6 +172,29 @@ export interface Database {
           hours_studied?: number
           days_studied?: number
           created_at?: string
+          user_id: string
+        }
+      }
+      insights_cache: {
+        Row: {
+          id: string
+          type: string
+          title: string
+          description: string
+          priority: string
+          area: string | null
+          generated_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          type: string
+          title: string
+          description: string
+          priority: string
+          area?: string | null
+          generated_at?: string
+          user_id: string
         }
       }
     }

@@ -4,15 +4,8 @@ import { PageHeader } from '../components/PageHeader'
 import { Badge } from '../components/Badge'
 import { useData } from '../hooks/useData'
 import { generateInsights, loadCachedInsights } from '../lib/groq'
-import type { AIInsight, MedicalArea } from '../types'
-
-const areaLabels: Record<MedicalArea, string> = {
-  clinica_medica: 'Clínica Médica',
-  cirurgia: 'Cirurgia',
-  pediatria: 'Pediatria',
-  ginecologia_obstetricia: 'Ginecologia e Obstetrícia',
-  preventiva: 'Preventiva',
-}
+import { AREA_LABELS } from '../types'
+import type { AIInsight } from '../types'
 
 const insightIcons: Record<string, typeof Lightbulb> = {
   weekly: TrendingUp,
@@ -129,7 +122,7 @@ export function AIInsights() {
           <div className="grid gap-4">
             {suggestions.map((insight, i) => {
               const Icon = insightIcons[insight.type] || Lightbulb
-              const areaName = insight.area ? areaLabels[insight.area] : null
+              const areaName = insight.area ? AREA_LABELS[insight.area] : null
               return (
                 <div
                   key={i}

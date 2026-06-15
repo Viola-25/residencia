@@ -254,7 +254,7 @@ export function useData() {
         trend: 'stable',
         date: new Date().toISOString().split('T')[0],
         user_id: user!.id,
-      }, { onConflict: 'area' })
+      }, { onConflict: 'user_id,area' })
     } catch { /* local fallback */ }
   }
 
