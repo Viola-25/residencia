@@ -1,10 +1,18 @@
 import { useState } from 'react'
-import { Outlet } from 'react-router-dom'
-import { Menu } from 'lucide-react'
+import { Outlet, useNavigate } from 'react-router-dom'
+import { Menu, LogOut } from 'lucide-react'
 import { Sidebar } from './Sidebar'
+import { useAuth } from '../contexts/AuthContext'
 
 export function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+
+  const handleLogout = async () => {
+    await logout()
+    navigate('/login')
+  }
 
   return (
     <div className="flex min-h-screen bg-zinc-950 text-zinc-100">
@@ -24,8 +32,14 @@ export function Layout() {
             <span className="text-zinc-400">Painel de Performance</span>
           </div>
           <div className="ml-auto flex items-center gap-3">
-            <span className="h-2 w-2 rounded-full bg-emerald-500" />
-            <span className="text-xs text-zinc-500">Sistema operacional</span>
+            <span className="text-xs text-zinc-500">{user?.email}</span>
+            <button
+              onClick={handleLogout}
+              className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-zinc-900 hover:text-rose-400"
+              title="Sair"
+            >
+              <LogOut size={16} />
+            </button>
           </div>
         </header>
 

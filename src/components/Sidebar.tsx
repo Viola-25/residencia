@@ -10,7 +10,9 @@ import {
   Sparkles,
   GraduationCap,
   Settings as SettingsIcon,
+  LogOut,
 } from 'lucide-react'
+import { useAuth } from '../contexts/AuthContext'
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -30,6 +32,8 @@ interface SidebarProps {
 }
 
 export function Sidebar({ open, onClose }: SidebarProps) {
+  const { user, logout } = useAuth()
+
   return (
     <>
       {open && (
@@ -76,8 +80,21 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         </nav>
 
         <div className="border-t border-zinc-800 px-5 py-3">
-          <p className="text-xs text-zinc-600">ENAMED 2026</p>
-          <p className="text-sm font-medium text-zinc-400">Preparação para Residência</p>
+          <div className="mb-3 flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 text-xs font-medium text-zinc-300">
+              {user?.email?.[0].toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-medium text-zinc-300">{user?.email}</p>
+            </div>
+          </div>
+          <button
+            onClick={logout}
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-900 hover:text-rose-400"
+          >
+            <LogOut size={14} />
+            Sair
+          </button>
         </div>
       </aside>
     </>

@@ -9,7 +9,9 @@ const groq = new Groq({
 
 const ERROR_EXTRACTION_SYSTEM_PROMPT = `Você é um assistente que extrai erros de estudo de observações de estudantes de medicina.
 
-Analise o texto fornecido e extraia TODOS os erros, dificuldades, assuntos fracos, temas para revisão e conceitos confundidos mencionados.
+Analise o texto fornecido e extraia APENAS erros EXPLÍCITOS — situações onde o aluno claramente mencionou ter errado, não sabido, esquecido, confundido ou tido dificuldade com um assunto específico.
+
+IGNORE menções genéricas de estudo, como "estudei sobre X", "fiz questões de Y", "revisei Z", "li sobre W", "completei tópico". Estas não são erros.
 
 Responda APENAS com um array JSON. Se nada for encontrado, retorne array vazio [].
 Formato esperado:
@@ -23,15 +25,88 @@ Formato esperado:
 ]
 
 Regras:
-- topic: extraia o assunto específico (ex: "insuficiência cardíaca", "farmacologia", "cirurgia geral")
+- topic: extraia apenas o assunto específico do erro (ex: "insuficiência cardíaca", "farmacologia", "cirurgia geral")
 - error_reason: classifique o motivo
-  - "nao_sabia": quando o aluno não sabia o conteúdo
-  - "esqueci": quando sabia mas esqueceu
-  - "interpretacao": quando errou por interpretação ou confusão
-  - "pegadinha": quando caiu em pegadinha
-  - "pressa": quando errou por pressa
+  - "nao_sabia": quando o aluno disse explicitamente que não sabia o conteúdo
+  - "esqueci": quando disse que sabia mas esqueceu
+  - "interpretacao": quando disse que errou por interpretação ou confusão
+  - "pegadinha": quando disse que caiu em pegadinha
+  - "pressa": quando disse que errou por pressa
 - nivel_confianca: "baixo" se parecer muito inseguro, "medio" normalmente, "alto" se parecer confiante
-- sugestao_revisao: gere uma sugestão prática de revisão ou null se não aplicável`
+- sugestao_revisao: gere uma sugestão prática de revisão ou null se não aplicável
+- IMPORTANTE: Só extraia se houver palavra explícita de erro (errei, não sei, esqueci, confundi, dificuldade, etc). Nunca extraia de frases genéricas como "estudei", "fiz", "revisei", "completei", "li".`
+
+const INLINE_ERROR_ANALYSIS_PROMPT = `Você é um assistente que analisa erros de estudantes de medicina.
+
+Com base no enunciado da questão, na alternativa que o aluno selecionou (errada) e na alternativa correta, gere uma sugestão de revisão curta e prática.
+
+Responda APENAS com um JSON:
+{
+  "sugestao_revisao": "sugestão curta de revisão ou null",
+  "error_reason_sugerido": "nao_sabia" | "esqueci" | "interpretacao" | "pegadinha" | "pressa"
+}
+
+Regras:
+- sugestao_revisao: dica prática do que revisar com base no erro
+- error_reason_sugerido: classifique o motivo mais provável do erro
+  - "interpretacao": se o aluno confundiu conceitos ou interpretou errado
+  - "nao_sabia": se parece que o aluno não sabia o conteúdo
+  - "esqueci": se parece que sabia mas esqueceu
+  - "pegadinha": se a questão tem uma pegadinha clássica
+  - "pressa": se parece erro por pressa/desatenção
+- Se não houver dados suficientes, retorne null para sugestao_revisao e "nao_sabia" para error_reason_sugerido`
+
+export async function analyzeInlineError(data: {
+  topic: string
+  enunciado: string
+  alternativa_selecionada: string
+  alternativa_certa: string
+  error_reason: string
+}): Promise<{
+  sugestao_revisao: string | null
+  error_reason_sugerido: string
+}> {
+  if (!data.enunciado || data.enunciado.trim().length < 10) {
+    return { sugestao_revisao: null, error_reason_sugerido: data.error_reason }
+  }
+
+  const apiKey = import.meta.env.VITE_GROQ_API_KEY
+  if (!apiKey) return { sugestao_revisao: null, error_reason_sugerido: data.error_reason }
+
+  try {
+    const completion = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        { role: 'system', content: INLINE_ERROR_ANALYSIS_PROMPT },
+        {
+          role: 'user',
+          content: `Tema: ${data.topic}
+Enunciado: "${data.enunciado}"
+Alternativa selecionada (errada): "${data.alternativa_selecionada}"
+Alternativa correta: "${data.alternativa_certa}"
+Motivo informado: ${data.error_reason}`,
+        },
+      ],
+      temperature: 0.1,
+      max_tokens: 300,
+    })
+
+    const text = completion.choices[0]?.message?.content
+    if (!text) return { sugestao_revisao: null, error_reason_sugerido: data.error_reason }
+
+    const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
+    const parsed = JSON.parse(cleaned) as {
+      sugestao_revisao: string | null
+      error_reason_sugerido: string
+    }
+    return {
+      sugestao_revisao: parsed.sugestao_revisao || null,
+      error_reason_sugerido: parsed.error_reason_sugerido || data.error_reason,
+    }
+  } catch {
+    return { sugestao_revisao: null, error_reason_sugerido: data.error_reason }
+  }
+}
 
 export async function extractErrorsFromNotesAI(notes: string): Promise<{
   topic: string

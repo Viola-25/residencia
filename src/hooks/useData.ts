@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../contexts/AuthContext'
 import type {
   DailyLog,
   DailyLogFormData,
@@ -26,7 +27,7 @@ import {
   extractErrorsFromNotes,
 } from '../lib/calculations'
 import { getDaysUntil, getCurrentWeekStart } from '../lib/dates'
-import { extractErrorsFromNotesAI } from '../lib/groq'
+import { extractErrorsFromNotesAI, analyzeInlineError } from '../lib/groq'
 
 const DEFAULT_CONFIG: StudyConfig = {
   id: 'default',
@@ -41,6 +42,7 @@ const DEFAULT_CONFIG: StudyConfig = {
 }
 
 export function useData() {
+  const { user } = useAuth()
   const [logs, setLogs] = useState<DailyLog[]>([])
   const [mocks, setMocks] = useState<MockExam[]>([])
   const [errors, setErrors] = useState<ErrorEntry[]>([])
@@ -49,13 +51,14 @@ export function useData() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!user) return
     ;(async () => {
       try {
         const [logsRes, mocksRes, errorsRes, configRes] = await Promise.all([
-          supabase.from('daily_logs').select('*').order('date', { ascending: false }),
-          supabase.from('mock_exams').select('*').order('date', { ascending: false }),
-          supabase.from('error_bank').select('*').order('created_at', { ascending: false }),
-          supabase.from('study_config').select('*').limit(1).single(),
+          supabase.from('daily_logs').select('*').eq('user_id', user.id).order('date', { ascending: false }),
+          supabase.from('mock_exams').select('*').eq('user_id', user.id).order('date', { ascending: false }),
+          supabase.from('error_bank').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+          supabase.from('study_config').select('*').eq('user_id', user.id).limit(1).single(),
         ])
 
         if (logsRes.data) setLogs(logsRes.data as DailyLog[])
@@ -68,7 +71,7 @@ export function useData() {
         setLoading(false)
       }
     })()
-  }, [])
+  }, [user])
 
   const areaPerformance = useMemo(
     () => calculateAreaPerformanceFromLogs(logs),
@@ -112,31 +115,42 @@ export function useData() {
     }
     setLogs((prev) => [newLog, ...prev])
     try {
-      await supabase.from('daily_logs').insert(newLog)
+      await supabase.from('daily_logs').insert({ ...newLog, user_id: user!.id })
     } catch { /* local fallback */ }
 
-    // Save inline errors
+    // Save inline errors with AI analysis
+    const inlineTopics: string[] = []
     if (formData.inline_errors && formData.inline_errors.length > 0) {
       for (const ie of formData.inline_errors) {
         if (!ie.topic.trim()) continue
+        inlineTopics.push(ie.topic.toLowerCase())
+
+        const analysis = await analyzeInlineError({
+          topic: ie.topic,
+          enunciado: ie.enunciado,
+          alternativa_selecionada: ie.alternativa_selecionada,
+          alternativa_certa: ie.alternativa_certa,
+          error_reason: ie.error_reason,
+        })
+
         const newError: ErrorEntry = {
           id: crypto.randomUUID(),
           question: `[Registro: ${formData.date}] ${ie.enunciado || ie.topic}${ie.alternativa_selecionada ? ` | Selecionou: ${ie.alternativa_selecionada}` : ''}${ie.alternativa_certa ? ` | Correto: ${ie.alternativa_certa}` : ''}`,
           topic: ie.topic,
           subtopic: null,
-          error_reason: ie.error_reason,
+          error_reason: analysis.error_reason_sugerido as ErrorReason,
           needs_review: false,
           reviewed: false,
           origem_atividade: newLog.id,
           nivel_confianca: 'medio',
           recorrencia: 1,
           ultima_ocorrencia: formData.date,
-          sugestao_revisao: null,
+          sugestao_revisao: analysis.sugestao_revisao,
           created_at: new Date().toISOString(),
         }
         setErrors((prev) => [newError, ...prev])
         try {
-          await supabase.from('error_bank').insert(newError)
+          await supabase.from('error_bank').insert({ ...newError, user_id: user!.id })
         } catch { /* local fallback */ }
       }
     }
@@ -149,10 +163,7 @@ export function useData() {
         : extractErrorsFromNotes(formData.notes).map((e) => ({ ...e, sugestao_revisao: null as string | null }))
 
       for (const ext of extractedErrors) {
-        const existingSame = errors.find(
-          (e) => e.topic.toLowerCase() === ext.topic.toLowerCase() && e.origem_atividade === newLog.id
-        )
-        if (existingSame) continue
+        if (inlineTopics.includes(ext.topic.toLowerCase())) continue
 
         const newError: ErrorEntry = {
           id: crypto.randomUUID(),
@@ -171,7 +182,7 @@ export function useData() {
         }
         setErrors((prev) => [newError, ...prev])
         try {
-          await supabase.from('error_bank').insert(newError)
+          await supabase.from('error_bank').insert({ ...newError, user_id: user!.id })
         } catch { /* local fallback */ }
       }
     }
@@ -212,7 +223,7 @@ export function useData() {
     }
     setMocks((prev) => [newMock, ...prev])
     try {
-      await supabase.from('mock_exams').insert(newMock)
+      await supabase.from('mock_exams').insert({ ...newMock, user_id: user!.id })
     } catch { /* local fallback */ }
   }
 
@@ -241,6 +252,7 @@ export function useData() {
         hit_rate,
         trend: 'stable',
         date: new Date().toISOString().split('T')[0],
+        user_id: user!.id,
       }, { onConflict: 'area' })
     } catch { /* local fallback */ }
   }
@@ -279,8 +291,9 @@ export function useData() {
         mock_goal_per_week: updated.mock_goal_per_week,
         daily_hours_goal: updated.daily_hours_goal,
         daily_questions_goal: updated.daily_questions_goal,
+        user_id: user!.id,
         id: config.id === 'default' ? undefined : config.id,
-      })
+      }, { onConflict: 'user_id' })
     } catch { /* local fallback */ }
   }
 
