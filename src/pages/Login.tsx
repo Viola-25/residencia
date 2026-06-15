@@ -28,6 +28,8 @@ export function Login() {
     } else if (isSignup) {
       setSuccessMsg('Conta criada! Verifique seu email para confirmar.')
       setSubmitting(false)
+    } else {
+      setSubmitting(false)
     }
   }
 
