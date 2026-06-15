@@ -18,17 +18,20 @@ export function Login() {
     setSuccessMsg('')
     setSubmitting(true)
 
-    const err = isSignup
-      ? await signup(email, password)
-      : await login(email, password)
+    try {
+      const err = isSignup
+        ? await signup(email, password)
+        : await login(email, password)
 
-    if (err) {
-      setError(err)
-      setSubmitting(false)
-    } else if (isSignup) {
-      setSuccessMsg('Conta criada! Verifique seu email para confirmar.')
-      setSubmitting(false)
-    } else {
+      if (err) {
+        setError(err)
+      } else if (isSignup) {
+        setSuccessMsg('Conta criada! Verifique seu email para confirmar.')
+      }
+    } catch (err: any) {
+      setError(err?.message ?? 'Erro inesperado')
+      console.error('[Login] handleSubmit exception:', err)
+    } finally {
       setSubmitting(false)
     }
   }

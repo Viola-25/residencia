@@ -23,11 +23,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     auth.getSession().then(({ data: { session } }: any) => {
+      console.log('[Auth] getSession:', session ? 'found' : 'none')
       setUser(session?.user ? { id: session.user.id, email: session.user.email } : null)
+      setLoading(false)
+    }).catch((err: any) => {
+      console.error('[Auth] getSession error:', err)
       setLoading(false)
     })
 
     const { data: { subscription } } = auth.onAuthStateChange((_event: string, session: any) => {
+      console.log('[Auth] state change:', _event, session?.user?.email)
       setUser(session?.user ? { id: session.user.id, email: session.user.email } : null)
     })
 
@@ -35,13 +40,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const login = async (email: string, password: string): Promise<string | null> => {
-    const { error } = await auth.signInWithPassword({ email, password })
-    return error?.message ?? null
+    try {
+      console.log('[Auth] login attempt:', email)
+      const { error } = await auth.signInWithPassword({ email, password })
+      console.log('[Auth] login result:', error ? error.message : 'success')
+      return error?.message ?? null
+    } catch (err: any) {
+      console.error('[Auth] login exception:', err)
+      return err?.message ?? 'Erro ao conectar com o servidor'
+    }
   }
 
   const signup = async (email: string, password: string): Promise<string | null> => {
-    const { error } = await auth.signUp({ email, password })
-    return error?.message ?? null
+    try {
+      console.log('[Auth] signup attempt:', email)
+      const { error } = await auth.signUp({ email, password })
+      console.log('[Auth] signup result:', error ? error.message : 'success')
+      return error?.message ?? null
+    } catch (err: any) {
+      console.error('[Auth] signup exception:', err)
+      return err?.message ?? 'Erro ao conectar com o servidor'
+    }
   }
 
   const logout = async () => {
