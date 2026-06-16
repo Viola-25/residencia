@@ -1,12 +1,12 @@
 import { useState, useMemo } from 'react'
-import { CalendarCheck, Plus, Moon, Zap, Trash2, XCircle, Edit, Eye, Brain } from 'lucide-react'
+import { CalendarCheck, Plus, Moon, Zap, Trash2, Edit, Eye, Brain } from 'lucide-react'
 import { PageHeader } from '../components/PageHeader'
 import { StatCard } from '../components/StatCard'
 import { Badge } from '../components/Badge'
 import { useData } from '../hooks/useData'
 import { formatDateShort, getTodayDateString } from '../lib/dates'
-import type { DailyLog, DailyLogFormData, Mood, MedicalArea, InlineError } from '../types'
-import { MOOD_OPTIONS, MEDICAL_AREAS, REGISTRATION_TYPES, ERROR_REASONS } from '../types'
+import type { DailyLog, DailyLogFormData, Mood, MedicalArea } from '../types'
+import { MOOD_OPTIONS, MEDICAL_AREAS, REGISTRATION_TYPES } from '../types'
 
 const emptyAreas = () =>
   Object.fromEntries(
@@ -42,20 +42,10 @@ function LogFormBody({
   form,
   onFieldChange,
   onAreaChange,
-  inlineErrors,
-  onAddInlineError,
-  onUpdateInlineError,
-  onRemoveInlineError,
-  showInlineErrors,
 }: {
   form: DailyLogFormData
   onFieldChange: <K extends keyof DailyLogFormData>(key: K, value: DailyLogFormData[K]) => void
   onAreaChange: (area: MedicalArea, field: 'questions_done' | 'correct', value: number) => void
-  inlineErrors: InlineError[]
-  onAddInlineError: () => void
-  onUpdateInlineError: (index: number, field: keyof InlineError, value: string) => void
-  onRemoveInlineError: (index: number) => void
-  showInlineErrors: boolean
 }) {
   const totalQuestions = Object.values(form.areas).reduce((s, a) => s + a.questions_done, 0)
   const totalCorrect = Object.values(form.areas).reduce((s, a) => s + a.correct, 0)
@@ -216,95 +206,6 @@ function LogFormBody({
         />
       </div>
 
-      {showInlineErrors && (
-        <div className="mb-4">
-          <div className="mb-2 flex items-center justify-between">
-            <label className="text-xs font-medium text-zinc-400">Erros na Atividade</label>
-            <button
-              type="button"
-              onClick={onAddInlineError}
-              className="flex items-center gap-1 rounded-md bg-rose-500/10 px-3 py-1 text-xs font-medium text-rose-400 transition-colors hover:bg-rose-500/20"
-            >
-              <Plus size={12} />
-              Adicionar Erro
-            </button>
-          </div>
-          <div className="space-y-2">
-            {inlineErrors.map((err, index) => (
-              <div
-                key={index}
-                className="rounded-lg border border-zinc-700 bg-zinc-800/30 p-3"
-              >
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-xs font-medium text-zinc-500">Erro #{index + 1}</span>
-                  <button
-                    type="button"
-                    onClick={() => onRemoveInlineError(index)}
-                    className="rounded p-0.5 text-zinc-600 hover:text-rose-400"
-                  >
-                    <XCircle size={14} />
-                  </button>
-                </div>
-                <div className="mb-2">
-                  <input
-                    type="text"
-                    value={err.topic}
-                    onChange={(e) => onUpdateInlineError(index, 'topic', e.target.value)}
-                    placeholder="Tema do erro (ex: Asma, DRGE)"
-                    className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
-                  />
-                </div>
-                <div className="mb-2 space-y-2">
-                  <textarea
-                    value={err.enunciado}
-                    onChange={(e) => onUpdateInlineError(index, 'enunciado', e.target.value)}
-                    rows={2}
-                    placeholder="Enunciado da questão"
-                    className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
-                  />
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="text"
-                      value={err.alternativa_selecionada}
-                      onChange={(e) => onUpdateInlineError(index, 'alternativa_selecionada', e.target.value)}
-                      placeholder="Alternativa que selecionou"
-                      className="w-full rounded-md border border-rose-500/30 bg-zinc-800 px-2 py-1.5 text-sm text-rose-300 focus:border-rose-500 focus:outline-none"
-                    />
-                    <input
-                      type="text"
-                      value={err.alternativa_certa}
-                      onChange={(e) => onUpdateInlineError(index, 'alternativa_certa', e.target.value)}
-                      placeholder="Alternativa correta"
-                      className="w-full rounded-md border border-emerald-500/30 bg-zinc-800 px-2 py-1.5 text-sm text-emerald-300 focus:border-emerald-500 focus:outline-none"
-                    />
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {ERROR_REASONS.map((r) => (
-                    <button
-                      type="button"
-                      key={r.value}
-                      onClick={() => onUpdateInlineError(index, 'error_reason', r.value)}
-                      className={`rounded-md px-2 py-0.5 text-[11px] font-medium transition-colors ${
-                        err.error_reason === r.value
-                          ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                          : 'bg-zinc-700/50 text-zinc-400 border border-zinc-700 hover:bg-zinc-700'
-                      }`}
-                    >
-                      {r.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-            {inlineErrors.length === 0 && (
-              <p className="text-xs text-zinc-600">
-                Nenhum erro adicionado. Você também pode descrever os erros nas observações que serão extraídos automaticamente.
-              </p>
-            )}
-          </div>
-        </div>
-      )}
     </>
   )
 }
@@ -318,7 +219,6 @@ export function DailyLog() {
   })
   const [form, setForm] = useState<DailyLogFormData>(initialForm)
   const [showForm, setShowForm] = useState(false)
-  const [inlineErrors, setInlineErrors] = useState<InlineError[]>([])
 
   const [editLog, setEditLog] = useState<DailyLog | null>(null)
   const [editForm, setEditForm] = useState<DailyLogFormData>(initialForm)
@@ -329,20 +229,6 @@ export function DailyLog() {
     [form.areas]
   )
 
-  const addInlineError = () => {
-    setInlineErrors((prev) => [...prev, { topic: '', enunciado: '', alternativa_selecionada: '', alternativa_certa: '', error_reason: 'nao_sabia' }])
-  }
-
-  const updateInlineError = (index: number, field: keyof InlineError, value: string) => {
-    setInlineErrors((prev) =>
-      prev.map((e, i) => (i === index ? { ...e, [field]: value } : e))
-    )
-  }
-
-  const removeInlineError = (index: number) => {
-    setInlineErrors((prev) => prev.filter((_, i) => i !== index))
-  }
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (totalFormQuestions === 0) return
@@ -350,11 +236,9 @@ export function DailyLog() {
       ...form,
       core_review_done: form.registration_type === 'revisao',
       flashcards_done: false,
-      inline_errors: inlineErrors.filter((ie) => ie.topic.trim()),
     }
     addDailyLog(enriched)
     setForm(initialForm)
-    setInlineErrors([])
     setShowForm(false)
   }
 
@@ -552,11 +436,6 @@ export function DailyLog() {
             form={form}
             onFieldChange={updateField}
             onAreaChange={updateArea}
-            inlineErrors={inlineErrors}
-            onAddInlineError={addInlineError}
-            onUpdateInlineError={updateInlineError}
-            onRemoveInlineError={removeInlineError}
-            showInlineErrors={true}
           />
 
           <button
@@ -684,16 +563,11 @@ export function DailyLog() {
             <form onSubmit={handleEditSubmit}>
               <h3 className="mb-4 text-sm font-semibold text-zinc-200">Editar Registro</h3>
 
-              <LogFormBody
-                form={editForm}
-                onFieldChange={updateEditField}
-                onAreaChange={updateEditArea}
-                inlineErrors={[]}
-                onAddInlineError={() => {}}
-                onUpdateInlineError={() => {}}
-                onRemoveInlineError={() => {}}
-                showInlineErrors={false}
-              />
+                <LogFormBody
+                  form={editForm}
+                  onFieldChange={updateEditField}
+                  onAreaChange={updateEditArea}
+                />
 
               <div className="flex items-center gap-3">
                 <button

@@ -51,7 +51,6 @@ export interface DailyLogFormData {
   notes: string
   mood: Mood
   energy_level: number
-  inline_errors?: InlineError[]
 }
 
 export interface MockExam {

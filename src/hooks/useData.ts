@@ -7,7 +7,6 @@ import type {
   MockExam,
   MockExamFormData,
   ErrorEntry,
-  ErrorReason,
   WeeklySummary,
   StudyConfig,
   MedicalArea,
@@ -28,7 +27,7 @@ import {
   extractErrorsFromNotes,
 } from '../lib/calculations'
 import { getDaysUntil, getCurrentWeekStart, getTodayDateString } from '../lib/dates'
-import { extractErrorsFromNotesAI, analyzeInlineError, analyzeAndClusterError } from '../lib/groq'
+import { extractErrorsFromNotesAI, analyzeAndClusterError } from '../lib/groq'
 import { calculateNextSRSState } from '../lib/calculations'
 
 const DEFAULT_CONFIG: StudyConfig = {
@@ -128,50 +127,6 @@ export function useData() {
       await supabase.from('daily_logs').insert({ ...newLog, user_id: user!.id })
     } catch { /* local fallback */ }
 
-    // Save inline errors with AI analysis
-    const inlineTopics: string[] = []
-    if (formData.inline_errors && formData.inline_errors.length > 0) {
-      for (const ie of formData.inline_errors) {
-        if (!ie.topic.trim()) continue
-        inlineTopics.push(ie.topic.toLowerCase())
-
-        const analysis = await analyzeInlineError({
-          topic: ie.topic,
-          enunciado: ie.enunciado,
-          alternativa_selecionada: ie.alternativa_selecionada,
-          alternativa_certa: ie.alternativa_certa,
-          error_reason: ie.error_reason,
-        })
-
-        const newError: ErrorEntry = {
-          id: crypto.randomUUID(),
-          question: `[Registro: ${formData.date}] ${ie.enunciado || ie.topic}${ie.alternativa_selecionada ? ` | Selecionou: ${ie.alternativa_selecionada}` : ''}${ie.alternativa_certa ? ` | Correto: ${ie.alternativa_certa}` : ''}`,
-          topic: ie.topic,
-          subtopic: null,
-          area: null,
-          error_reason: analysis.error_reason_sugerido as ErrorReason,
-          needs_review: false,
-          reviewed: false,
-          origem_atividade: newLog.id,
-          nivel_confianca: 'medio',
-          recorrencia: 1,
-          ultima_ocorrencia: formData.date,
-          sugestao_revisao: analysis.sugestao_revisao,
-          next_review_date: null,
-          interval_days: 0,
-          ease_factor: 2.5,
-          repetitions: 0,
-          occurrence_count: 1,
-          history_notes: null,
-          created_at: new Date().toISOString(),
-        }
-        setErrors((prev) => [newError, ...prev])
-        try {
-          await supabase.from('error_bank').insert({ ...newError, user_id: user!.id })
-        } catch { /* local fallback */ }
-      }
-    }
-
     // Auto-extract errors from notes (AI first, regex fallback)
     if (formData.notes && formData.notes.trim().length > 0) {
       const aiErrors = await extractErrorsFromNotesAI(formData.notes)
@@ -180,8 +135,6 @@ export function useData() {
         : extractErrorsFromNotes(formData.notes).map((e) => ({ ...e, sugestao_revisao: null as string | null }))
 
       for (const ext of extractedErrors) {
-        if (inlineTopics.includes(ext.topic.toLowerCase())) continue
-
         const newError: ErrorEntry = {
           id: crypto.randomUUID(),
           question: `[Auto: ${formData.date}] ${ext.topic}`,
