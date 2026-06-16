@@ -71,6 +71,7 @@ export interface Database {
           question: string
           topic: string
           subtopic: string | null
+          area: string | null
           error_reason: string
           needs_review: boolean
           reviewed: boolean
@@ -79,6 +80,12 @@ export interface Database {
           recorrencia: number
           ultima_ocorrencia: string | null
           sugestao_revisao: string | null
+          next_review_date: string | null
+          interval_days: number
+          ease_factor: number
+          repetitions: number
+          occurrence_count: number
+          history_notes: string[] | null
           created_at: string
           user_id: string
         }
@@ -87,6 +94,7 @@ export interface Database {
           question: string
           topic: string
           subtopic?: string | null
+          area?: string | null
           error_reason: string
           needs_review?: boolean
           reviewed?: boolean
@@ -95,6 +103,12 @@ export interface Database {
           recorrencia?: number
           ultima_ocorrencia?: string | null
           sugestao_revisao?: string | null
+          next_review_date?: string | null
+          interval_days?: number
+          ease_factor?: number
+          repetitions?: number
+          occurrence_count?: number
+          history_notes?: string[] | null
           created_at?: string
           user_id: string
         }

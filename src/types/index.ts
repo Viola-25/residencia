@@ -81,6 +81,7 @@ export interface ErrorEntry {
   question: string
   topic: string
   subtopic: string | null
+  area: MedicalArea | null
   error_reason: ErrorReason
   needs_review: boolean
   reviewed: boolean
@@ -89,6 +90,12 @@ export interface ErrorEntry {
   recorrencia: number
   ultima_ocorrencia: string | null
   sugestao_revisao: string | null
+  next_review_date: string | null
+  interval_days: number
+  ease_factor: number
+  repetitions: number
+  occurrence_count: number
+  history_notes: string[] | null
   created_at: string
 }
 

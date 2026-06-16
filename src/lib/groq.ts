@@ -436,3 +436,69 @@ function fallbackInsights(data: {
   }
   return insights
 }
+
+export interface ClusteringResult {
+  isDuplicate: boolean
+  existingErrorId: string | null
+  suggestedCleanTitle: string
+}
+
+export async function analyzeAndClusterError(
+  newErrorText: string,
+  existingErrorsOfArea: { id: string; topic: string }[]
+): Promise<ClusteringResult> {
+  const apiKey = import.meta.env.VITE_GROQ_API_KEY
+  if (!apiKey || existingErrorsOfArea.length === 0) {
+    return { isDuplicate: false, existingErrorId: null, suggestedCleanTitle: newErrorText }
+  }
+
+  const prompt = `
+Você é o motor de inteligência de um software de preparação para residência médica.
+Sua tarefa é analisar uma nova anotação de erro de questão e verificar se ela pertence a um tema/tópico que o usuário JÁ errou anteriormente, para podermos agrupar em um único registro em vez de duplicar.
+
+Nova anotação de erro: "${newErrorText}"
+
+Lista de tópicos que o usuário já errou nessa mesma área médica:
+${JSON.stringify(existingErrorsOfArea)}
+
+Regras de Negócio:
+1. Erros sobre a mesma patologia, conduta errada ou complicação específica devem ser agrupados (Ex: "ICFER tratamento" e "Manejo medicamentoso da insuficiência cardíaca com fração de ejeção reduzida" são o mesmo erro).
+2. Se for um erro repetido, retorne isDuplicate: true e o correspondente existingErrorId.
+3. Se for um erro inédito, retorne isDuplicate: false e existingErrorId: null.
+4. Sempre retorne em suggestedCleanTitle uma versão limpa, padronizada e puramente médica do tópico (Ex: "Cetoacidose Diabética - Manejo Inicial").
+
+Responda ESTRITAMENTE com um objeto JSON no formato:
+{
+  "isDuplicate": boolean,
+  "existingErrorId": string | null,
+  "suggestedCleanTitle": string
+}
+`
+
+  try {
+    const completion = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        { role: 'system', content: 'Você é um assistente que responta apenas JSON válido.' },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.1,
+      max_tokens: 300,
+      response_format: { type: 'json_object' },
+    })
+
+    const text = completion.choices[0]?.message?.content
+    if (!text) {
+      return { isDuplicate: false, existingErrorId: null, suggestedCleanTitle: newErrorText }
+    }
+
+    const parsed = JSON.parse(text) as ClusteringResult
+    return {
+      isDuplicate: parsed.isDuplicate ?? false,
+      existingErrorId: parsed.existingErrorId ?? null,
+      suggestedCleanTitle: parsed.suggestedCleanTitle || newErrorText,
+    }
+  } catch {
+    return { isDuplicate: false, existingErrorId: null, suggestedCleanTitle: newErrorText }
+  }
+}

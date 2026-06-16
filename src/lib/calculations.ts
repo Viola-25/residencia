@@ -318,3 +318,51 @@ export function extractErrorsFromNotes(notes: string): { topic: string; error_re
 
   return results
 }
+
+export interface SRSRating {
+  id: string
+  quality: 'easy' | 'good' | 'hard' | 'forgot'
+}
+
+export function calculateNextSRSState(currentState: {
+  interval_days: number
+  ease_factor: number
+  repetitions: number
+}, quality: 'easy' | 'good' | 'hard' | 'forgot') {
+  let { interval_days, ease_factor, repetitions } = currentState
+
+  if (quality === 'forgot') {
+    repetitions = 0
+    interval_days = 1
+    ease_factor = Math.max(1.3, ease_factor - 0.2)
+  } else {
+    if (repetitions === 0) {
+      interval_days = 1
+    } else if (repetitions === 1) {
+      interval_days = 3
+    } else if (repetitions === 2) {
+      interval_days = 7
+    } else {
+      let multiplier = ease_factor
+      if (quality === 'easy') multiplier *= 1.2
+      if (quality === 'hard') multiplier *= 0.8
+      interval_days = Math.round(interval_days * multiplier)
+    }
+
+    repetitions++
+
+    if (quality === 'easy') ease_factor += 0.15
+    if (quality === 'hard') ease_factor = Math.max(1.3, ease_factor - 0.15)
+  }
+
+  const nextReviewDate = new Date()
+  nextReviewDate.setDate(nextReviewDate.getDate() + interval_days)
+  nextReviewDate.setHours(0, 0, 0, 0)
+
+  return {
+    interval_days,
+    ease_factor: Math.round(ease_factor * 100) / 100,
+    repetitions,
+    next_review_date: nextReviewDate.toISOString(),
+  }
+}

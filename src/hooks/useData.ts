@@ -28,7 +28,8 @@ import {
   extractErrorsFromNotes,
 } from '../lib/calculations'
 import { getDaysUntil, getCurrentWeekStart, getTodayDateString } from '../lib/dates'
-import { extractErrorsFromNotesAI, analyzeInlineError } from '../lib/groq'
+import { extractErrorsFromNotesAI, analyzeInlineError, analyzeAndClusterError } from '../lib/groq'
+import { calculateNextSRSState } from '../lib/calculations'
 
 const DEFAULT_CONFIG: StudyConfig = {
   id: 'default',
@@ -399,6 +400,52 @@ export function useData() {
     }
   }, [areaPerformance, dashboardMetrics, weeklySummaries])
 
+  const addSmartError = async (notes: string, area: MedicalArea) => {
+    const { data: existing } = await supabase
+      .from('error_bank')
+      .select('id, topic')
+      .eq('area', area)
+
+    const analysis = await analyzeAndClusterError(notes, existing || [])
+
+    if (analysis.isDuplicate && analysis.existingErrorId) {
+      const { data: currentError } = await supabase
+        .from('error_bank')
+        .select('occurrence_count, history_notes')
+        .eq('id', analysis.existingErrorId)
+        .single()
+
+      const newCount = (currentError?.occurrence_count || 1) + 1
+      const newHistory = [...(currentError?.history_notes || []), notes]
+
+      await supabase
+        .from('error_bank')
+        .update({
+          occurrence_count: newCount,
+          history_notes: newHistory,
+          next_review_date: new Date().toISOString(),
+          interval_days: 1,
+          repetitions: 0,
+        })
+        .eq('id', analysis.existingErrorId)
+    } else {
+      await supabase
+        .from('error_bank')
+        .insert({
+          topic: analysis.suggestedCleanTitle,
+          area,
+          question: notes,
+          error_reason: 'nao_sabia',
+          occurrence_count: 1,
+          history_notes: [notes],
+          next_review_date: new Date().toISOString(),
+          interval_days: 1,
+          ease_factor: 2.5,
+          repetitions: 0,
+        })
+    }
+  }
+
   return {
     loading,
     logs,
@@ -417,5 +464,6 @@ export function useData() {
     deleteMockExam,
     deleteError,
     updateConfig,
+    addSmartError,
   }
 }
