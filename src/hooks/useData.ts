@@ -252,6 +252,48 @@ export function useData() {
     }
   }
 
+  const reviewErrorWithSRS = async (id: string, quality: 'easy' | 'good' | 'hard' | 'forgot') => {
+    const error = errors.find((e) => e.id === id)
+    if (!error) return
+
+    const srsState = calculateNextSRSState(
+      {
+        interval_days: error.interval_days,
+        ease_factor: error.ease_factor,
+        repetitions: error.repetitions,
+      },
+      quality
+    )
+
+    setErrors((prev) =>
+      prev.map((e) =>
+        e.id === id
+          ? {
+              ...e,
+              reviewed: true,
+              next_review_date: srsState.next_review_date,
+              interval_days: srsState.interval_days,
+              ease_factor: srsState.ease_factor,
+              repetitions: srsState.repetitions,
+            }
+          : e
+      )
+    )
+
+    try {
+      await supabase
+        .from('error_bank')
+        .update({
+          reviewed: true,
+          next_review_date: srsState.next_review_date,
+          interval_days: srsState.interval_days,
+          ease_factor: srsState.ease_factor,
+          repetitions: srsState.repetitions,
+        })
+        .eq('id', id)
+    } catch { /* local fallback */ }
+  }
+
   const saveAreaPerformance = async (area: MedicalArea, questions_done: number, correct: number) => {
     const hit_rate = questions_done > 0 ? Math.round((correct / questions_done) * 100 * 100) / 100 : 0
     try {
@@ -365,7 +407,7 @@ export function useData() {
   }, [logs, config])
 
   const approvalScore = useMemo(
-    () => calculateApprovalScore(logs, mocks, weeklySummaries, areaPerformance),
+    () => calculateApprovalScore(logs, mocks, weeklySummaries, areaPerformance, errors),
     [logs, mocks, weeklySummaries, areaPerformance]
   )
 
@@ -411,38 +453,78 @@ export function useData() {
     if (analysis.isDuplicate && analysis.existingErrorId) {
       const { data: currentError } = await supabase
         .from('error_bank')
-        .select('occurrence_count, history_notes')
+        .select('occurrence_count, history_notes, interval_days, ease_factor, repetitions')
         .eq('id', analysis.existingErrorId)
         .single()
 
       const newCount = (currentError?.occurrence_count || 1) + 1
       const newHistory = [...(currentError?.history_notes || []), notes]
 
+      const srsState = calculateNextSRSState(
+        {
+          interval_days: currentError?.interval_days ?? 0,
+          ease_factor: currentError?.ease_factor ?? 2.5,
+          repetitions: currentError?.repetitions ?? 0,
+        },
+        'forgot'
+      )
+
       await supabase
         .from('error_bank')
         .update({
           occurrence_count: newCount,
           history_notes: newHistory,
-          next_review_date: new Date().toISOString(),
-          interval_days: 1,
-          repetitions: 0,
+          next_review_date: srsState.next_review_date,
+          interval_days: srsState.interval_days,
+          ease_factor: srsState.ease_factor,
+          repetitions: srsState.repetitions,
         })
         .eq('id', analysis.existingErrorId)
+
+      setErrors((prev) =>
+        prev.map((e) =>
+          e.id === analysis.existingErrorId
+            ? {
+                ...e,
+                occurrence_count: newCount,
+                history_notes: newHistory,
+                next_review_date: srsState.next_review_date,
+                interval_days: srsState.interval_days,
+                ease_factor: srsState.ease_factor,
+                repetitions: srsState.repetitions,
+              }
+            : e
+        )
+      )
     } else {
+      const newError: ErrorEntry = {
+        id: crypto.randomUUID(),
+        question: notes,
+        topic: analysis.suggestedCleanTitle,
+        subtopic: null,
+        area,
+        error_reason: 'nao_sabia',
+        needs_review: false,
+        reviewed: false,
+        origem_atividade: null,
+        nivel_confianca: 'medio',
+        recorrencia: 1,
+        ultima_ocorrencia: new Date().toISOString().split('T')[0],
+        sugestao_revisao: null,
+        next_review_date: new Date().toISOString(),
+        interval_days: 1,
+        ease_factor: 2.5,
+        repetitions: 0,
+        occurrence_count: 1,
+        history_notes: [notes],
+        created_at: new Date().toISOString(),
+      }
+
+      setErrors((prev) => [newError, ...prev])
+
       await supabase
         .from('error_bank')
-        .insert({
-          topic: analysis.suggestedCleanTitle,
-          area,
-          question: notes,
-          error_reason: 'nao_sabia',
-          occurrence_count: 1,
-          history_notes: [notes],
-          next_review_date: new Date().toISOString(),
-          interval_days: 1,
-          ease_factor: 2.5,
-          repetitions: 0,
-        })
+        .insert({ ...newError, user_id: user!.id })
     }
   }
 
@@ -459,6 +541,7 @@ export function useData() {
     addDailyLog,
     addMockExam,
     toggleErrorReview,
+    reviewErrorWithSRS,
     deleteDailyLog,
     updateDailyLog,
     deleteMockExam,

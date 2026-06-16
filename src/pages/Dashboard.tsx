@@ -7,6 +7,7 @@ import {
   BarChart3,
   LineChart,
   Clock,
+  Brain,
 } from 'lucide-react'
 import {
   BarChart,
@@ -32,7 +33,18 @@ import { getHitRateTrend, calculateGlobalHitRate } from '../lib/calculations'
 import { useData } from '../hooks/useData'
 
 export function Dashboard() {
-  const { dashboardMetrics, logs, mocks, areaPerformance, config } = useData()
+  const { dashboardMetrics, logs, mocks, areaPerformance, config, errors } = useData()
+
+  const dueForReview = useMemo(() => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return errors.filter((e) => {
+      if (!e.next_review_date) return false
+      const reviewDate = new Date(e.next_review_date)
+      reviewDate.setHours(0, 0, 0, 0)
+      return reviewDate <= today && !e.reviewed
+    })
+  }, [errors])
 
   const weeklyChartData = useMemo(() => {
     const weekMap = new Map<string, { questions: number; hits: number; total: number }>()
@@ -94,6 +106,30 @@ export function Dashboard() {
         description="Panorama completo da sua preparação"
         icon={BarChart3}
       />
+
+      {dueForReview.length > 0 && (
+        <a
+          href="/errors"
+          className="group mb-6 flex items-center justify-between rounded-xl border border-violet-500/20 bg-gradient-to-r from-violet-500/10 to-transparent p-5 transition-all hover:border-violet-500/40 hover:from-violet-500/20"
+        >
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/20">
+              <Brain size={24} className="text-violet-400" />
+            </div>
+            <div>
+              <h3 className="text-base font-semibold text-violet-200">
+                Warm-up: {dueForReview.length} conceito{dueForReview.length > 1 ? 's' : ''} para revisar hoje
+              </h3>
+              <p className="text-sm text-zinc-500">
+                Reveja os erros pendentes antes de começar os estudos — são só alguns minutos
+              </p>
+            </div>
+          </div>
+          <span className="shrink-0 rounded-lg bg-violet-500/10 px-4 py-2 text-sm font-medium text-violet-300 transition-colors group-hover:bg-violet-500/20">
+            Revisar agora →
+          </span>
+        </a>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
         <StatCard

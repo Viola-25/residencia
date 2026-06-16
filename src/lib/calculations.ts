@@ -1,4 +1,4 @@
-import type { DailyLog, MockExam, WeeklySummary, AreaPerformance, ApprovalScore, MedicalArea, ErrorReason } from '../types'
+import type { DailyLog, MockExam, WeeklySummary, AreaPerformance, ApprovalScore, MedicalArea, ErrorReason, ErrorEntry } from '../types'
 import { MEDICAL_AREAS } from '../types'
 
 export function calculateRecentHitRate(logs: DailyLog[], days: number): number {
@@ -137,7 +137,8 @@ export function calculateApprovalScore(
   logs: DailyLog[],
   mocks: MockExam[],
   weeklySummaries: WeeklySummary[],
-  areaPerformance: AreaPerformance[]
+  areaPerformance: AreaPerformance[],
+  errors?: ErrorEntry[]
 ): ApprovalScore {
   const hitRate = calculateGlobalHitRate(logs)
   const mockAvg = getMockAverage(mocks)
@@ -160,7 +161,16 @@ export function calculateApprovalScore(
       ? Math.round((logs.filter((l) => l.core_review_done).length / logs.length) * 100)
       : 0
   )
-  const errorBankScore = areaPerformance.length > 0 ? 70 : 0
+  let errorBankScore = 0
+  if (errors && errors.length > 0) {
+    const consolidated = errors.filter(
+      (e) => e.repetitions >= 3 && e.interval_days >= 21 && e.reviewed
+    ).length
+    const total = Math.max(errors.length, 1)
+    errorBankScore = Math.round((consolidated / total) * 100)
+  } else if (areaPerformance.length > 0) {
+    errorBankScore = 70
+  }
 
   const score = Math.round(
     hitRateScore * 0.3 +

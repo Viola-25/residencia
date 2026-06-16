@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   XCircle,
   LineChart,
+  Brain,
 } from 'lucide-react'
 import {
   BarChart,
@@ -38,7 +39,20 @@ const priorityConfig = {
 }
 
 export function Performance() {
-  const { areaPerformance, logs, dashboardMetrics } = useData()
+  const { areaPerformance, logs, dashboardMetrics, errors, approvalScore } = useData()
+
+  const srsStats = useMemo(() => {
+    if (errors.length === 0) return null
+    const total = errors.length
+    const consolidated = errors.filter((e) => e.repetitions >= 3 && e.interval_days >= 14 && e.reviewed).length
+    const pending = errors.filter((e) => !e.reviewed).length
+    const dueNow = errors.filter((e) => {
+      if (!e.next_review_date) return false
+      return new Date(e.next_review_date) <= new Date() && !e.reviewed
+    }).length
+    const healthyRate = total > 0 ? Math.round((consolidated / total) * 100) : 0
+    return { total, consolidated, pending, dueNow, healthyRate }
+  }, [errors])
   const hitRate30d = useMemo(() => getHitRateTrend(logs, 30), [logs])
   const globalRate = useMemo(() => calculateGlobalHitRate(logs), [logs])
 
@@ -138,6 +152,46 @@ export function Performance() {
           trend={hitRate30d.trend}
         />
       </div>
+
+      {srsStats && (
+        <div className="mb-6 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+          <div className="mb-4 flex items-center gap-2">
+            <Brain size={16} className="text-violet-400" />
+            <h3 className="text-sm font-semibold text-zinc-200">Consolidação por Revisão Espacada</h3>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-4">
+            <div className="rounded-lg bg-zinc-800/50 p-3">
+              <p className="text-xs text-zinc-500">Total de Erros</p>
+              <p className="text-xl font-bold text-zinc-200">{srsStats.total}</p>
+            </div>
+            <div className="rounded-lg bg-emerald-500/10 p-3">
+              <p className="text-xs text-emerald-400">Consolidados</p>
+              <p className="text-xl font-bold text-emerald-400">{srsStats.consolidated}</p>
+            </div>
+            <div className="rounded-lg bg-amber-500/10 p-3">
+              <p className="text-xs text-amber-400">Pendentes</p>
+              <p className="text-xl font-bold text-amber-400">{srsStats.pending} ({srsStats.dueNow} atrasados)</p>
+            </div>
+            <div className="rounded-lg bg-violet-500/10 p-3">
+              <p className="text-xs text-violet-400">Saúde do Banco</p>
+              <p className="text-xl font-bold text-violet-400">{srsStats.healthyRate}%</p>
+            </div>
+          </div>
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-zinc-800">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-amber-500 via-violet-500 to-emerald-500 transition-all"
+              style={{ width: `${srsStats.healthyRate}%` }}
+            />
+          </div>
+          <p className="mt-2 text-xs text-zinc-600">
+            {srsStats.healthyRate >= 70
+              ? 'Ótimo! A maioria dos conceitos já está consolidada na memória de longo prazo.'
+              : srsStats.healthyRate >= 40
+                ? 'Progresso consistente. Continue revisando para consolidar mais conceitos.'
+                : 'Foque em revisar os erros pendentes para consolidar o aprendizado.'}
+          </p>
+        </div>
+      )}
 
       <div className="mb-8 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
         <h3 className="mb-4 text-sm font-semibold text-zinc-200">Evolução Temporal</h3>

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { CalendarCheck, Plus, Moon, Zap, Trash2, XCircle, Edit, Eye } from 'lucide-react'
+import { CalendarCheck, Plus, Moon, Zap, Trash2, XCircle, Edit, Eye, Brain } from 'lucide-react'
 import { PageHeader } from '../components/PageHeader'
 import { StatCard } from '../components/StatCard'
 import { Badge } from '../components/Badge'
@@ -310,7 +310,12 @@ function LogFormBody({
 }
 
 export function DailyLog() {
-  const { logs, dashboardMetrics, addDailyLog, updateDailyLog, deleteDailyLog } = useData()
+  const { logs, dashboardMetrics, addDailyLog, updateDailyLog, deleteDailyLog, addSmartError } = useData()
+  const [quickError, setQuickError] = useState<{ open: boolean; notes: string; area: MedicalArea }>({
+    open: false,
+    notes: '',
+    area: 'clinica_medica',
+  })
   const [form, setForm] = useState<DailyLogFormData>(initialForm)
   const [showForm, setShowForm] = useState(false)
   const [inlineErrors, setInlineErrors] = useState<InlineError[]>([])
@@ -444,13 +449,22 @@ export function DailyLog() {
         description="Registre seu desempenho diário"
         icon={CalendarCheck}
         action={
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 rounded-lg bg-zinc-800 px-4 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-700"
-          >
-            <Plus size={16} />
-            {showForm ? 'Cancelar' : 'Novo Registro'}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setQuickError((p) => ({ ...p, open: true }))}
+              className="flex items-center gap-2 rounded-lg border border-violet-500/30 bg-violet-500/10 px-4 py-2 text-sm font-medium text-violet-300 transition-colors hover:bg-violet-500/20"
+            >
+              <Brain size={16} />
+              Erro Rápido
+            </button>
+            <button
+              onClick={() => setShowForm(!showForm)}
+              className="flex items-center gap-2 rounded-lg bg-zinc-800 px-4 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-700"
+            >
+              <Plus size={16} />
+              {showForm ? 'Cancelar' : 'Novo Registro'}
+            </button>
+          </div>
         }
       />
 
@@ -480,6 +494,52 @@ export function DailyLog() {
           color="emerald"
         />
       </div>
+
+      {quickError.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-lg rounded-xl border border-zinc-700 bg-zinc-900 p-6 shadow-2xl">
+            <h3 className="mb-4 text-sm font-semibold text-zinc-200">Erro Rápido</h3>
+            <p className="mb-4 text-xs text-zinc-500">
+              Descreva o erro que você cometeu. A IA identifica o tema e agenda a revisão automaticamente.
+            </p>
+            <textarea
+              value={quickError.notes}
+              onChange={(e) => setQuickError((p) => ({ ...p, notes: e.target.value }))}
+              placeholder='Ex: esqueci que no choque obstrutivo por tamponamento a conduta inicial é pericardiocentese, fui direto pra volume'
+              rows={4}
+              className="mb-3 w-full rounded-lg border border-zinc-700 bg-zinc-800 p-3 text-sm text-zinc-200 placeholder-zinc-600 focus:border-violet-500 focus:outline-none"
+            />
+            <select
+              value={quickError.area}
+              onChange={(e) => setQuickError((p) => ({ ...p, area: e.target.value as MedicalArea }))}
+              className="mb-4 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
+            >
+              {MEDICAL_AREAS.map((a) => (
+                <option key={a.value} value={a.value}>{a.label}</option>
+              ))}
+            </select>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setQuickError({ open: false, notes: '', area: 'clinica_medica' })}
+                className="flex-1 rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-400 transition-colors hover:bg-zinc-800"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  if (!quickError.notes.trim()) return
+                  await addSmartError(quickError.notes, quickError.area)
+                  setQuickError({ open: false, notes: '', area: 'clinica_medica' })
+                }}
+                disabled={!quickError.notes.trim()}
+                className="flex-1 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Salvar Erro
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showForm && (
         <form
