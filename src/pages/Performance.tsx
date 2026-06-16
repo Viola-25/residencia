@@ -26,6 +26,7 @@ import { StatCard } from '../components/StatCard'
 import { Badge } from '../components/Badge'
 import { getWeekLabel } from '../lib/dates'
 import { AREA_LABELS } from '../types'
+import { getHitRateTrend, calculateGlobalHitRate } from '../lib/calculations'
 import { useData } from '../hooks/useData'
 import { MEDICAL_AREAS } from '../types'
 import type { MedicalArea } from '../types'
@@ -38,6 +39,8 @@ const priorityConfig = {
 
 export function Performance() {
   const { areaPerformance, logs, dashboardMetrics } = useData()
+  const hitRate30d = useMemo(() => getHitRateTrend(logs, 30), [logs])
+  const globalRate = useMemo(() => calculateGlobalHitRate(logs), [logs])
 
   const allAreas = MEDICAL_AREAS.map(({ value }) => {
     const perf = areaPerformance.find((a) => a.area === value)
@@ -127,11 +130,12 @@ export function Performance() {
           color="rose"
         />
         <StatCard
-          title="Taxa de Acerto"
-          value={`${dashboardMetrics.global_hit_rate}%`}
+          title="Taxa de Acerto (30 dias)"
+          value={`${hitRate30d.currentRate}%`}
+          subtitle={`Global: ${globalRate}% | ${hitRate30d.diff > 0 ? '+' : ''}${hitRate30d.diff}% vs mês anterior`}
           icon={LineChart}
-          color="violet"
-          trend={dashboardMetrics.evolution_percentage > 0 ? 'up' : dashboardMetrics.evolution_percentage < 0 ? 'down' : 'neutral'}
+          color={hitRate30d.currentRate >= globalRate ? 'emerald' : 'amber'}
+          trend={hitRate30d.trend}
         />
       </div>
 

@@ -1,6 +1,46 @@
 import type { DailyLog, MockExam, WeeklySummary, AreaPerformance, ApprovalScore, MedicalArea, ErrorReason } from '../types'
 import { MEDICAL_AREAS } from '../types'
 
+export function calculateRecentHitRate(logs: DailyLog[], days: number): number {
+  const cutoffDate = new Date()
+  cutoffDate.setHours(0, 0, 0, 0)
+  cutoffDate.setDate(cutoffDate.getDate() - days)
+
+  const recentLogs = logs.filter(log => new Date(log.date + 'T00:00:00') >= cutoffDate)
+  return calculateGlobalHitRate(recentLogs)
+}
+
+export function getHitRateTrend(logs: DailyLog[], days: number = 30) {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const periodStart = new Date(today)
+  periodStart.setDate(today.getDate() - days)
+
+  const prevPeriodStart = new Date(periodStart)
+  prevPeriodStart.setDate(periodStart.getDate() - days)
+
+  const currentLogs = logs.filter(log => {
+    const d = new Date(log.date + 'T00:00:00')
+    return d >= periodStart
+  })
+
+  const prevLogs = logs.filter(log => {
+    const d = new Date(log.date + 'T00:00:00')
+    return d >= prevPeriodStart && d < periodStart
+  })
+
+  const currentRate = calculateGlobalHitRate(currentLogs)
+  const prevRate = calculateGlobalHitRate(prevLogs)
+  const diff = Math.round((currentRate - prevRate) * 100) / 100
+
+  let trend: 'up' | 'down' | 'neutral' = 'neutral'
+  if (diff > 0) trend = 'up'
+  if (diff < 0) trend = 'down'
+
+  return { currentRate, prevRate, diff, trend }
+}
+
 export function calculateTotalQuestions(logs: DailyLog[]): number {
   return logs.reduce((sum, log) => sum + log.questions_done, 0)
 }

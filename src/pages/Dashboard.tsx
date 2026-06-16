@@ -27,6 +27,7 @@ import { PageHeader } from '../components/PageHeader'
 import { StatCard } from '../components/StatCard'
 import { getWeekLabel } from '../lib/dates'
 import { AREA_LABELS_SHORT } from '../types'
+import { getHitRateTrend, calculateGlobalHitRate } from '../lib/calculations'
 
 import { useData } from '../hooks/useData'
 
@@ -83,6 +84,8 @@ export function Dashboard() {
   }, [areaPerformance])
 
   const metrics = dashboardMetrics
+  const hitRate30d = useMemo(() => getHitRateTrend(logs, 30), [logs])
+  const globalRate = useMemo(() => calculateGlobalHitRate(logs), [logs])
 
   return (
     <div>
@@ -119,11 +122,12 @@ export function Dashboard() {
           color="emerald"
         />
         <StatCard
-          title="Taxa Global de Acerto"
-          value={`${metrics.global_hit_rate}%`}
+          title="Taxa de Acerto (30 dias)"
+          value={`${hitRate30d.currentRate}%`}
+          subtitle={`Global: ${globalRate}% | ${hitRate30d.diff > 0 ? '+' : ''}${hitRate30d.diff}% vs mês anterior`}
           icon={TrendingUp}
-          color="violet"
-          trend={metrics.evolution_percentage > 0 ? 'up' : metrics.evolution_percentage < 0 ? 'down' : 'neutral'}
+          color={hitRate30d.currentRate >= globalRate ? 'emerald' : 'amber'}
+          trend={hitRate30d.trend}
         />
         <StatCard
           title="Meta Anual"
