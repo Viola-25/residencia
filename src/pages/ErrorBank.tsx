@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { AlertTriangle, Search, Trash2, TrendingUp, BarChart3, Clock, Brain, ChevronDown, Sparkles } from 'lucide-react'
+import { AlertTriangle, Search, Trash2, TrendingUp, BarChart3, Clock, Brain, Sparkles, TrendingDown } from 'lucide-react'
 import { PageHeader } from '../components/PageHeader'
 import { StatCard } from '../components/StatCard'
 import { Badge } from '../components/Badge'
@@ -19,7 +19,7 @@ const reasonColors: Record<ErrorReason, 'red' | 'yellow' | 'blue' | 'zinc' | 'gr
 const SRS_QUALITIES = [
   { value: 'easy' as const, label: 'Fácil', icon: Sparkles, color: 'text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/30' },
   { value: 'good' as const, label: 'Bom', icon: Brain, color: 'text-sky-400 hover:bg-sky-500/20 border-sky-500/30' },
-  { value: 'hard' as const, label: 'Difícil', icon: ChevronDown, color: 'text-amber-400 hover:bg-amber-500/20 border-amber-500/30' },
+  { value: 'hard' as const, label: 'Difícil', icon: TrendingDown, color: 'text-amber-400 hover:bg-amber-500/20 border-amber-500/30' },
   { value: 'forgot' as const, label: 'Esqueci', icon: AlertTriangle, color: 'text-rose-400 hover:bg-rose-500/20 border-rose-500/30' },
 ]
 
@@ -97,10 +97,6 @@ export function ErrorBank() {
     return [...errors].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 5)
   }, [errors])
 
-  const needsReview = useMemo(() => {
-    return errors.filter((e) => e.needs_review && !e.reviewed)
-  }, [errors])
-
   const dueForReview = useMemo(() => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
@@ -142,7 +138,7 @@ export function ErrorBank() {
           title="Revisão Devida"
           value={dueForReview.length}
           icon={Clock}
-          color={dueForReview.length > 0 ? 'amber' : 'green'}
+          color={dueForReview.length > 0 ? 'amber' : 'emerald'}
         />
         <StatCard
           title="Mais Frequente"

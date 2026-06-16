@@ -148,6 +148,7 @@ export function useData() {
           question: `[Registro: ${formData.date}] ${ie.enunciado || ie.topic}${ie.alternativa_selecionada ? ` | Selecionou: ${ie.alternativa_selecionada}` : ''}${ie.alternativa_certa ? ` | Correto: ${ie.alternativa_certa}` : ''}`,
           topic: ie.topic,
           subtopic: null,
+          area: null,
           error_reason: analysis.error_reason_sugerido as ErrorReason,
           needs_review: false,
           reviewed: false,
@@ -156,6 +157,12 @@ export function useData() {
           recorrencia: 1,
           ultima_ocorrencia: formData.date,
           sugestao_revisao: analysis.sugestao_revisao,
+          next_review_date: null,
+          interval_days: 0,
+          ease_factor: 2.5,
+          repetitions: 0,
+          occurrence_count: 1,
+          history_notes: null,
           created_at: new Date().toISOString(),
         }
         setErrors((prev) => [newError, ...prev])
@@ -180,6 +187,7 @@ export function useData() {
           question: `[Auto: ${formData.date}] ${ext.topic}`,
           topic: ext.topic,
           subtopic: null,
+          area: null,
           error_reason: ext.error_reason,
           needs_review: ext.nivel_confianca === 'baixo',
           reviewed: false,
@@ -188,6 +196,12 @@ export function useData() {
           recorrencia: 1,
           ultima_ocorrencia: formData.date,
           sugestao_revisao: ext.sugestao_revisao,
+          next_review_date: null,
+          interval_days: 0,
+          ease_factor: 2.5,
+          repetitions: 0,
+          occurrence_count: 1,
+          history_notes: null,
           created_at: new Date().toISOString(),
         }
         setErrors((prev) => [newError, ...prev])

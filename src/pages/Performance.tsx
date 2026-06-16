@@ -39,7 +39,7 @@ const priorityConfig = {
 }
 
 export function Performance() {
-  const { areaPerformance, logs, dashboardMetrics, errors, approvalScore } = useData()
+  const { areaPerformance, logs, dashboardMetrics, errors } = useData()
 
   const srsStats = useMemo(() => {
     if (errors.length === 0) return null

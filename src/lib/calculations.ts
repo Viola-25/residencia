@@ -102,24 +102,37 @@ export function getMockTrend(mocks: MockExam[]): number {
 }
 
 export function calculateCurrentStreak(logs: DailyLog[]): number {
-  if (logs.length === 0) return 0
-  const uniqueDates = [...new Set(logs.map(l => l.date))].sort().reverse()
+  const uniqueDates = Array.from(new Set(logs.map((log) => log.date)))
+    .sort((a, b) => b.localeCompare(a))
+
+  if (uniqueDates.length === 0) return 0
+
   let streak = 0
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-  const anchor = new Date(uniqueDates[0] + 'T00:00:00')
-  const gap = Math.round((today.getTime() - anchor.getTime()) / (1000 * 60 * 60 * 24))
-  if (gap > 1) return 0
+
+  const lastLogDate = new Date(uniqueDates[0] + 'T00:00:00')
+  const daysSinceLastLog = Math.round((today.getTime() - lastLogDate.getTime()) / (1000 * 60 * 60 * 24))
+  if (daysSinceLastLog > 1) return 0
+
+  const anchor = lastLogDate
+
   for (let i = 0; i < uniqueDates.length; i++) {
-    const expected = new Date(anchor)
-    expected.setDate(expected.getDate() - i)
-    const actual = new Date(uniqueDates[i] + 'T00:00:00')
-    if (actual.getTime() === expected.getTime()) {
+    const logDate = new Date(uniqueDates[i] + 'T00:00:00')
+    const expectedDate = new Date(anchor)
+    expectedDate.setDate(expectedDate.getDate() - streak)
+
+    const diff = Math.round(
+      (logDate.getTime() - expectedDate.getTime()) / (1000 * 60 * 60 * 24)
+    )
+
+    if (diff === 0) {
       streak++
     } else {
       break
     }
   }
+
   return streak
 }
 
