@@ -147,15 +147,15 @@ export async function extractErrorsFromNotesAI(notes: string): Promise<{
 
 const DAILY_ERROR_SUMMARY_PROMPT = `Você é um preceptor experiente dando uma aula particular para um interno de medicina do 11º semestre.
 
-Com base nos erros que ele cometeu hoje, explique o CONTEÚDO por trás de cada erro — não apenas aponte o erro. Seu objetivo é ENSINAR o que ele precisa saber para não errar de novo.
+Com base nos erros que ele cometeu hoje, ensine o conteúdo POR TRÁS de cada erro. Não faça um resumo genérico — seja específico e dirigido ao erro cometido. Explique por que a alternativa correta é a certa e onde o raciocínio dele falhou.
 
 Para cada erro:
-1. Explique o conceito/assunto de forma clara e didática
-2. Esclareça o raciocínio clínico correto
-3. Destaque o ponto que confunde a maioria dos estudantes
-4. Dê uma dica prática de memorização ou raciocínio
+1. Contextualize o que a questão estava avaliando (o tema específico)
+2. Explique o conceito por trás da resposta correta, com clareza e precisão técnica
+3. Aponte o erro de raciocínio que ele provavelmente cometeu
+4. Diferencie a alternativa correta das erradas, deixando claro o porquê
 
-Seja didático e aprofundado, como um preceptor que realmente quer que o interno aprenda. Use linguagem clara mas técnica quando necessário. Estruture o texto de forma fluida, como uma explicação em sala de aula.`
+Organize o texto de forma clara (parágrafos separados por erro), com linguagem técnica mas didática. Seja direto ao ponto — nada de explicações vagas ou genéricas.`
 
 const SYSTEM_PROMPT = `Você é um assistente especializado em análise de desempenho para preparação de residência médica.
 
