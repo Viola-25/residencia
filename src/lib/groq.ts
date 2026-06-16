@@ -1,5 +1,6 @@
 import Groq from 'groq-sdk'
 import { supabase } from './supabase'
+import { getTodayRangeUTC } from './dates'
 import type { DailyLog, MockExam, ErrorEntry, AreaPerformance, StudyConfig, AIInsight, ErrorReason } from '../types'
 
 const groq = new Groq({
@@ -172,11 +173,12 @@ Regras:
 
 export async function loadCachedInsights(): Promise<AIInsight[] | null> {
   try {
-    const today = new Date().toISOString().split('T')[0]
+    const { start, end } = getTodayRangeUTC()
     const { data } = await supabase
       .from('insights_cache')
       .select('type,title,description,priority,area,generated_at')
-      .gte('generated_at', today)
+      .gte('generated_at', start)
+      .lt('generated_at', end)
       .order('generated_at', { ascending: false })
 
     if (data && data.length > 0) {

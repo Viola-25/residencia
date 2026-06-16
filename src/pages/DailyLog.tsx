@@ -4,7 +4,7 @@ import { PageHeader } from '../components/PageHeader'
 import { StatCard } from '../components/StatCard'
 import { Badge } from '../components/Badge'
 import { useData } from '../hooks/useData'
-import { formatDateShort } from '../lib/dates'
+import { formatDateShort, getTodayDateString } from '../lib/dates'
 import type { DailyLog, DailyLogFormData, Mood, MedicalArea, InlineError } from '../types'
 import { MOOD_OPTIONS, MEDICAL_AREAS, REGISTRATION_TYPES, ERROR_REASONS } from '../types'
 
@@ -14,7 +14,7 @@ const emptyAreas = () =>
   ) as DailyLogFormData['areas']
 
 const initialForm: DailyLogFormData = {
-  date: new Date().toISOString().split('T')[0],
+  date: getTodayDateString(),
   registration_type: 'questoes',
   hours_studied: 0,
   areas: emptyAreas(),

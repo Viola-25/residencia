@@ -13,7 +13,7 @@ import { PageHeader } from '../components/PageHeader'
 import { StatCard } from '../components/StatCard'
 import { Badge } from '../components/Badge'
 import { useData } from '../hooks/useData'
-import { formatDateShort } from '../lib/dates'
+import { formatDateShort, getTodayDateString } from '../lib/dates'
 import { getMockAverage, getMockTrend } from '../lib/calculations'
 import type { MockExamFormData, MedicalArea } from '../types'
 import { MEDICAL_AREAS } from '../types'
@@ -24,7 +24,7 @@ const emptyAreas = () =>
   ) as MockExamFormData['areas']
 
 const initialForm: MockExamFormData = {
-  date: new Date().toISOString().split('T')[0],
+  date: getTodayDateString(),
   name: '',
   areas: emptyAreas(),
   ranking: '',

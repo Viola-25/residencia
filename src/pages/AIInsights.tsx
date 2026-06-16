@@ -4,6 +4,7 @@ import { PageHeader } from '../components/PageHeader'
 import { Badge } from '../components/Badge'
 import { useData } from '../hooks/useData'
 import { generateInsights, loadCachedInsights, generateDailyErrorSummary, loadDailySummaryCache, saveDailySummaryCache } from '../lib/groq'
+import { getTodayDateString, getTodayRangeUTC } from '../lib/dates'
 import { AREA_LABELS } from '../types'
 import type { AIInsight } from '../types'
 
@@ -30,8 +31,8 @@ export function AIInsights() {
   const [dailySummaryError, setDailySummaryError] = useState<string | null>(null)
 
   const todayErrors = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0]
-    return errors.filter((e) => e.created_at && e.created_at.startsWith(today))
+    const { start, end } = getTodayRangeUTC()
+    return errors.filter((e) => e.created_at && e.created_at >= start && e.created_at < end)
   }, [errors])
 
   const handleGenerateDailySummary = useCallback(async () => {
@@ -41,8 +42,7 @@ export function AIInsights() {
       const result = await generateDailyErrorSummary(todayErrors)
       if (result) {
         setDailySummary(result)
-        const today = new Date().toISOString().split('T')[0]
-        await saveDailySummaryCache(today, result)
+        await saveDailySummaryCache(getTodayDateString(), result)
       } else {
         setDailySummaryError('Não foi possível gerar o resumo. Tente novamente.')
       }
@@ -86,8 +86,7 @@ export function AIInsights() {
 
   useEffect(() => {
     const loadSummary = async () => {
-      const today = new Date().toISOString().split('T')[0]
-      const cached = await loadDailySummaryCache(today)
+      const cached = await loadDailySummaryCache(getTodayDateString())
       if (cached) {
         setDailySummary(cached)
       }

@@ -27,7 +27,7 @@ import {
   calculateAreaPerformanceFromLogs,
   extractErrorsFromNotes,
 } from '../lib/calculations'
-import { getDaysUntil, getCurrentWeekStart } from '../lib/dates'
+import { getDaysUntil, getCurrentWeekStart, getTodayDateString } from '../lib/dates'
 import { extractErrorsFromNotesAI, analyzeInlineError } from '../lib/groq'
 
 const DEFAULT_CONFIG: StudyConfig = {
@@ -260,7 +260,7 @@ export function useData() {
         correct,
         hit_rate,
         trend: 'stable',
-        date: new Date().toISOString().split('T')[0],
+        date: getTodayDateString(),
         user_id: user!.id,
       }, { onConflict: 'user_id,area' })
     } catch { /* local fallback */ }
