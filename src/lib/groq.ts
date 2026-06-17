@@ -443,6 +443,73 @@ export interface ClusteringResult {
   suggestedCleanTitle: string
 }
 
+export interface GeneratedFlashcard {
+  front: string
+  back: string
+}
+
+const FLASHCARD_GENERATION_PROMPT = `Você é um especialista em criação de flashcards médicos para residência.
+
+Sua tarefa é transformar o erro que o aluno cometeu em um flashcard de alta qualidade para Active Recall.
+
+Regras estritas:
+1. A FRENTE (front) do card DEVE ser uma pergunta clínica direta e específica baseada no erro do usuário, ou a última frase de um mini-caso clínico. NUNCA coloque apenas o tema ou assunto.
+2. O VERSO (back) do card DEVE conter a resposta direta com a conduta, diagnóstico ou conceito exato, seguida de uma única frase curta de justificativa.
+
+Exemplo:
+- Erro: "Não sabia que na cetoacidose diabética o potássio total está baixo"
+- Front: "Paciente com cetoacidose diabética chega com potássio sérico de 4,2 mEq/L. Qual a conduta em relação à reposição de potássio?"
+- Back: "Repor potássio assim que o nível sérico cair abaixo de 5,3 mEq/L, pois o potássio total corporal está depletado, mesmo que o sérico esteja normal."
+
+Responda APENAS com um JSON no formato:
+{ "front": "pergunta clínica aqui", "back": "resposta direta + justificativa aqui" }`
+
+export async function generateErrorFlashcard(error: {
+  topic: string
+  question: string
+  error_reason: string
+  sugestao_revisao: string | null
+}): Promise<GeneratedFlashcard> {
+  const apiKey = import.meta.env.VITE_GROQ_API_KEY
+  if (!apiKey) {
+    return {
+      front: error.topic,
+      back: error.question,
+    }
+  }
+
+  try {
+    const completion = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        { role: 'system', content: FLASHCARD_GENERATION_PROMPT },
+        {
+          role: 'user',
+          content: `Tema do erro: "${error.topic}"
+Descrição do erro: "${error.question}"
+Motivo: ${error.error_reason}${error.sugestao_revisao ? `\nSugestão de revisão: "${error.sugestao_revisao}"` : ''}
+
+Gere o flashcard seguindo estritamente as regras do system prompt.`,
+        },
+      ],
+      temperature: 0.3,
+      max_tokens: 500,
+    })
+
+    const text = completion.choices[0]?.message?.content
+    if (!text) return { front: error.topic, back: error.question }
+
+    const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
+    const parsed = JSON.parse(cleaned) as GeneratedFlashcard
+    return {
+      front: parsed.front || error.topic,
+      back: parsed.back || error.question,
+    }
+  } catch {
+    return { front: error.topic, back: error.question }
+  }
+}
+
 export async function analyzeAndClusterError(
   newErrorText: string,
   existingErrorsOfArea: { id: string; topic: string }[]

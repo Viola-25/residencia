@@ -6,6 +6,8 @@ import { Badge } from '../components/Badge'
 import { useData } from '../hooks/useData'
 import { formatDateShort } from '../lib/dates'
 import type { ErrorReason } from '../types'
+import { generateErrorFlashcard } from '../lib/groq'
+import type { GeneratedFlashcard } from '../lib/groq'
 import { ERROR_REASONS } from '../types'
 
 const reasonColors: Record<ErrorReason, 'red' | 'yellow' | 'blue' | 'zinc' | 'green'> = {
@@ -44,6 +46,8 @@ export function ErrorBank() {
   const [filterReview, setFilterReview] = useState<'all' | 'pending' | 'reviewed'>('all')
   const [reviewingId, setReviewingId] = useState<string | null>(null)
   const [flashcardReview, setFlashcardReview] = useState<{ error: typeof errors[0]; revealed: boolean } | null>(null)
+  const [flashcardData, setFlashcardData] = useState<GeneratedFlashcard | null>(null)
+  const [flashcardLoading, setFlashcardLoading] = useState(false)
 
   const topicStats = useMemo(() => {
     const topicMap = new Map<string, { count: number; lastDate: string; reasons: Set<string> }>()
@@ -194,9 +198,21 @@ export function ErrorBank() {
       {dueForReview.length > 0 && (
         <div className="mb-4 flex justify-end">
           <button
-            onClick={() => {
+            onClick={async () => {
               const next = dueForReview[0]
-              if (next) setFlashcardReview({ error: next, revealed: false })
+              if (next) {
+                setFlashcardReview({ error: next, revealed: false })
+                setFlashcardData(null)
+                setFlashcardLoading(true)
+                const result = await generateErrorFlashcard({
+                  topic: next.topic,
+                  question: next.question,
+                  error_reason: next.error_reason,
+                  sugestao_revisao: next.sugestao_revisao,
+                })
+                setFlashcardData(result)
+                setFlashcardLoading(false)
+              }
             }}
             className="flex items-center gap-2 rounded-lg border border-violet-500/30 bg-violet-500/10 px-4 py-2 text-sm font-medium text-violet-300 transition-colors hover:bg-violet-500/20"
           >
@@ -209,23 +225,28 @@ export function ErrorBank() {
       {flashcardReview && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-lg rounded-xl border border-zinc-700 bg-zinc-900 p-6 shadow-2xl">
-            {!flashcardReview.revealed ? (
+            {flashcardLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-400 border-t-transparent" />
+                <span className="ml-3 text-sm text-zinc-400">Gerando flashcard...</span>
+              </div>
+            ) : !flashcardReview.revealed ? (
               <>
                 <div className="mb-2 text-center text-xs font-medium uppercase tracking-wider text-zinc-500">
                   {ERROR_REASONS.find((r) => r.value === flashcardReview.error.error_reason)?.label}
                 </div>
                 <h2 className="mb-2 text-center text-xl font-bold text-zinc-100">
-                  {flashcardReview.error.topic}
+                  {flashcardData?.front || flashcardReview.error.topic}
                 </h2>
                 <p className="mb-6 text-center text-sm text-zinc-500">
-                  Tente lembrar o detalhe que te fez errar da última vez...
+                  Tente lembrar a conduta, diagnóstico ou conceito exato...
                 </p>
                 <div className="flex justify-center">
                   <button
                     onClick={() => setFlashcardReview({ ...flashcardReview, revealed: true })}
                     className="rounded-lg bg-violet-600 px-8 py-3 text-sm font-medium text-white transition-colors hover:bg-violet-500"
                   >
-                    Revelar Anotação
+                    Revelar Resposta
                   </button>
                 </div>
               </>
@@ -236,7 +257,7 @@ export function ErrorBank() {
                 </div>
                 <div className="mb-4 rounded-lg border border-zinc-700/50 bg-zinc-800/50 p-4">
                   <p className="text-sm leading-relaxed text-zinc-300">
-                    {flashcardReview.error.question}
+                    {flashcardData?.back || flashcardReview.error.question}
                   </p>
                 </div>
                 {flashcardReview.error.history_notes && flashcardReview.error.history_notes.length > 1 && (

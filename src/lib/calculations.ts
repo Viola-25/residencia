@@ -176,11 +176,15 @@ export function calculateApprovalScore(
   )
   let errorBankScore = 0
   if (errors && errors.length > 0) {
-    const consolidated = errors.filter(
-      (e) => e.repetitions >= 3 && e.interval_days >= 21 && e.reviewed
-    ).length
-    const total = Math.max(errors.length, 1)
-    errorBankScore = Math.round((consolidated / total) * 100)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const overdue = errors.filter((e) => {
+      if (!e.next_review_date) return false
+      const reviewDate = new Date(e.next_review_date)
+      reviewDate.setHours(0, 0, 0, 0)
+      return reviewDate <= today && !e.reviewed
+    }).length
+    errorBankScore = Math.round(((errors.length - overdue) / errors.length) * 100)
   } else if (areaPerformance.length > 0) {
     errorBankScore = 70
   }
