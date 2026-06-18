@@ -1,4 +1,4 @@
-import type { DailyLog, MockExam, WeeklySummary, AreaPerformance, ApprovalScore, MedicalArea, ErrorReason, ErrorEntry } from '../types'
+import type { DailyLog, MockExam, WeeklySummary, AreaPerformance, ApprovalScore, MedicalArea, MotivoErro, ErrorEntry } from '../types'
 import { MEDICAL_AREAS } from '../types'
 
 export function calculateRecentHitRate(logs: DailyLog[], days: number): number {
@@ -312,20 +312,20 @@ export function calculateAreaPerformanceFromLogs(logs: DailyLog[]): AreaPerforma
   })
 }
 
-export function extractErrorsFromNotes(notes: string): { topic: string; error_reason: ErrorReason; nivel_confianca: 'baixo' | 'medio' | 'alto' }[] {
-  const results: { topic: string; error_reason: ErrorReason; nivel_confianca: 'baixo' | 'medio' | 'alto' }[] = []
+export function extractErrorsFromNotes(notes: string): { topic: string; error_reason: MotivoErro; nivel_confianca: 'baixo' | 'medio' | 'alto' }[] {
+  const results: { topic: string; error_reason: MotivoErro; nivel_confianca: 'baixo' | 'medio' | 'alto' }[] = []
   const lower = notes.toLowerCase()
 
-  const patterns: { regex: RegExp; reason: ErrorReason }[] = [
-    { regex: /errei\s+(\w+(?:\s+\w+){0,3})/gi, reason: 'nao_sabia' },
-    { regex: /não\s*sei\s+(\w+(?:\s+\w+){0,3})/gi, reason: 'nao_sabia' },
-    { regex: /esqueci\s+(\w+(?:\s+\w+){0,3})/gi, reason: 'esqueci' },
-    { regex: /interpret[eaç]\w+\s+(\w+(?:\s+\w+){0,3})/gi, reason: 'interpretacao' },
-    { regex: /confundi\s+(\w+(?:\s+\w+){0,3})/gi, reason: 'interpretacao' },
-    { regex: /pegadinha\s+(\w+(?:\s+\w+){0,3})/gi, reason: 'pegadinha' },
-    { regex: /pressa\s+(\w+(?:\s+\w+){0,3})/gi, reason: 'pressa' },
-    { regex: /dificuldade\s+(\w+(?:\s+\w+){0,3})/gi, reason: 'nao_sabia' },
-    { regex: /revisar\s+(\w+(?:\s+\w+){0,3})/gi, reason: 'esqueci' },
+  const patterns: { regex: RegExp; reason: MotivoErro }[] = [
+    { regex: /errei\s+(\w+(?:\s+\w+){0,3})/gi, reason: 'Não sabia' },
+    { regex: /não\s*sei\s+(\w+(?:\s+\w+){0,3})/gi, reason: 'Não sabia' },
+    { regex: /esqueci\s+(\w+(?:\s+\w+){0,3})/gi, reason: 'Esqueci' },
+    { regex: /interpret[eaç]\w+\s+(\w+(?:\s+\w+){0,3})/gi, reason: 'Dificuldade de interpretação' },
+    { regex: /confundi\s+(\w+(?:\s+\w+){0,3})/gi, reason: 'Dificuldade de interpretação' },
+    { regex: /pegadinha\s+(\w+(?:\s+\w+){0,3})/gi, reason: 'Pegadinha' },
+    { regex: /pressa\s+(\w+(?:\s+\w+){0,3})/gi, reason: 'Falta de atenção' },
+    { regex: /dificuldade\s+(\w+(?:\s+\w+){0,3})/gi, reason: 'Não sabia' },
+    { regex: /revisar\s+(\w+(?:\s+\w+){0,3})/gi, reason: 'Esqueci' },
   ]
 
   for (const { regex, reason } of patterns) {

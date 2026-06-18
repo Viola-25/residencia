@@ -5,17 +5,17 @@ import { StatCard } from '../components/StatCard'
 import { Badge } from '../components/Badge'
 import { useData } from '../hooks/useData'
 import { formatDateShort } from '../lib/dates'
-import type { ErrorReason } from '../types'
+import type { MotivoErro } from '../types'
 import { generateErrorFlashcard } from '../lib/groq'
 import type { GeneratedFlashcard } from '../lib/groq'
 import { ERROR_REASONS } from '../types'
 
-const reasonColors: Record<ErrorReason, 'red' | 'yellow' | 'blue' | 'zinc' | 'green'> = {
-  nao_sabia: 'red',
-  esqueci: 'yellow',
-  interpretacao: 'blue',
-  pegadinha: 'zinc',
-  pressa: 'green',
+const reasonColors: Record<MotivoErro, 'red' | 'yellow' | 'blue' | 'zinc' | 'green'> = {
+  'Não sabia': 'red',
+  'Esqueci': 'yellow',
+  'Dificuldade de interpretação': 'blue',
+  'Pegadinha': 'zinc',
+  'Falta de atenção': 'green',
 }
 
 const SRS_QUALITIES = [
@@ -42,7 +42,7 @@ function formatNextReview(dateStr: string | null): string {
 export function ErrorBank() {
   const { errors, reviewErrorWithSRS, deleteError } = useData()
   const [search, setSearch] = useState('')
-  const [filterReason, setFilterReason] = useState<ErrorReason | 'all'>('all')
+  const [filterReason, setFilterReason] = useState<MotivoErro | 'all'>('all')
   const [filterReview, setFilterReview] = useState<'all' | 'pending' | 'reviewed'>('all')
   const [reviewingId, setReviewingId] = useState<string | null>(null)
   const [flashcardReview, setFlashcardReview] = useState<{ error: typeof errors[0]; revealed: boolean } | null>(null)
@@ -386,7 +386,7 @@ export function ErrorBank() {
           <select
             value={filterReason}
             onChange={(e) =>
-              setFilterReason(e.target.value as ErrorReason | 'all')
+              setFilterReason(e.target.value as MotivoErro | 'all')
             }
             className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
           >

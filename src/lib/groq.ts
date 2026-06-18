@@ -1,71 +1,120 @@
 import Groq from 'groq-sdk'
 import { supabase } from './supabase'
 import { getTodayRangeUTC } from './dates'
-import type { DailyLog, MockExam, ErrorEntry, AreaPerformance, StudyConfig, AIInsight, ErrorReason } from '../types'
+import type { DailyLog, MockExam, ErrorEntry, AreaPerformance, StudyConfig, AIInsight, MotivoErro } from '../types'
 
 const groq = new Groq({
   apiKey: import.meta.env.VITE_GROQ_API_KEY || '',
   dangerouslyAllowBrowser: true,
 })
 
-const ERROR_EXTRACTION_SYSTEM_PROMPT = `Você é um assistente que extrai erros de estudo de observações de estudantes de medicina.
+/**
+ * Sanitiza a resposta bruta do LLM removendo blocos markdown (```json ... ```)
+ * e extraindo apenas o JSON válido entre o primeiro { ou [ e o último } ou ].
+ */
+export function parseJsonSafe<T>(raw: string): T | null {
+  if (!raw) return null
+  let cleaned = raw.trim()
+  cleaned = cleaned.replace(/```(?:json|JSON)\s*/g, '').replace(/```\s*/g, '').trim()
+  const firstBrace = cleaned.indexOf('{')
+  const firstBracket = cleaned.indexOf('[')
+  const start =
+    firstBrace === -1 && firstBracket === -1
+      ? 0
+      : firstBrace === -1
+        ? firstBracket
+        : firstBracket === -1
+          ? firstBrace
+          : Math.min(firstBrace, firstBracket)
+  if (start > 0) cleaned = cleaned.slice(start)
+  const lastBrace = cleaned.lastIndexOf('}')
+  const lastBracket = cleaned.lastIndexOf(']')
+  const end = Math.max(lastBrace, lastBracket)
+  if (end > 0) cleaned = cleaned.slice(0, end + 1)
+  try {
+    return JSON.parse(cleaned) as T
+  } catch {
+    return null
+  }
+}
 
-Analise o texto fornecido e extraia APENAS erros EXPLÍCITOS — situações onde o aluno claramente mencionou ter errado, não sabido, esquecido, confundido ou tido dificuldade com um assunto específico.
+const ERROR_EXTRACTION_SYSTEM_PROMPT = `Você é um assistente especializado em extração de erros de estudo para estudantes de medicina.
 
-IGNORE menções genéricas de estudo, como "estudei sobre X", "fiz questões de Y", "revisei Z", "li sobre W", "completei tópico". Estas não são erros.
+Analise o relato do estudante e extraia APENAS erros EXPLÍCITOS — situações onde ele claramente mencionou ter errado, não sabido, esquecido, confundido ou tido dificuldade.
 
-Responda APENAS com um array JSON. Se nada for encontrado, retorne array vazio [].
-Formato esperado:
+IGNORE menções genéricas como "estudei", "fiz questões", "revisei", "li", "completei tópico". Estas NÃO são erros.
+
+REGRAS ESTRITAS:
+
+1. TEMA (campo "topic"):
+   - É ESTRITAMENTE PROIBIDO copiar a descrição do erro do usuário.
+   - O tema DEVE ser curto, padronizado e iniciar OBRIGATORIAMENTE com uma das 5 grandes áreas da residência médica:
+     "Clínica Médica", "Cirurgia", "Ginecologia e Obstetrícia", "Pediatria" ou "Preventiva".
+   - Formato: "Grande Área - Subárea/Doença"
+   - Exemplo válido: "Clínica Médica - Insuficiência Cardíaca"
+   - Exemplo válido: "Cirurgia - Abdome Agudo Obstrutivo"
+   - Exemplo INVÁLIDO: "insuficiência cardíaca" (falta a grande área)
+
+2. MOTIVO (campo "error_reason"):
+   - Escolha EXATAMENTE UMA das opções abaixo LENDO as palavras do estudante:
+     "Não sabia" — quando ele disse que não sabia o conteúdo
+     "Esqueci" — quando disse "deu branco", "sabia mas esqueci"
+     "Falta de atenção" — quando disse "não vi a palavra exceto", "li rápido demais", "pulei informação"
+     "Pegadinha" — quando disse que a questão tinha uma pegadinha
+     "Dificuldade de interpretação" — quando confundiu conceitos ou interpretou errado
+   - RESOLUÇÃO DE CONFLITOS: Se o relato contiver múltiplos motivos (ex: "era pegadinha e eu esqueci"), priorize a CAUSA RAIZ ESTRUTURAL da questão sobre a falha cognitiva secundária. Neste exemplo, "Pegadinha" é a causa raiz.
+
+3. NÍVEL DE CONFIANÇA (campo "nivel_confianca"):
+   "baixo" — se o aluno pareceu muito inseguro
+   "medio" — normalmente
+   "alto" — se pareceu confiante
+
+4. SUGESTÃO DE REVISÃO (campo "sugestao_revisao"):
+   Gere uma dica prática e curta de revisão, ou null se não aplicável.
+
+SAÍDA:
+Responda EXCLUSIVAMENTE com um JSON válido — SEM formatação markdown (\`\`\`json), SEM texto antes ou depois.
+Se nada for encontrado, retorne array vazio [].
+
+Formato:
 [
   {
-    "topic": "nome do tema extraído",
-    "error_reason": "nao_sabia" | "esqueci" | "interpretacao" | "pegadinha" | "pressa",
+    "topic": "Grande Área - Subárea/Doença",
+    "error_reason": "Não sabia" | "Esqueci" | "Falta de atenção" | "Pegadinha" | "Dificuldade de interpretação",
     "nivel_confianca": "baixo" | "medio" | "alto",
-    "sugestao_revisao": "sugestão curta de revisão ou null"
+    "sugestao_revisao": "dica curta de revisão ou null"
   }
-]
-
-Regras:
-- topic: extraia apenas o assunto específico do erro (ex: "insuficiência cardíaca", "farmacologia", "cirurgia geral")
-- error_reason: classifique o motivo
-  - "nao_sabia": quando o aluno disse explicitamente que não sabia o conteúdo
-  - "esqueci": quando disse que sabia mas esqueceu
-  - "interpretacao": quando disse que errou por interpretação ou confusão
-  - "pegadinha": quando disse que caiu em pegadinha
-  - "pressa": quando disse que errou por pressa
-- nivel_confianca: "baixo" se parecer muito inseguro, "medio" normalmente, "alto" se parecer confiante
-- sugestao_revisao: gere uma sugestão prática de revisão ou null se não aplicável
-- IMPORTANTE: Só extraia se houver palavra explícita de erro (errei, não sei, esqueci, confundi, dificuldade, etc). Nunca extraia de frases genéricas como "estudei", "fiz", "revisei", "completei", "li".`
+]`
 
 const INLINE_ERROR_ANALYSIS_PROMPT = `Você é um assistente que analisa erros de estudantes de medicina.
 
 Com base no enunciado da questão, na alternativa que o aluno selecionou (errada) e na alternativa correta, gere uma sugestão de revisão curta e prática.
 
-Responda APENAS com um JSON:
+Responda APENAS com um JSON — SEM markdown, SEM texto extra:
 {
   "sugestao_revisao": "sugestão curta de revisão ou null",
-  "error_reason_sugerido": "nao_sabia" | "esqueci" | "interpretacao" | "pegadinha" | "pressa"
+  "error_reason_sugerido": "Não sabia" | "Esqueci" | "Falta de atenção" | "Pegadinha" | "Dificuldade de interpretação"
 }
 
 Regras:
 - sugestao_revisao: dica prática do que revisar com base no erro
 - error_reason_sugerido: classifique o motivo mais provável do erro
-  - "interpretacao": se o aluno confundiu conceitos ou interpretou errado
-  - "nao_sabia": se parece que o aluno não sabia o conteúdo
-  - "esqueci": se parece que sabia mas esqueceu
-  - "pegadinha": se a questão tem uma pegadinha clássica
-  - "pressa": se parece erro por pressa/desatenção
-- Se não houver dados suficientes, retorne null para sugestao_revisao e "nao_sabia" para error_reason_sugerido`
+  - "Dificuldade de interpretação": se o aluno confundiu conceitos ou interpretou errado
+  - "Não sabia": se parece que o aluno não sabia o conteúdo
+  - "Esqueci": se parece que sabia mas esqueceu
+  - "Pegadinha": se a questão tem uma pegadinha clássica
+  - "Falta de atenção": se parece erro por pressa/desatenção
+- Se não houver dados suficientes, retorne null para sugestao_revisao e "Não sabia" para error_reason_sugerido`
 
 export async function analyzeInlineError(data: {
   topic: string
   enunciado: string
   alternativa_selecionada: string
   alternativa_certa: string
-  error_reason: string
+  error_reason: MotivoErro | string
 }): Promise<{
   sugestao_revisao: string | null
-  error_reason_sugerido: string
+  error_reason_sugerido: MotivoErro | string
 }> {
   if (!data.enunciado || data.enunciado.trim().length < 10) {
     return { sugestao_revisao: null, error_reason_sugerido: data.error_reason }
@@ -95,11 +144,12 @@ Motivo informado: ${data.error_reason}`,
     const text = completion.choices[0]?.message?.content
     if (!text) return { sugestao_revisao: null, error_reason_sugerido: data.error_reason }
 
-    const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
-    const parsed = JSON.parse(cleaned) as {
+    const parsed = parseJsonSafe<{
       sugestao_revisao: string | null
       error_reason_sugerido: string
-    }
+    }>(text)
+    if (!parsed) return { sugestao_revisao: null, error_reason_sugerido: data.error_reason }
+
     return {
       sugestao_revisao: parsed.sugestao_revisao || null,
       error_reason_sugerido: parsed.error_reason_sugerido || data.error_reason,
@@ -111,7 +161,7 @@ Motivo informado: ${data.error_reason}`,
 
 export async function extractErrorsFromNotesAI(notes: string): Promise<{
   topic: string
-  error_reason: ErrorReason
+  error_reason: MotivoErro
   nivel_confianca: 'baixo' | 'medio' | 'alto'
   sugestao_revisao: string | null
 }[]> {
@@ -132,13 +182,12 @@ export async function extractErrorsFromNotesAI(notes: string): Promise<{
     const text = completion.choices[0]?.message?.content
     if (!text) return []
 
-    const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
-    const parsed = JSON.parse(cleaned) as {
+    const parsed = parseJsonSafe<{
       topic: string
-      error_reason: ErrorReason
+      error_reason: MotivoErro
       nivel_confianca: 'baixo' | 'medio' | 'alto'
       sugestao_revisao: string | null
-    }[]
+    }[]>(text)
     return Array.isArray(parsed) ? parsed.slice(0, 10) : []
   } catch {
     return []
@@ -372,9 +421,8 @@ Gere de 3 a 5 insights com análise realista e recomendações práticas.`
       return fallback
     }
 
-    const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
-    const parsed = JSON.parse(cleaned) as AIInsight[]
-    const result = parsed.slice(0, 5)
+    const parsed = parseJsonSafe<AIInsight[]>(text)
+    const result = (parsed ?? []).slice(0, 5)
     await saveInsights(result)
     return result
   } catch {
@@ -467,7 +515,7 @@ Responda APENAS com um JSON no formato:
 export async function generateErrorFlashcard(error: {
   topic: string
   question: string
-  error_reason: string
+  error_reason: MotivoErro | string
   sugestao_revisao: string | null
 }): Promise<GeneratedFlashcard> {
   const apiKey = import.meta.env.VITE_GROQ_API_KEY
@@ -499,8 +547,8 @@ Gere o flashcard seguindo estritamente as regras do system prompt.`,
     const text = completion.choices[0]?.message?.content
     if (!text) return { front: error.topic, back: error.question }
 
-    const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
-    const parsed = JSON.parse(cleaned) as GeneratedFlashcard
+    const parsed = parseJsonSafe<GeneratedFlashcard>(text)
+    if (!parsed) return { front: error.topic, back: error.question }
     return {
       front: parsed.front || error.topic,
       back: parsed.back || error.question,
@@ -559,7 +607,8 @@ Responda ESTRITAMENTE com um objeto JSON no formato:
       return { isDuplicate: false, existingErrorId: null, suggestedCleanTitle: newErrorText }
     }
 
-    const parsed = JSON.parse(text) as ClusteringResult
+    const parsed = parseJsonSafe<ClusteringResult>(text)
+    if (!parsed) return { isDuplicate: false, existingErrorId: null, suggestedCleanTitle: newErrorText }
     return {
       isDuplicate: parsed.isDuplicate ?? false,
       existingErrorId: parsed.existingErrorId ?? null,

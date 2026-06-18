@@ -470,7 +470,7 @@ export function useData() {
         topic: analysis.suggestedCleanTitle,
         subtopic: null,
         area,
-        error_reason: 'nao_sabia',
+        error_reason: 'Não sabia',
         needs_review: false,
         reviewed: false,
         origem_atividade: null,

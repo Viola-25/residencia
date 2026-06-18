@@ -7,7 +7,19 @@ export type MedicalArea =
 
 export type Mood = 'excelente' | 'bom' | 'medio' | 'ruim'
 
-export type ErrorReason = 'nao_sabia' | 'esqueci' | 'interpretacao' | 'pegadinha' | 'pressa'
+export type MotivoErro =
+  | 'Não sabia'
+  | 'Esqueci'
+  | 'Falta de atenção'
+  | 'Pegadinha'
+  | 'Dificuldade de interpretação'
+
+export type GrandeArea =
+  | 'Clínica Médica'
+  | 'Cirurgia'
+  | 'Ginecologia e Obstetrícia'
+  | 'Pediatria'
+  | 'Preventiva'
 
 export type RegistrationType = 'questoes' | 'simulado' | 'revisao'
 
@@ -38,7 +50,7 @@ export interface InlineError {
   enunciado: string
   alternativa_selecionada: string
   alternativa_certa: string
-  error_reason: ErrorReason
+  error_reason: MotivoErro
 }
 
 export interface DailyLogFormData {
@@ -81,7 +93,7 @@ export interface ErrorEntry {
   topic: string
   subtopic: string | null
   area: MedicalArea | null
-  error_reason: ErrorReason
+  error_reason: MotivoErro
   needs_review: boolean
   reviewed: boolean
   origem_atividade: string | null
@@ -102,7 +114,7 @@ export interface ErrorEntryFormData {
   question: string
   topic: string
   subtopic: string
-  error_reason: ErrorReason
+  error_reason: MotivoErro
   needs_review: boolean
 }
 
@@ -218,10 +230,10 @@ export const REGISTRATION_TYPES: { value: RegistrationType; label: string }[] = 
   { value: 'revisao', label: 'Revisão Núcleo' },
 ]
 
-export const ERROR_REASONS: { value: ErrorReason; label: string }[] = [
-  { value: 'nao_sabia', label: 'Não sabia' },
-  { value: 'esqueci', label: 'Esqueci' },
-  { value: 'interpretacao', label: 'Interpretação' },
-  { value: 'pegadinha', label: 'Pegadinha' },
-  { value: 'pressa', label: 'Pressa' },
+export const ERROR_REASONS: { value: MotivoErro; label: string }[] = [
+  { value: 'Não sabia', label: 'Não sabia' },
+  { value: 'Esqueci', label: 'Esqueci' },
+  { value: 'Falta de atenção', label: 'Falta de atenção' },
+  { value: 'Pegadinha', label: 'Pegadinha' },
+  { value: 'Dificuldade de interpretação', label: 'Dificuldade de interpretação' },
 ]
