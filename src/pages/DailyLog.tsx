@@ -1,29 +1,16 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { CalendarCheck, Plus, Moon, Zap, Trash2, Edit, Eye, Brain } from 'lucide-react'
 import { PageHeader } from '../components/PageHeader'
 import { StatCard } from '../components/StatCard'
 import { Badge } from '../components/Badge'
+import { DailyLogForm } from '../components/forms/DailyLogForm'
+import { QuickErrorModal } from '../components/modals/QuickErrorModal'
+import { EditLogModal } from '../components/modals/EditLogModal'
+import { ViewLogModal } from '../components/modals/ViewLogModal'
 import { useData } from '../hooks/useData'
-import { formatDateShort, getTodayDateString } from '../lib/dates'
-import type { DailyLog, DailyLogFormData, Mood, MedicalArea } from '../types'
-import { MOOD_OPTIONS, MEDICAL_AREAS, REGISTRATION_TYPES } from '../types'
-
-const emptyAreas = () =>
-  Object.fromEntries(
-    MEDICAL_AREAS.map((a) => [a.value, { questions_done: 0, correct: 0 }])
-  ) as DailyLogFormData['areas']
-
-const initialForm: DailyLogFormData = {
-  date: getTodayDateString(),
-  registration_type: 'questoes',
-  hours_studied: 0,
-  areas: emptyAreas(),
-  core_review_done: false,
-  flashcards_done: false,
-  notes: '',
-  mood: 'bom',
-  energy_level: 7,
-}
+import { formatDateShort } from '../lib/dates'
+import type { DailyLog, Mood, MedicalArea } from '../types'
+import { MOOD_OPTIONS, REGISTRATION_TYPES } from '../types'
 
 const moodColors: Record<Mood, string> = {
   excelente: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
@@ -32,299 +19,25 @@ const moodColors: Record<Mood, string> = {
   ruim: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
 }
 
-const registrationTypeColors: Record<string, string> = {
-  questoes: 'border-violet-500/20 bg-violet-500/5',
-  simulado: 'border-emerald-500/20 bg-emerald-500/5',
-  revisao: 'border-amber-500/20 bg-amber-500/5',
-}
-
-function LogFormBody({
-  form,
-  onFieldChange,
-  onAreaChange,
-}: {
-  form: DailyLogFormData
-  onFieldChange: <K extends keyof DailyLogFormData>(key: K, value: DailyLogFormData[K]) => void
-  onAreaChange: (area: MedicalArea, field: 'questions_done' | 'correct', value: number) => void
-}) {
-  const totalQuestions = Object.values(form.areas).reduce((s, a) => s + a.questions_done, 0)
-  const totalCorrect = Object.values(form.areas).reduce((s, a) => s + a.correct, 0)
-  const hitRate = totalQuestions > 0
-    ? Math.round((totalCorrect / totalQuestions) * 100 * 100) / 100
-    : 0
-
-  return (
-    <>
-      <div className="mb-6">
-        <label className="mb-2 block text-xs font-medium text-zinc-400">Tipo de Registro</label>
-        <div className="flex flex-wrap gap-2">
-          {REGISTRATION_TYPES.map((t) => (
-            <button
-              type="button"
-              key={t.value}
-              onClick={() => onFieldChange('registration_type', t.value)}
-              className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
-                form.registration_type === t.value
-                  ? registrationTypeColors[t.value] + ' text-zinc-100'
-                  : 'border-zinc-700 bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="sm:col-span-2 lg:col-span-1">
-          <label className="mb-1 block text-xs font-medium text-zinc-400">Data</label>
-          <input
-            type="date"
-            value={form.date}
-            onChange={(e) => onFieldChange('date', e.target.value)}
-            className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-xs font-medium text-zinc-400">Horas Estudadas</label>
-          <input
-            type="number"
-            step="0.5"
-            min="0"
-            max="24"
-            value={form.hours_studied}
-            onChange={(e) => onFieldChange('hours_studied', Number(e.target.value))}
-            className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
-          />
-        </div>
-        <div className="flex items-center gap-4 rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-2">
-          <div>
-            <p className="text-xs text-zinc-500">Total</p>
-            <p className="text-lg font-bold text-zinc-100">{totalQuestions}</p>
-          </div>
-          <div className="h-8 w-px bg-zinc-700" />
-          <div>
-            <p className="text-xs text-zinc-500">Acertos</p>
-            <p className="text-lg font-bold text-emerald-400">{totalCorrect}</p>
-          </div>
-          <div className="h-8 w-px bg-zinc-700" />
-          <div>
-            <p className="text-xs text-zinc-500">%</p>
-            <p className={`text-lg font-bold ${
-              hitRate >= 80 ? 'text-emerald-400' : hitRate >= 70 ? 'text-amber-400' : 'text-rose-400'
-            }`}>
-              {hitRate}%
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="mb-4">
-        <label className="mb-2 block text-xs font-medium text-zinc-400">
-          Questões por Grande Área
-        </label>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {MEDICAL_AREAS.map((area) => (
-            <div
-              key={area.value}
-              className="rounded-lg border border-zinc-700 bg-zinc-800/30 p-3"
-            >
-              <p className="mb-2 text-xs font-medium text-zinc-400">{area.label}</p>
-              <div className="flex items-center gap-2">
-                <div className="flex-1">
-                  <label className="text-[10px] text-zinc-500">Questões</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={form.areas[area.value].questions_done}
-                    onChange={(e) =>
-                      onAreaChange(area.value, 'questions_done', Number(e.target.value))
-                    }
-                    className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
-                  />
-                </div>
-                <div className="flex-1">
-                  <label className="text-[10px] text-zinc-500">Acertos</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={form.areas[area.value].correct}
-                    onChange={(e) =>
-                      onAreaChange(area.value, 'correct', Number(e.target.value))
-                    }
-                    className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="mb-4">
-        <label className="mb-1 block text-xs font-medium text-zinc-400">Humor</label>
-        <div className="flex flex-wrap gap-2">
-          {MOOD_OPTIONS.map((m) => (
-            <button
-              type="button"
-              key={m.value}
-              onClick={() => onFieldChange('mood', m.value)}
-              className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
-                form.mood === m.value
-                  ? moodColors[m.value]
-                  : 'border-zinc-700 bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
-              }`}
-            >
-              {m.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="mb-4">
-        <label className="mb-1 block text-xs font-medium text-zinc-400">
-          Nível de Energia: {form.energy_level}/10
-        </label>
-        <input
-          type="range"
-          min="0"
-          max="10"
-          value={form.energy_level}
-          onChange={(e) => onFieldChange('energy_level', Number(e.target.value))}
-          className="w-full accent-violet-500"
-        />
-      </div>
-
-      <div className="mb-4">
-        <label className="mb-1 block text-xs font-medium text-zinc-400">Observações</label>
-        <textarea
-          value={form.notes}
-          onChange={(e) => onFieldChange('notes', e.target.value)}
-          rows={2}
-          placeholder="Descreva a atividade: banco de questões, temas estudados..."
-          className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
-        />
-      </div>
-
-    </>
-  )
-}
-
 export function DailyLog() {
   const { logs, dashboardMetrics, addDailyLog, updateDailyLog, deleteDailyLog, addSmartError } = useData()
-  const [quickError, setQuickError] = useState<{ open: boolean; notes: string; area: MedicalArea }>({
-    open: false,
-    notes: '',
-    area: 'clinica_medica',
-  })
-  const [form, setForm] = useState<DailyLogFormData>(initialForm)
   const [showForm, setShowForm] = useState(false)
-
   const [editLog, setEditLog] = useState<DailyLog | null>(null)
-  const [editForm, setEditForm] = useState<DailyLogFormData>(initialForm)
   const [viewLog, setViewLog] = useState<DailyLog | null>(null)
+  const [quickErrorOpen, setQuickErrorOpen] = useState(false)
 
-  const totalFormQuestions = useMemo(
-    () => Object.values(form.areas).reduce((s, a) => s + a.questions_done, 0),
-    [form.areas]
-  )
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (totalFormQuestions === 0) return
-    const enriched = {
-      ...form,
-      core_review_done: form.registration_type === 'revisao',
-      flashcards_done: false,
-    }
-    addDailyLog(enriched)
-    setForm(initialForm)
-    setShowForm(false)
+  const handleQuickError = async (notes: string, area: MedicalArea) => {
+    await addSmartError(notes, area)
   }
 
-  const updateField = <K extends keyof DailyLogFormData>(
-    key: K,
-    value: DailyLogFormData[K]
-  ) => {
-    setForm((prev) => ({ ...prev, [key]: value }))
-  }
-
-  const updateArea = (area: MedicalArea, field: 'questions_done' | 'correct', value: number) => {
-    setForm((prev) => ({
-      ...prev,
-      areas: {
-        ...prev.areas,
-        [area]: { ...prev.areas[area], [field]: value },
-      },
-    }))
-  }
-
-  const logToFormData = (log: DailyLog): DailyLogFormData => {
-    const areas = emptyAreas()
-    for (const ad of log.areas_data) {
-      areas[ad.area] = {
-        questions_done: ad.questions_done,
-        correct: ad.correct,
-      }
-    }
-    return {
-      date: log.date,
-      registration_type: log.registration_type,
-      hours_studied: log.hours_studied,
-      areas,
-      core_review_done: log.core_review_done,
-      flashcards_done: log.flashcards_done,
-      notes: log.notes || '',
-      mood: log.mood,
-      energy_level: log.energy_level,
-    }
-  }
-
-  const openEditModal = (log: DailyLog) => {
-    setEditForm(logToFormData(log))
+  const handleEdit = (log: DailyLog) => {
     setEditLog(log)
   }
 
-  const closeEditModal = () => {
+  const handleEditSave = (id: string, data: Parameters<typeof updateDailyLog>[1]) => {
+    updateDailyLog(id, data)
     setEditLog(null)
-    setEditForm(initialForm)
   }
-
-  const handleEditSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!editLog) return
-    const totalQuestions = Object.values(editForm.areas).reduce((s, a) => s + a.questions_done, 0)
-    if (totalQuestions === 0) return
-    updateDailyLog(editLog.id, editForm)
-    closeEditModal()
-  }
-
-  const updateEditField = <K extends keyof DailyLogFormData>(
-    key: K,
-    value: DailyLogFormData[K]
-  ) => {
-    setEditForm((prev) => ({ ...prev, [key]: value }))
-  }
-
-  const updateEditArea = (area: MedicalArea, field: 'questions_done' | 'correct', value: number) => {
-    setEditForm((prev) => ({
-      ...prev,
-      areas: {
-        ...prev.areas,
-        [area]: { ...prev.areas[area], [field]: value },
-      },
-    }))
-  }
-
-  const openViewModal = (log: DailyLog) => {
-    setViewLog(log)
-  }
-
-  const closeViewModal = () => {
-    setViewLog(null)
-  }
-
-  const editTotalQuestions = Object.values(editForm.areas).reduce((s, a) => s + a.questions_done, 0)
 
   return (
     <div>
@@ -335,7 +48,7 @@ export function DailyLog() {
         action={
           <div className="flex gap-2">
             <button
-              onClick={() => setQuickError((p) => ({ ...p, open: true }))}
+              onClick={() => setQuickErrorOpen(true)}
               className="flex items-center gap-2 rounded-lg border border-violet-500/30 bg-violet-500/10 px-4 py-2 text-sm font-medium text-violet-300 transition-colors hover:bg-violet-500/20"
             >
               <Brain size={16} />
@@ -379,73 +92,17 @@ export function DailyLog() {
         />
       </div>
 
-      {quickError.open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-lg rounded-xl border border-zinc-700 bg-zinc-900 p-6 shadow-2xl">
-            <h3 className="mb-4 text-sm font-semibold text-zinc-200">Erro Rápido</h3>
-            <p className="mb-4 text-xs text-zinc-500">
-              Descreva o erro que você cometeu. A IA identifica o tema e agenda a revisão automaticamente.
-            </p>
-            <textarea
-              value={quickError.notes}
-              onChange={(e) => setQuickError((p) => ({ ...p, notes: e.target.value }))}
-              placeholder='Ex: esqueci que no choque obstrutivo por tamponamento a conduta inicial é pericardiocentese, fui direto pra volume'
-              rows={4}
-              className="mb-3 w-full rounded-lg border border-zinc-700 bg-zinc-800 p-3 text-sm text-zinc-200 placeholder-zinc-600 focus:border-violet-500 focus:outline-none"
-            />
-            <select
-              value={quickError.area}
-              onChange={(e) => setQuickError((p) => ({ ...p, area: e.target.value as MedicalArea }))}
-              className="mb-4 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
-            >
-              {MEDICAL_AREAS.map((a) => (
-                <option key={a.value} value={a.value}>{a.label}</option>
-              ))}
-            </select>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setQuickError({ open: false, notes: '', area: 'clinica_medica' })}
-                className="flex-1 rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-400 transition-colors hover:bg-zinc-800"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={async () => {
-                  if (!quickError.notes.trim()) return
-                  await addSmartError(quickError.notes, quickError.area)
-                  setQuickError({ open: false, notes: '', area: 'clinica_medica' })
-                }}
-                disabled={!quickError.notes.trim()}
-                className="flex-1 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Salvar Erro
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {showForm && (
-        <form
-          onSubmit={handleSubmit}
-          className="mb-8 rounded-xl border border-zinc-800 bg-zinc-900/50 p-6"
-        >
+        <div className="mb-8 rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
           <h3 className="mb-4 text-sm font-semibold text-zinc-200">Novo Registro</h3>
-
-          <LogFormBody
-            form={form}
-            onFieldChange={updateField}
-            onAreaChange={updateArea}
+          <DailyLogForm
+            onSubmit={(data) => {
+              addDailyLog(data)
+              setShowForm(false)
+            }}
+            onCancel={() => setShowForm(false)}
           />
-
-          <button
-            type="submit"
-            disabled={totalFormQuestions === 0}
-            className="rounded-lg bg-violet-600 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Salvar Registro
-          </button>
-        </form>
+        </div>
       )}
 
       <div className="rounded-xl border border-zinc-800 bg-zinc-900/50">
@@ -519,14 +176,14 @@ export function DailyLog() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
                       <button
-                        onClick={() => openViewModal(log)}
+                        onClick={() => setViewLog(log)}
                         className="rounded p-1 text-zinc-600 transition-colors hover:bg-zinc-800 hover:text-blue-400"
                         title="Visualizar"
                       >
                         <Eye size={14} />
                       </button>
                       <button
-                        onClick={() => openEditModal(log)}
+                        onClick={() => handleEdit(log)}
                         className="rounded p-1 text-zinc-600 transition-colors hover:bg-zinc-800 hover:text-violet-400"
                         title="Editar"
                       >
@@ -557,128 +214,22 @@ export function DailyLog() {
         </div>
       </div>
 
-      {editLog && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 pt-10">
-          <div className="relative mb-10 w-full max-w-3xl rounded-xl border border-zinc-700 bg-zinc-900 p-6 shadow-2xl mx-4">
-            <form onSubmit={handleEditSubmit}>
-              <h3 className="mb-4 text-sm font-semibold text-zinc-200">Editar Registro</h3>
+      <QuickErrorModal
+        open={quickErrorOpen}
+        onClose={() => setQuickErrorOpen(false)}
+        onSave={handleQuickError}
+      />
 
-                <LogFormBody
-                  form={editForm}
-                  onFieldChange={updateEditField}
-                  onAreaChange={updateEditArea}
-                />
+      <EditLogModal
+        log={editLog}
+        onClose={() => setEditLog(null)}
+        onSave={handleEditSave}
+      />
 
-              <div className="flex items-center gap-3">
-                <button
-                  type="submit"
-                  disabled={editTotalQuestions === 0}
-                  className="rounded-lg bg-violet-600 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Salvar Alterações
-                </button>
-                <button
-                  type="button"
-                  onClick={closeEditModal}
-                  className="rounded-lg border border-zinc-700 px-6 py-2 text-sm font-medium text-zinc-400 transition-colors hover:bg-zinc-800"
-                >
-                  Cancelar
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {viewLog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="w-full max-w-lg rounded-xl border border-zinc-700 bg-zinc-900 p-6 shadow-2xl mx-4">
-            <h3 className="mb-4 text-sm font-semibold text-zinc-200">Detalhes do Registro</h3>
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between border-b border-zinc-800 pb-2">
-                <span className="text-zinc-400">Data</span>
-                <span className="text-zinc-200">{formatDateShort(viewLog.date)}</span>
-              </div>
-              <div className="flex justify-between border-b border-zinc-800 pb-2">
-                <span className="text-zinc-400">Tipo</span>
-                <Badge
-                  variant={
-                    viewLog.registration_type === 'questoes'
-                      ? 'blue'
-                      : viewLog.registration_type === 'simulado'
-                        ? 'green'
-                        : 'yellow'
-                  }
-                >
-                  {REGISTRATION_TYPES.find((t) => t.value === viewLog.registration_type)?.label}
-                </Badge>
-              </div>
-              <div className="flex justify-between border-b border-zinc-800 pb-2">
-                <span className="text-zinc-400">Horas Estudadas</span>
-                <span className="text-zinc-200">{viewLog.hours_studied}h</span>
-              </div>
-              <div className="flex justify-between border-b border-zinc-800 pb-2">
-                <span className="text-zinc-400">Total de Questões</span>
-                <span className="text-zinc-200">{viewLog.questions_done}</span>
-              </div>
-              <div className="flex justify-between border-b border-zinc-800 pb-2">
-                <span className="text-zinc-400">Acertos</span>
-                <span className="text-emerald-400">
-                  {viewLog.areas_data.reduce((s, a) => s + a.correct, 0)}
-                </span>
-              </div>
-              <div className="flex justify-between border-b border-zinc-800 pb-2">
-                <span className="text-zinc-400">Aproveitamento</span>
-                <Badge
-                  variant={
-                    viewLog.hit_rate >= 80 ? 'green' : viewLog.hit_rate >= 70 ? 'yellow' : 'red'
-                  }
-                >
-                  {viewLog.hit_rate}%
-                </Badge>
-              </div>
-              <div className="flex justify-between border-b border-zinc-800 pb-2">
-                <span className="text-zinc-400">Revisão Núcleo</span>
-                <span className={viewLog.core_review_done ? 'text-emerald-400' : 'text-zinc-600'}>
-                  {viewLog.core_review_done ? 'Sim' : 'Não'}
-                </span>
-              </div>
-              <div className="flex justify-between border-b border-zinc-800 pb-2">
-                <span className="text-zinc-400">Humor</span>
-                <span
-                  className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${moodColors[viewLog.mood]}`}
-                >
-                  {MOOD_OPTIONS.find((m) => m.value === viewLog.mood)?.label}
-                </span>
-              </div>
-              <div className="flex justify-between border-b border-zinc-800 pb-2">
-                <span className="text-zinc-400">Energia</span>
-                <span className="text-zinc-200">{viewLog.energy_level}/10</span>
-              </div>
-              {viewLog.notes && (
-                <div className="border-b border-zinc-800 pb-2">
-                  <div className="text-zinc-400 mb-1">Observações</div>
-                  <div className="text-zinc-200 whitespace-pre-wrap">{viewLog.notes}</div>
-                </div>
-              )}
-              <div className="flex justify-between border-b border-zinc-800 pb-2">
-                <span className="text-zinc-400">Áreas</span>
-                <span className="text-zinc-200">
-                  {viewLog.areas_data
-                    .map((ad) => `${ad.area}: ${ad.questions_done} (${ad.correct} acertos)`)
-                    .join(', ')}
-                </span>
-              </div>
-            </div>
-            <button
-              onClick={closeViewModal}
-              className="mt-6 rounded-lg border border-zinc-700 px-6 py-2 text-sm font-medium text-zinc-400 transition-colors hover:bg-zinc-800"
-            >
-              Fechar
-            </button>
-          </div>
-        </div>
-      )}
+      <ViewLogModal
+        log={viewLog}
+        onClose={() => setViewLog(null)}
+      />
     </div>
   )
 }

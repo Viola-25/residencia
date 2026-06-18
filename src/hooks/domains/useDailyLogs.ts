@@ -1,0 +1,128 @@
+import { useState, useEffect } from 'react'
+import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../contexts/AuthContext'
+import type { DailyLog, DailyLogFormData, MedicalArea } from '../../types'
+
+function buildAreasData(formData: DailyLogFormData): {
+  areas_data: { area: MedicalArea; questions_done: number; correct: number }[]
+  totalQuestions: number
+  totalCorrect: number
+} {
+  const areas_data: { area: MedicalArea; questions_done: number; correct: number }[] = []
+  let totalQuestions = 0
+  let totalCorrect = 0
+  for (const [area, data] of Object.entries(formData.areas)) {
+    if (data.questions_done > 0) {
+      areas_data.push({
+        area: area as MedicalArea,
+        questions_done: data.questions_done,
+        correct: data.correct,
+      })
+      totalQuestions += data.questions_done
+      totalCorrect += data.correct
+    }
+  }
+  return { areas_data, totalQuestions, totalCorrect }
+}
+
+export type LogMutationResult = {
+  newLog: DailyLog
+  formData: DailyLogFormData
+}
+
+export function useDailyLogs() {
+  const { user } = useAuth()
+  const [logs, setLogs] = useState<DailyLog[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!user) return
+    supabase
+      .from('daily_logs')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('date', { ascending: false })
+      .then((res) => {
+        if (res.data) setLogs(res.data as DailyLog[])
+      })
+      .catch((err) => {
+        console.error('Error fetching daily logs:', err)
+      })
+      .finally(() => setLoading(false))
+  }, [user])
+
+  const addDailyLog = async (formData: DailyLogFormData) => {
+    const { areas_data, totalQuestions, totalCorrect } = buildAreasData(formData)
+
+    const hit_rate = totalQuestions > 0
+      ? Math.round((totalCorrect / totalQuestions) * 100 * 100) / 100
+      : 0
+
+    const newLog: DailyLog = {
+      id: crypto.randomUUID(),
+      date: formData.date,
+      registration_type: formData.registration_type,
+      hours_studied: formData.hours_studied,
+      questions_done: totalQuestions,
+      hit_rate,
+      areas_data,
+      core_review_done: formData.core_review_done,
+      flashcards_done: formData.flashcards_done,
+      notes: formData.notes || null,
+      mood: formData.mood,
+      energy_level: formData.energy_level,
+      created_at: new Date().toISOString(),
+    }
+
+    setLogs((prev) => [newLog, ...prev])
+
+    try {
+      await supabase.from('daily_logs').insert({ ...newLog, user_id: user!.id })
+    } catch (err) {
+      console.error('Error inserting daily log:', err)
+    }
+
+    return { newLog, formData }
+  }
+
+  const updateDailyLog = async (id: string, formData: DailyLogFormData) => {
+    const { areas_data, totalQuestions, totalCorrect } = buildAreasData(formData)
+
+    const hit_rate = totalQuestions > 0
+      ? Math.round((totalCorrect / totalQuestions) * 100 * 100) / 100
+      : 0
+
+    const updated: Partial<DailyLog> = {
+      date: formData.date,
+      registration_type: formData.registration_type,
+      hours_studied: formData.hours_studied,
+      questions_done: totalQuestions,
+      hit_rate,
+      areas_data,
+      core_review_done: formData.core_review_done,
+      flashcards_done: formData.flashcards_done,
+      notes: formData.notes || null,
+      mood: formData.mood,
+      energy_level: formData.energy_level,
+    }
+
+    setLogs((prev) => prev.map((l) => (l.id === id ? { ...l, ...updated } : l)))
+
+    try {
+      await supabase.from('daily_logs').update(updated).eq('id', id)
+    } catch (err) {
+      console.error('Error updating daily log:', err)
+    }
+  }
+
+  const deleteDailyLog = async (id: string) => {
+    setLogs((prev) => prev.filter((l) => l.id !== id))
+    try {
+      await supabase.from('daily_logs').delete().eq('id', id)
+    } catch (err) {
+      console.error('Error deleting daily log:', err)
+    }
+  }
+
+  return { logs, loading, addDailyLog, updateDailyLog, deleteDailyLog }
+}

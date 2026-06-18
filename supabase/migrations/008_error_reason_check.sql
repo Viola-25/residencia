@@ -2,10 +2,13 @@
 -- Restricts the error_reason column to exactly 5 standardized values
 -- and migrates legacy values to the new format.
 
--- First, migrate existing legacy values to the new standardized format
+-- Drop constraint first to allow safe migration of existing data
+ALTER TABLE error_bank DROP CONSTRAINT IF EXISTS error_bank_error_reason_check;
+
+-- Migrate existing legacy values to the new standardized format
 UPDATE error_bank
 SET error_reason = 'Não sabia'
-WHERE error_reason = 'nao_sabia';
+WHERE error_reason IN ('nao_sabia', 'nao sabia');
 
 UPDATE error_bank
 SET error_reason = 'Esqueci'

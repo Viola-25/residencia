@@ -1,18 +1,11 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
-import type {
-  DailyLog,
-  DailyLogFormData,
-  MockExam,
-  MockExamFormData,
-  ErrorEntry,
-  WeeklySummary,
-  StudyConfig,
-  MedicalArea,
-  DashboardMetrics,
-  StrategicData,
-} from '../types'
+import { useDailyLogs } from './domains/useDailyLogs'
+import { useMockExams } from './domains/useMockExams'
+import { useErrorBank } from './domains/useErrorBank'
+import { useStudyConfig } from './domains/useStudyConfig'
+import type { MedicalArea, DashboardMetrics, StrategicData, MockExamFormData, DailyLogFormData, ErrorEntry } from '../types'
 import {
   calculateTotalQuestions,
   calculateTotalCorrect,
@@ -27,239 +20,43 @@ import {
   extractErrorsFromNotes,
 } from '../lib/calculations'
 import { getDaysUntil, getCurrentWeekStart, getTodayDateString } from '../lib/dates'
-import { extractErrorsFromNotesAI, analyzeAndClusterError } from '../lib/groq'
-import { calculateNextSRSState } from '../lib/calculations'
-
-const DEFAULT_CONFIG: StudyConfig = {
-  id: 'default',
-  enamed_date: '2026-10-18',
-  first_exam_date: '2026-10-25',
-  yearly_goal: 10000,
-  weekly_goal: 200,
-  monthly_goal: 800,
-  mock_goal_per_week: 1,
-  daily_hours_goal: 4,
-  daily_questions_goal: 40,
-}
+import { extractErrorsFromNotesAI } from '../lib/groq'
 
 export function useData() {
   const { user } = useAuth()
-  const [logs, setLogs] = useState<DailyLog[]>([])
-  const [mocks, setMocks] = useState<MockExam[]>([])
-  const [errors, setErrors] = useState<ErrorEntry[]>([])
-  const [config, setConfig] = useState<StudyConfig>(DEFAULT_CONFIG)
-  const [weeklySummaries] = useState<WeeklySummary[]>([])
-  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (!user) return
-    ;(async () => {
-      try {
-        const [logsRes, mocksRes, errorsRes] = await Promise.all([
-          supabase.from('daily_logs').select('*').eq('user_id', user.id).order('date', { ascending: false }),
-          supabase.from('mock_exams').select('*').eq('user_id', user.id).order('date', { ascending: false }),
-          supabase.from('error_bank').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
-        ])
-        if (logsRes.data) setLogs(logsRes.data as DailyLog[])
-        if (mocksRes.data) setMocks(mocksRes.data as MockExam[])
-        if (errorsRes.data) setErrors(errorsRes.data as ErrorEntry[])
-      } catch {
-        // Using local state when Supabase is not configured
-      }
+  const {
+    logs,
+    loading: logsLoading,
+    addDailyLog: addDailyLogRaw,
+    updateDailyLog,
+    deleteDailyLog,
+  } = useDailyLogs()
 
-      try {
-        const configRes = await supabase
-          .from('study_config')
-          .select('*')
-          .eq('user_id', user.id)
-          .maybeSingle()
-        if (configRes.data) setConfig(configRes.data as StudyConfig)
-      } catch {
-        // Using default config
-      }
+  const {
+    mocks,
+    loading: mocksLoading,
+    addMockExam: addMockExamRaw,
+    deleteMockExam,
+  } = useMockExams()
 
-      setLoading(false)
-    })()
-  }, [user])
+  const {
+    errors,
+    loading: errorsLoading,
+    toggleErrorReview,
+    reviewErrorWithSRS,
+    deleteError,
+    addSmartError,
+    addExtractedErrors,
+  } = useErrorBank()
 
-  const areaPerformance = useMemo(
-    () => calculateAreaPerformanceFromLogs(logs),
-    [logs]
-  )
+  const {
+    config,
+    loading: configLoading,
+    updateConfig,
+  } = useStudyConfig()
 
-  const addDailyLog = async (formData: DailyLogFormData) => {
-    const areas_data: { area: MedicalArea; questions_done: number; correct: number }[] = []
-    let totalQuestions = 0
-    let totalCorrect = 0
-    for (const [area, data] of Object.entries(formData.areas)) {
-      if (data.questions_done > 0) {
-        areas_data.push({
-          area: area as MedicalArea,
-          questions_done: data.questions_done,
-          correct: data.correct,
-        })
-        totalQuestions += data.questions_done
-        totalCorrect += data.correct
-      }
-    }
-
-    const hit_rate = totalQuestions > 0
-      ? Math.round((totalCorrect / totalQuestions) * 100 * 100) / 100
-      : 0
-
-    const newLog: DailyLog = {
-      id: crypto.randomUUID(),
-      date: formData.date,
-      registration_type: formData.registration_type,
-      hours_studied: formData.hours_studied,
-      questions_done: totalQuestions,
-      hit_rate,
-      areas_data,
-      core_review_done: formData.core_review_done,
-      flashcards_done: formData.flashcards_done,
-      notes: formData.notes || null,
-      mood: formData.mood,
-      energy_level: formData.energy_level,
-      created_at: new Date().toISOString(),
-    }
-    setLogs((prev) => [newLog, ...prev])
-    try {
-      await supabase.from('daily_logs').insert({ ...newLog, user_id: user!.id })
-    } catch { /* local fallback */ }
-
-    // Auto-extract errors from notes (AI first, regex fallback)
-    if (formData.notes && formData.notes.trim().length > 0) {
-      const aiErrors = await extractErrorsFromNotesAI(formData.notes)
-      const extractedErrors = aiErrors.length > 0
-        ? aiErrors
-        : extractErrorsFromNotes(formData.notes).map((e) => ({ ...e, sugestao_revisao: null as string | null }))
-
-      for (const ext of extractedErrors) {
-        const newError: ErrorEntry = {
-          id: crypto.randomUUID(),
-          question: `[Auto: ${formData.date}] ${ext.topic}`,
-          topic: ext.topic,
-          subtopic: null,
-          area: null,
-          error_reason: ext.error_reason,
-          needs_review: ext.nivel_confianca === 'baixo',
-          reviewed: false,
-          origem_atividade: newLog.id,
-          nivel_confianca: ext.nivel_confianca,
-          recorrencia: 1,
-          ultima_ocorrencia: formData.date,
-          sugestao_revisao: ext.sugestao_revisao,
-          next_review_date: null,
-          interval_days: 0,
-          ease_factor: 2.5,
-          repetitions: 0,
-          occurrence_count: 1,
-          history_notes: null,
-          created_at: new Date().toISOString(),
-        }
-        setErrors((prev) => [newError, ...prev])
-        try {
-          await supabase.from('error_bank').insert({ ...newError, user_id: user!.id })
-        } catch { /* local fallback */ }
-      }
-    }
-  }
-
-  const addMockExam = async (formData: MockExamFormData) => {
-    const areas_data: { area: MedicalArea; questions_done: number; correct: number }[] = []
-    let totalQuestions = 0
-    let totalCorrect = 0
-    for (const [area, data] of Object.entries(formData.areas)) {
-      if (data.questions_done > 0) {
-        areas_data.push({
-          area: area as MedicalArea,
-          questions_done: data.questions_done,
-          correct: data.correct,
-        })
-        totalQuestions += data.questions_done
-        totalCorrect += data.correct
-        saveAreaPerformance(area as MedicalArea, data.questions_done, data.correct)
-      }
-    }
-
-    const percentage = totalQuestions > 0
-      ? Math.round((totalCorrect / totalQuestions) * 100 * 100) / 100
-      : 0
-
-    const newMock: MockExam = {
-      id: crypto.randomUUID(),
-      date: formData.date,
-      name: formData.name,
-      total_score: totalCorrect,
-      percentage,
-      areas_data,
-      ranking: formData.ranking ? Number(formData.ranking) : null,
-      participants: formData.participants ? Number(formData.participants) : null,
-      time_spent_minutes: formData.time_spent_minutes ? Number(formData.time_spent_minutes) : null,
-      created_at: new Date().toISOString(),
-    }
-    setMocks((prev) => [newMock, ...prev])
-    try {
-      await supabase.from('mock_exams').insert({ ...newMock, user_id: user!.id })
-    } catch { /* local fallback */ }
-  }
-
-  const toggleErrorReview = async (id: string) => {
-    setErrors((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, reviewed: !e.reviewed } : e))
-    )
-    const error = errors.find((e) => e.id === id)
-    if (error) {
-      try {
-        await supabase
-          .from('error_bank')
-          .update({ reviewed: !error.reviewed })
-          .eq('id', id)
-      } catch { /* local fallback */ }
-    }
-  }
-
-  const reviewErrorWithSRS = async (id: string, quality: 'easy' | 'good' | 'hard' | 'forgot') => {
-    const error = errors.find((e) => e.id === id)
-    if (!error) return
-
-    const srsState = calculateNextSRSState(
-      {
-        interval_days: error.interval_days,
-        ease_factor: error.ease_factor,
-        repetitions: error.repetitions,
-      },
-      quality
-    )
-
-    setErrors((prev) =>
-      prev.map((e) =>
-        e.id === id
-          ? {
-              ...e,
-              reviewed: true,
-              next_review_date: srsState.next_review_date,
-              interval_days: srsState.interval_days,
-              ease_factor: srsState.ease_factor,
-              repetitions: srsState.repetitions,
-            }
-          : e
-      )
-    )
-
-    try {
-      await supabase
-        .from('error_bank')
-        .update({
-          reviewed: true,
-          next_review_date: srsState.next_review_date,
-          interval_days: srsState.interval_days,
-          ease_factor: srsState.ease_factor,
-          repetitions: srsState.repetitions,
-        })
-        .eq('id', id)
-    } catch { /* local fallback */ }
-  }
+  const loading = logsLoading || mocksLoading || errorsLoading || configLoading
 
   const saveAreaPerformance = async (area: MedicalArea, questions_done: number, correct: number) => {
     const hit_rate = questions_done > 0 ? Math.round((correct / questions_done) * 100 * 100) / 100 : 0
@@ -273,89 +70,60 @@ export function useData() {
         date: getTodayDateString(),
         user_id: user!.id,
       }, { onConflict: 'user_id,area' })
-    } catch { /* local fallback */ }
+    } catch (err) {
+      console.error('Error saving area performance:', err)
+    }
   }
 
-  const deleteDailyLog = async (id: string) => {
-    setLogs((prev) => prev.filter((l) => l.id !== id))
-    setErrors((prev) => prev.filter((e) => e.origem_atividade !== id))
-    try {
-      await supabase.from('daily_logs').delete().eq('id', id)
-    } catch { /* local fallback */ }
+  const addDailyLog = async (formData: DailyLogFormData) => {
+    const result = await addDailyLogRaw(formData)
+
+    if (formData.notes && formData.notes.trim().length > 0) {
+      const aiErrors = await extractErrorsFromNotesAI(formData.notes)
+      const extractedErrorsRaw = aiErrors.length > 0
+        ? aiErrors
+        : extractErrorsFromNotes(formData.notes).map((e) => ({ ...e, sugestao_revisao: null as string | null }))
+
+      const errorEntries: ErrorEntry[] = extractedErrorsRaw.map((ext) => ({
+        id: crypto.randomUUID(),
+        question: `[Auto: ${formData.date}] ${ext.topic}`,
+        topic: ext.topic,
+        subtopic: null,
+        area: null,
+        error_reason: ext.error_reason,
+        needs_review: ext.nivel_confianca === 'baixo',
+        reviewed: false,
+        origem_atividade: result.newLog.id,
+        nivel_confianca: ext.nivel_confianca,
+        recorrencia: 1,
+        ultima_ocorrencia: formData.date,
+        sugestao_revisao: ext.sugestao_revisao,
+        next_review_date: null,
+        interval_days: 0,
+        ease_factor: 2.5,
+        repetitions: 0,
+        occurrence_count: 1,
+        history_notes: null,
+        created_at: new Date().toISOString(),
+      }))
+
+      await addExtractedErrors(errorEntries)
+    }
   }
 
-  const deleteMockExam = async (id: string) => {
-    setMocks((prev) => prev.filter((m) => m.id !== id))
-    try {
-      await supabase.from('mock_exams').delete().eq('id', id)
-    } catch { /* local fallback */ }
-  }
-
-  const deleteError = async (id: string) => {
-    setErrors((prev) => prev.filter((e) => e.id !== id))
-    try {
-      await supabase.from('error_bank').delete().eq('id', id)
-    } catch { /* local fallback */ }
-  }
-
-  const updateDailyLog = async (id: string, formData: DailyLogFormData) => {
-    const areas_data: { area: MedicalArea; questions_done: number; correct: number }[] = []
-    let totalQuestions = 0
-    let totalCorrect = 0
+  const addMockExam = async (formData: MockExamFormData) => {
     for (const [area, data] of Object.entries(formData.areas)) {
       if (data.questions_done > 0) {
-        areas_data.push({
-          area: area as MedicalArea,
-          questions_done: data.questions_done,
-          correct: data.correct,
-        })
-        totalQuestions += data.questions_done
-        totalCorrect += data.correct
+        saveAreaPerformance(area as MedicalArea, data.questions_done, data.correct)
       }
     }
-
-    const hit_rate = totalQuestions > 0
-      ? Math.round((totalCorrect / totalQuestions) * 100 * 100) / 100
-      : 0
-
-    const updated: Partial<DailyLog> = {
-      date: formData.date,
-      registration_type: formData.registration_type,
-      hours_studied: formData.hours_studied,
-      questions_done: totalQuestions,
-      hit_rate,
-      areas_data,
-      core_review_done: formData.core_review_done,
-      flashcards_done: formData.flashcards_done,
-      notes: formData.notes || null,
-      mood: formData.mood,
-      energy_level: formData.energy_level,
-    }
-
-    setLogs((prev) => prev.map((l) => (l.id === id ? { ...l, ...updated } : l)))
-    try {
-      await supabase.from('daily_logs').update(updated).eq('id', id)
-    } catch { /* local fallback */ }
+    await addMockExamRaw(formData)
   }
 
-  const updateConfig = async (newConfig: Partial<StudyConfig>) => {
-    const updated = { ...config, ...newConfig }
-    setConfig(updated)
-    try {
-      await supabase.from('study_config').upsert({
-        enamed_date: updated.enamed_date,
-        first_exam_date: updated.first_exam_date,
-        yearly_goal: updated.yearly_goal,
-        weekly_goal: updated.weekly_goal,
-        monthly_goal: updated.monthly_goal,
-        mock_goal_per_week: updated.mock_goal_per_week,
-        daily_hours_goal: updated.daily_hours_goal,
-        daily_questions_goal: updated.daily_questions_goal,
-        user_id: user!.id,
-        id: config.id === 'default' ? undefined : config.id,
-      }, { onConflict: 'user_id' })
-    } catch { /* local fallback */ }
-  }
+  const areaPerformance = useMemo(
+    () => calculateAreaPerformanceFromLogs(logs),
+    [logs]
+  )
 
   const dashboardMetrics = useMemo((): DashboardMetrics => {
     const sortedLogs = [...logs].sort((a, b) => a.date.localeCompare(b.date))
@@ -374,8 +142,8 @@ export function useData() {
   }, [logs, config])
 
   const approvalScore = useMemo(
-    () => calculateApprovalScore(logs, mocks, weeklySummaries, areaPerformance, errors),
-    [logs, mocks, weeklySummaries, areaPerformance]
+    () => calculateApprovalScore(logs, mocks, [], areaPerformance, errors),
+    [logs, mocks, areaPerformance, errors]
   )
 
   const strategicData = useMemo((): StrategicData => {
@@ -403,97 +171,9 @@ export function useData() {
       most_decline: mostDecline,
       days_without_study: dashboardMetrics.days_without_study,
       current_streak: dashboardMetrics.current_streak,
-      best_week: weeklySummaries.length > 0
-        ? weeklySummaries.reduce((best, w) => (w.questions_done > best.questions_done ? w : best))
-        : null,
+      best_week: null,
     }
-  }, [areaPerformance, dashboardMetrics, weeklySummaries])
-
-  const addSmartError = async (notes: string, area: MedicalArea) => {
-    const { data: existing } = await supabase
-      .from('error_bank')
-      .select('id, topic')
-      .eq('area', area)
-
-    const analysis = await analyzeAndClusterError(notes, existing || [])
-
-    if (analysis.isDuplicate && analysis.existingErrorId) {
-      const { data: currentError } = await supabase
-        .from('error_bank')
-        .select('occurrence_count, history_notes, interval_days, ease_factor, repetitions')
-        .eq('id', analysis.existingErrorId)
-        .single()
-
-      const newCount = (currentError?.occurrence_count || 1) + 1
-      const newHistory = [...(currentError?.history_notes || []), notes]
-
-      const srsState = calculateNextSRSState(
-        {
-          interval_days: currentError?.interval_days ?? 0,
-          ease_factor: currentError?.ease_factor ?? 2.5,
-          repetitions: currentError?.repetitions ?? 0,
-        },
-        'forgot'
-      )
-
-      await supabase
-        .from('error_bank')
-        .update({
-          occurrence_count: newCount,
-          history_notes: newHistory,
-          next_review_date: srsState.next_review_date,
-          interval_days: srsState.interval_days,
-          ease_factor: srsState.ease_factor,
-          repetitions: srsState.repetitions,
-        })
-        .eq('id', analysis.existingErrorId)
-
-      setErrors((prev) =>
-        prev.map((e) =>
-          e.id === analysis.existingErrorId
-            ? {
-                ...e,
-                occurrence_count: newCount,
-                history_notes: newHistory,
-                next_review_date: srsState.next_review_date,
-                interval_days: srsState.interval_days,
-                ease_factor: srsState.ease_factor,
-                repetitions: srsState.repetitions,
-              }
-            : e
-        )
-      )
-    } else {
-      const newError: ErrorEntry = {
-        id: crypto.randomUUID(),
-        question: notes,
-        topic: analysis.suggestedCleanTitle,
-        subtopic: null,
-        area,
-        error_reason: 'Não sabia',
-        needs_review: false,
-        reviewed: false,
-        origem_atividade: null,
-        nivel_confianca: 'medio',
-        recorrencia: 1,
-        ultima_ocorrencia: new Date().toISOString().split('T')[0],
-        sugestao_revisao: null,
-        next_review_date: new Date().toISOString(),
-        interval_days: 1,
-        ease_factor: 2.5,
-        repetitions: 0,
-        occurrence_count: 1,
-        history_notes: [notes],
-        created_at: new Date().toISOString(),
-      }
-
-      setErrors((prev) => [newError, ...prev])
-
-      await supabase
-        .from('error_bank')
-        .insert({ ...newError, user_id: user!.id })
-    }
-  }
+  }, [areaPerformance, dashboardMetrics])
 
   return {
     loading,
@@ -515,5 +195,6 @@ export function useData() {
     deleteError,
     updateConfig,
     addSmartError,
+    saveAreaPerformance,
   }
 }
