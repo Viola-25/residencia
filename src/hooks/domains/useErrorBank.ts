@@ -27,10 +27,11 @@ export function useErrorBank() {
   }, [user])
 
   const toggleErrorReview = async (id: string) => {
+    const previousErrors = errors
     setErrors((prev) =>
       prev.map((e) => (e.id === id ? { ...e, reviewed: !e.reviewed } : e))
     )
-    const error = errors.find((e) => e.id === id)
+    const error = previousErrors.find((e) => e.id === id)
     if (error) {
       try {
         await supabase
@@ -38,13 +39,15 @@ export function useErrorBank() {
           .update({ reviewed: !error.reviewed })
           .eq('id', id)
       } catch (err) {
+        setErrors(previousErrors)
         console.error('Error toggling review:', err)
       }
     }
   }
 
   const reviewErrorWithSRS = async (id: string, quality: 'easy' | 'good' | 'hard' | 'forgot') => {
-    const error = errors.find((e) => e.id === id)
+    const previousErrors = errors
+    const error = previousErrors.find((e) => e.id === id)
     if (!error) return
 
     const srsState = calculateNextSRSState(
@@ -83,15 +86,18 @@ export function useErrorBank() {
         })
         .eq('id', id)
     } catch (err) {
+      setErrors(previousErrors)
       console.error('Error updating SRS state:', err)
     }
   }
 
   const deleteError = async (id: string) => {
+    const previousErrors = errors
     setErrors((prev) => prev.filter((e) => e.id !== id))
     try {
       await supabase.from('error_bank').delete().eq('id', id)
     } catch (err) {
+      setErrors(previousErrors)
       console.error('Error deleting error:', err)
     }
   }
@@ -184,12 +190,14 @@ export function useErrorBank() {
 
   const addExtractedErrors = async (errorsToInsert: ErrorEntry[]) => {
     if (errorsToInsert.length === 0) return
+    const previousErrors = errors
     setErrors((prev) => [...errorsToInsert, ...prev])
     try {
       await supabase.from('error_bank').insert(
         errorsToInsert.map((e) => ({ ...e, user_id: user!.id }))
       )
     } catch (err) {
+      setErrors(previousErrors)
       console.error('Error inserting extracted errors:', err)
     }
   }

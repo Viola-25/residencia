@@ -1,6 +1,10 @@
 import type { DailyLog, MockExam, WeeklySummary, AreaPerformance, ApprovalScore, MedicalArea, MotivoErro, ErrorEntry } from '../types'
 import { MEDICAL_AREAS } from '../types'
 
+export function roundTo2(value: number): number {
+  return Math.round(value * 100) / 100
+}
+
 export function calculateRecentHitRate(logs: DailyLog[], days: number): number {
   const cutoffDate = new Date()
   cutoffDate.setHours(0, 0, 0, 0)
@@ -52,7 +56,7 @@ export function calculateTotalCorrect(logs: DailyLog[]): number {
 export function calculateGlobalHitRate(logs: DailyLog[]): number {
   const total = calculateTotalQuestions(logs)
   if (total === 0) return 0
-  return Math.round((calculateTotalCorrect(logs) / total) * 100 * 100) / 100
+  return roundTo2((calculateTotalCorrect(logs) / total) * 100)
 }
 
 export function calculateWeeklyProgress(
@@ -62,12 +66,12 @@ export function calculateWeeklyProgress(
 ): number {
   const weekLogs = logs.filter((log) => log.date >= weekStart)
   const total = weekLogs.reduce((sum, log) => sum + log.questions_done, 0)
-  return weeklyGoal > 0 ? Math.round((total / weeklyGoal) * 100 * 100) / 100 : 0
+  return weeklyGoal > 0 ? roundTo2((total / weeklyGoal) * 100) : 0
 }
 
 export function calculateYearlyProgress(logs: DailyLog[], yearlyGoal: number): number {
   const total = calculateTotalQuestions(logs)
-  return yearlyGoal > 0 ? Math.round((total / yearlyGoal) * 100 * 100) / 100 : 0
+  return yearlyGoal > 0 ? roundTo2((total / yearlyGoal) * 100) : 0
 }
 
 export function calculateEvolution(logs: DailyLog[]): number {
@@ -85,7 +89,7 @@ export function calculateEvolution(logs: DailyLog[]): number {
       ? secondHalf.reduce((s, l) => s + l.hit_rate, 0) / secondHalf.length
       : 0
   if (firstAvg === 0) return 0
-  return Math.round(((secondAvg - firstAvg) / firstAvg) * 100 * 100) / 100
+  return roundTo2(((secondAvg - firstAvg) / firstAvg) * 100)
 }
 
 export function getMockAverage(mocks: MockExam[]): number {
@@ -230,7 +234,7 @@ export function generateWeeklySummary(logs: DailyLog[], weekStart: string): Week
     (s, l) => s + Math.round(l.questions_done * (l.hit_rate / 100)),
     0
   )
-  const hit_rate = questions_done > 0 ? Math.round((correct / questions_done) * 100 * 100) / 100 : 0
+  const hit_rate = questions_done > 0 ? roundTo2((correct / questions_done) * 100) : 0
   const hours_studied =
     Math.round(weekLogsFiltered.reduce((s, l) => s + l.hours_studied, 0) * 100) / 100
   const days_studied = new Set(weekLogsFiltered.map((l) => l.date)).size
@@ -285,7 +289,7 @@ export function calculateAreaPerformanceFromLogs(logs: DailyLog[]): AreaPerforma
 
   const areas = Array.from(areaMap.entries()).map(([area, data]) => {
     const hit_rate = data.questions_done > 0
-      ? Math.round((data.correct / data.questions_done) * 100 * 100) / 100
+      ? roundTo2((data.correct / data.questions_done) * 100)
       : 0
     return {
       id: area,

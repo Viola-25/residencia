@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import type { DailyLog, DailyLogFormData, MedicalArea } from '../../types'
+import { roundTo2 } from '../../lib/calculations'
 
 function buildAreasData(formData: DailyLogFormData): {
   areas_data: { area: MedicalArea; questions_done: number; correct: number }[]
@@ -55,7 +56,7 @@ export function useDailyLogs() {
     const { areas_data, totalQuestions, totalCorrect } = buildAreasData(formData)
 
     const hit_rate = totalQuestions > 0
-      ? Math.round((totalCorrect / totalQuestions) * 100 * 100) / 100
+      ? roundTo2((totalCorrect / totalQuestions) * 100)
       : 0
 
     const newLog: DailyLog = {
@@ -74,11 +75,13 @@ export function useDailyLogs() {
       created_at: new Date().toISOString(),
     }
 
+    const previousLogs = logs
     setLogs((prev) => [newLog, ...prev])
 
     try {
       await supabase.from('daily_logs').insert({ ...newLog, user_id: user!.id })
     } catch (err) {
+      setLogs(previousLogs)
       console.error('Error inserting daily log:', err)
     }
 
@@ -89,7 +92,7 @@ export function useDailyLogs() {
     const { areas_data, totalQuestions, totalCorrect } = buildAreasData(formData)
 
     const hit_rate = totalQuestions > 0
-      ? Math.round((totalCorrect / totalQuestions) * 100 * 100) / 100
+      ? roundTo2((totalCorrect / totalQuestions) * 100)
       : 0
 
     const updated: Partial<DailyLog> = {
@@ -106,20 +109,24 @@ export function useDailyLogs() {
       energy_level: formData.energy_level,
     }
 
+    const previousLogs = logs
     setLogs((prev) => prev.map((l) => (l.id === id ? { ...l, ...updated } : l)))
 
     try {
       await supabase.from('daily_logs').update(updated).eq('id', id)
     } catch (err) {
+      setLogs(previousLogs)
       console.error('Error updating daily log:', err)
     }
   }
 
   const deleteDailyLog = async (id: string) => {
+    const previousLogs = logs
     setLogs((prev) => prev.filter((l) => l.id !== id))
     try {
       await supabase.from('daily_logs').delete().eq('id', id)
     } catch (err) {
+      setLogs(previousLogs)
       console.error('Error deleting daily log:', err)
     }
   }

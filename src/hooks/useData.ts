@@ -7,6 +7,7 @@ import { useErrorBank } from './domains/useErrorBank'
 import { useStudyConfig } from './domains/useStudyConfig'
 import type { MedicalArea, DashboardMetrics, StrategicData, MockExamFormData, DailyLogFormData, ErrorEntry } from '../types'
 import {
+  roundTo2,
   calculateTotalQuestions,
   calculateTotalCorrect,
   calculateGlobalHitRate,
@@ -59,7 +60,7 @@ export function useData() {
   const loading = logsLoading || mocksLoading || errorsLoading || configLoading
 
   const saveAreaPerformance = async (area: MedicalArea, questions_done: number, correct: number) => {
-    const hit_rate = questions_done > 0 ? Math.round((correct / questions_done) * 100 * 100) / 100 : 0
+    const hit_rate = questions_done > 0 ? roundTo2((correct / questions_done) * 100) : 0
     try {
       await supabase.from('area_performance').upsert({
         area,
@@ -158,10 +159,10 @@ export function useData() {
       ? areaPerformance.reduce((s, a) => s + a.hit_rate, 0) / areaPerformance.length
       : 0
     const mostGrowth = growthAreas.length > 0
-      ? { area: growthAreas[0].area, growth: Math.round(Math.abs(growthAreas[0].hit_rate - globalAvg) * 100) / 100 }
+      ? { area: growthAreas[0].area, growth: roundTo2(Math.abs(growthAreas[0].hit_rate - globalAvg)) }
       : null
     const mostDecline = declineAreas.length > 0
-      ? { area: declineAreas[0].area, decline: Math.round(Math.abs(declineAreas[0].hit_rate - globalAvg) * 100) / 100 }
+      ? { area: declineAreas[0].area, decline: roundTo2(Math.abs(declineAreas[0].hit_rate - globalAvg)) }
       : null
 
     return {

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import type { MockExam, MockExamFormData, MedicalArea } from '../../types'
+import { roundTo2 } from '../../lib/calculations'
 
 function buildAreasData(formData: MockExamFormData): {
   areas_data: { area: MedicalArea; questions_done: number; correct: number }[]
@@ -50,7 +51,7 @@ export function useMockExams() {
     const { areas_data, totalQuestions, totalCorrect } = buildAreasData(formData)
 
     const percentage = totalQuestions > 0
-      ? Math.round((totalCorrect / totalQuestions) * 100 * 100) / 100
+      ? roundTo2((totalCorrect / totalQuestions) * 100)
       : 0
 
     const newMock: MockExam = {
@@ -66,20 +67,24 @@ export function useMockExams() {
       created_at: new Date().toISOString(),
     }
 
+    const previousMocks = mocks
     setMocks((prev) => [newMock, ...prev])
 
     try {
       await supabase.from('mock_exams').insert({ ...newMock, user_id: user!.id })
     } catch (err) {
+      setMocks(previousMocks)
       console.error('Error inserting mock exam:', err)
     }
   }
 
   const deleteMockExam = async (id: string) => {
+    const previousMocks = mocks
     setMocks((prev) => prev.filter((m) => m.id !== id))
     try {
       await supabase.from('mock_exams').delete().eq('id', id)
     } catch (err) {
+      setMocks(previousMocks)
       console.error('Error deleting mock exam:', err)
     }
   }

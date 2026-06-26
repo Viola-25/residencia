@@ -38,6 +38,7 @@ export function useStudyConfig() {
 
   const updateConfig = async (newConfig: Partial<StudyConfig>) => {
     const updated = { ...config, ...newConfig }
+    const previousConfig = config
     setConfig(updated)
 
     try {
@@ -54,6 +55,7 @@ export function useStudyConfig() {
         id: config.id === 'default' ? undefined : config.id,
       }, { onConflict: 'user_id' })
     } catch (err) {
+      setConfig(previousConfig)
       console.error('Error updating config:', err)
     }
   }
