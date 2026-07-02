@@ -43,7 +43,7 @@ export function ViewLogModal({ log, onClose }: ViewLogModalProps) {
           </div>
           <div className="flex justify-between border-b border-zinc-800 pb-2">
             <span className="text-zinc-400">Horas Estudadas</span>
-            <span className="text-zinc-200">{log.hours_studied}h</span>
+            <span className="text-zinc-200">{Math.round(log.hours_studied * 60)}min</span>
           </div>
           <div className="flex justify-between border-b border-zinc-800 pb-2">
             <span className="text-zinc-400">Total de Questões</span>

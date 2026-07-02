@@ -26,7 +26,7 @@ const areaSchema = z.object({
 const dailyLogSchema = z.object({
   date: z.string().min(1, 'Data é obrigatória'),
   registration_type: z.enum(['questoes', 'simulado', 'revisao'] as const),
-  hours_studied: z.coerce.number().min(0).max(24),
+  hours_studied: z.coerce.number().min(0).max(600),
   areas: z.record(z.string(), areaSchema),
   core_review_done: z.boolean().default(false),
   flashcards_done: z.boolean().default(false),
@@ -67,7 +67,7 @@ function logToFormValues(log: DailyLogFormData): DailyLogFormValues {
   return {
     date: log.date,
     registration_type: log.registration_type,
-    hours_studied: log.hours_studied,
+      hours_studied: Math.round(log.hours_studied * 60),
     areas,
     core_review_done: log.core_review_done,
     flashcards_done: log.flashcards_done,
@@ -114,7 +114,7 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
     onSubmit({
       date: values.date,
       registration_type: values.registration_type,
-      hours_studied: Number(values.hours_studied),
+      hours_studied: Number(values.hours_studied) / 60,
       areas,
       core_review_done: values.registration_type === 'revisao',
       flashcards_done: false,
@@ -157,12 +157,12 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
           {errors.date && <p className="mt-1 text-xs text-rose-400">{errors.date.message}</p>}
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-zinc-400">Horas Estudadas</label>
+          <label className="mb-1 block text-xs font-medium text-zinc-400">Minutos</label>
           <input
             type="number"
-            step="0.5"
+            step="1"
             min="0"
-            max="24"
+            max="600"
             {...register('hours_studied')}
             className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
           />

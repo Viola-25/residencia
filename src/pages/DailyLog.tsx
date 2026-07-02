@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CalendarCheck, Plus, Moon, Zap, Trash2, Edit, Eye, Brain } from 'lucide-react'
+import { CalendarCheck, Plus, Moon, Zap, Trash2, Edit, Eye, Brain, Clock } from 'lucide-react'
 import { PageHeader } from '../components/PageHeader'
 import { StatCard } from '../components/StatCard'
 import { Badge } from '../components/Badge'
@@ -79,20 +79,39 @@ export function DailyLog() {
           color="amber"
         />
         <StatCard
-          title="Horas Totais"
-          value={logs.reduce((s, l) => s + l.hours_studied, 0).toFixed(1)}
+          title="Minutos Totais"
+          value={(() => {
+            const totalMinutes = logs.reduce((s, l) => s + l.hours_studied * 60, 0)
+            const hours = Math.floor(totalMinutes / 60)
+            const mins = Math.round(totalMinutes % 60)
+            return hours > 0 ? `${hours}h${mins}min` : `${mins}min`
+          })()}
           icon={Moon}
           color="violet"
         />
         <StatCard
-          title="Média Horas/Dia"
+          title="Média Min/Dia"
           value={(() => {
             const uniqueDays = new Set(logs.map(l => l.date.split('T')[0])).size
-            const totalHours = logs.reduce((s, l) => s + l.hours_studied, 0)
-            return uniqueDays > 0 ? (totalHours / uniqueDays).toFixed(1) : '0'
+            const totalMinutes = logs.reduce((s, l) => s + l.hours_studied * 60, 0)
+            return uniqueDays > 0 ? `${(totalMinutes / uniqueDays).toFixed(0)}min` : '0'
           })()}
           icon={Moon}
           color="emerald"
+        />
+        <StatCard
+          title="Segundos/Questão"
+          value={(() => {
+            const totalMinutes = logs.reduce((s, l) => s + l.hours_studied * 60, 0)
+            const totalQuestions = logs.reduce((s, l) => s + l.questions_done, 0)
+            if (totalQuestions === 0) return '-'
+            const secs = Math.round(totalMinutes * 60 / totalQuestions)
+            const m = Math.floor(secs / 60)
+            const s = secs % 60
+            return m > 0 ? `${m}min${s}s` : `${s}s`
+          })()}
+          icon={Clock}
+          color="cyan"
         />
       </div>
 
@@ -116,7 +135,7 @@ export function DailyLog() {
               <tr className="border-b border-zinc-800 text-left text-xs font-medium text-zinc-500">
                 <th className="px-4 py-3">Data</th>
                 <th className="px-4 py-3">Tipo</th>
-                <th className="px-4 py-3">Horas</th>
+                <th className="px-4 py-3">Min</th>
                 <th className="px-4 py-3">Questões</th>
                 <th className="px-4 py-3">Acertos</th>
                 <th className="px-4 py-3">%</th>
@@ -146,7 +165,7 @@ export function DailyLog() {
                       {REGISTRATION_TYPES.find((t) => t.value === log.registration_type)?.label}
                     </Badge>
                   </td>
-                  <td className="px-4 py-3">{log.hours_studied}h</td>
+                  <td className="px-4 py-3">{Math.round(log.hours_studied * 60)}min</td>
                   <td className="px-4 py-3">{log.questions_done}</td>
                   <td className="px-4 py-3">{log.areas_data.reduce((s, a) => s + a.correct, 0)}</td>
                   <td className="px-4 py-3">
