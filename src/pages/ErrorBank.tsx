@@ -5,7 +5,7 @@ import { StatCard } from '../components/StatCard'
 import { Badge } from '../components/Badge'
 import { useData } from '../hooks/useData'
 import { formatDateShort } from '../lib/dates'
-import type { MotivoErro } from '../types'
+import type { MotivoErro, ErrorEntry } from '../types'
 import { generateErrorFlashcard } from '../lib/groq'
 import type { GeneratedFlashcard } from '../lib/groq'
 import { ERROR_REASONS } from '../types'
@@ -40,14 +40,24 @@ function formatNextReview(dateStr: string | null): string {
 }
 
 export function ErrorBank() {
-  const { errors, reviewErrorWithSRS, deleteError } = useData()
+  const { errors: rawErrors, loading, reviewErrorWithSRS, deleteError } = useData()
   const [search, setSearch] = useState('')
   const [filterReason, setFilterReason] = useState<MotivoErro | 'all'>('all')
   const [filterReview, setFilterReview] = useState<'all' | 'pending' | 'reviewed'>('all')
   const [reviewingId, setReviewingId] = useState<string | null>(null)
-  const [flashcardReview, setFlashcardReview] = useState<{ error: typeof errors[0]; revealed: boolean } | null>(null)
+  const [flashcardReview, setFlashcardReview] = useState<{ error: ErrorEntry; revealed: boolean } | null>(null)
   const [flashcardData, setFlashcardData] = useState<GeneratedFlashcard | null>(null)
   const [flashcardLoading, setFlashcardLoading] = useState(false)
+
+  const errors = rawErrors || []
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-neutral-950 text-white">
+        <p className="animate-pulse text-lg">Carregando banco de erros...</p>
+      </div>
+    )
+  }
 
   const topicStats = useMemo(() => {
     const topicMap = new Map<string, { count: number; lastDate: string; reasons: Set<string> }>()
@@ -440,8 +450,8 @@ export function ErrorBank() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <Badge variant={reasonColors[err.error_reason]}>
-                      {ERROR_REASONS.find((r) => r.value === err.error_reason)?.label}
+                    <Badge variant={reasonColors[err.error_reason] || 'zinc'}>
+                      {ERROR_REASONS.find((r) => r.value === err.error_reason)?.label || err.error_reason}
                     </Badge>
                   </td>
                   <td className="px-4 py-3">

@@ -261,7 +261,7 @@ const AREA_ALIAS: Record<string, MedicalArea> = {
   obstetricia: 'ginecologia_obstetricia',
 }
 
-function normalizeArea(area: string): MedicalArea {
+export function normalizeArea(area: string): MedicalArea {
   return AREA_ALIAS[area] || (area as MedicalArea)
 }
 
@@ -356,36 +356,37 @@ export interface SRSRating {
   quality: 'easy' | 'good' | 'hard' | 'forgot'
 }
 
+const SRS_QUALITY_MAP: Record<'easy' | 'good' | 'hard' | 'forgot', number> = {
+  forgot: 1,
+  hard: 2,
+  good: 4,
+  easy: 5,
+}
+
 export function calculateNextSRSState(currentState: {
   interval_days: number
   ease_factor: number
   repetitions: number
 }, quality: 'easy' | 'good' | 'hard' | 'forgot') {
   let { interval_days, ease_factor, repetitions } = currentState
+  const q = SRS_QUALITY_MAP[quality]
 
-  if (quality === 'forgot') {
+  if (q < 3) {
     repetitions = 0
     interval_days = 1
-    ease_factor = Math.max(1.3, ease_factor - 0.2)
   } else {
     if (repetitions === 0) {
       interval_days = 1
     } else if (repetitions === 1) {
-      interval_days = 3
-    } else if (repetitions === 2) {
-      interval_days = 7
+      interval_days = 6
     } else {
-      let multiplier = ease_factor
-      if (quality === 'easy') multiplier *= 1.2
-      if (quality === 'hard') multiplier *= 0.8
-      interval_days = Math.round(interval_days * multiplier)
+      interval_days = Math.ceil(interval_days * ease_factor)
     }
-
-    repetitions++
-
-    if (quality === 'easy') ease_factor += 0.15
-    if (quality === 'hard') ease_factor = Math.max(1.3, ease_factor - 0.15)
+    repetitions += 1
   }
+
+  ease_factor = ease_factor + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02))
+  if (ease_factor < 1.3) ease_factor = 1.3
 
   const nextReviewDate = new Date()
   nextReviewDate.setDate(nextReviewDate.getDate() + interval_days)

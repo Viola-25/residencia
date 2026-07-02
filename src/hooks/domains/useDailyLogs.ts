@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import type { DailyLog, DailyLogFormData, MedicalArea } from '../../types'
-import { roundTo2 } from '../../lib/calculations'
+import { roundTo2, normalizeArea } from '../../lib/calculations'
 
 function buildAreasData(formData: DailyLogFormData): {
   areas_data: { area: MedicalArea; questions_done: number; correct: number }[]
@@ -15,7 +15,7 @@ function buildAreasData(formData: DailyLogFormData): {
   for (const [area, data] of Object.entries(formData.areas)) {
     if (data.questions_done > 0) {
       areas_data.push({
-        area: area as MedicalArea,
+        area: normalizeArea(area),
         questions_done: data.questions_done,
         correct: data.correct,
       })
