@@ -51,14 +51,6 @@ export function ErrorBank() {
 
   const errors = rawErrors || []
 
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-neutral-950 text-white">
-        <p className="animate-pulse text-lg">Carregando banco de erros...</p>
-      </div>
-    )
-  }
-
   const topicStats = useMemo(() => {
     const topicMap = new Map<string, { count: number; lastDate: string; reasons: Set<string> }>()
     for (const e of errors) {
@@ -125,6 +117,14 @@ export function ErrorBank() {
   const handleReview = (id: string, quality: 'easy' | 'good' | 'hard' | 'forgot') => {
     reviewErrorWithSRS(id, quality)
     setReviewingId(null)
+  }
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-neutral-950 text-white">
+        <p className="animate-pulse text-lg">Carregando banco de erros...</p>
+      </div>
+    )
   }
 
   return (

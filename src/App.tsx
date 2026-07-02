@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { Layout } from './components/Layout'
+import { ErrorBoundary } from './components/ErrorBoundary'
 
 const Login = lazy(() => import('./pages/Login').then((m) => ({ default: m.Login })))
 const Dashboard = lazy(() => import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })))
@@ -36,7 +37,7 @@ export default function App() {
                 <Route path="/diario" element={<DailyLog />} />
                 <Route path="/simulados" element={<MockExams />} />
                 <Route path="/desempenho" element={<Performance />} />
-                <Route path="/erros" element={<ErrorBank />} />
+                <Route path="/erros" element={<ErrorBoundary><ErrorBank /></ErrorBoundary>} />
                 <Route path="/radar" element={<ApprovalRadar />} />
                 <Route path="/estrategico" element={<StrategicPanel />} />
                 <Route path="/ia" element={<AIInsights />} />
