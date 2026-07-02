@@ -68,7 +68,7 @@ export function DailyLog() {
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total de Dias"
-          value={logs.length}
+          value={new Set(logs.map(l => l.date.split('T')[0])).size}
           icon={CalendarCheck}
           color="blue"
         />
@@ -86,7 +86,11 @@ export function DailyLog() {
         />
         <StatCard
           title="Média Horas/Dia"
-          value={logs.length > 0 ? (logs.reduce((s, l) => s + l.hours_studied, 0) / logs.length).toFixed(1) : '0'}
+          value={(() => {
+            const uniqueDays = new Set(logs.map(l => l.date.split('T')[0])).size
+            const totalHours = logs.reduce((s, l) => s + l.hours_studied, 0)
+            return uniqueDays > 0 ? (totalHours / uniqueDays).toFixed(1) : '0'
+          })()}
           icon={Moon}
           color="emerald"
         />
