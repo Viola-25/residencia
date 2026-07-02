@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { AlertTriangle, Search, Trash2, TrendingUp, BarChart3, Clock, Brain, Sparkles, TrendingDown } from 'lucide-react'
+import { AlertTriangle, Search, Trash2, TrendingUp, BarChart3, Clock, Brain, Sparkles, TrendingDown, CheckCircle2 } from 'lucide-react'
 import { PageHeader } from '../components/PageHeader'
 import { StatCard } from '../components/StatCard'
 import { Badge } from '../components/Badge'
@@ -45,7 +45,9 @@ export function ErrorBank() {
   const [filterReason, setFilterReason] = useState<MotivoErro | 'all'>('all')
   const [filterReview, setFilterReview] = useState<'all' | 'pending' | 'reviewed'>('all')
   const [reviewingId, setReviewingId] = useState<string | null>(null)
-  const [flashcardReview, setFlashcardReview] = useState<{ error: ErrorEntry; revealed: boolean } | null>(null)
+  const [flashcardQueue, setFlashcardQueue] = useState<ErrorEntry[] | null>(null)
+  const [fcIndex, setFcIndex] = useState(0)
+  const [fcRevealed, setFcRevealed] = useState(false)
   const [flashcardData, setFlashcardData] = useState<GeneratedFlashcard | null>(null)
   const [flashcardLoading, setFlashcardLoading] = useState(false)
 
@@ -117,6 +119,14 @@ export function ErrorBank() {
   const handleReview = (id: string, quality: 'easy' | 'good' | 'hard' | 'forgot') => {
     reviewErrorWithSRS(id, quality)
     setReviewingId(null)
+  }
+
+  const exitQueue = () => {
+    setFlashcardQueue(null)
+    setFcIndex(0)
+    setFcRevealed(false)
+    setFlashcardData(null)
+    setFlashcardLoading(false)
   }
 
   if (loading) {
@@ -205,24 +215,24 @@ export function ErrorBank() {
         </div>
       )}
 
-      {dueForReview.length > 0 && (
+      {dueForReview.length > 0 && !flashcardQueue && (
         <div className="mb-4 flex justify-end">
           <button
             onClick={async () => {
-              const next = dueForReview[0]
-              if (next) {
-                setFlashcardReview({ error: next, revealed: false })
-                setFlashcardData(null)
-                setFlashcardLoading(true)
-                const result = await generateErrorFlashcard({
-                  topic: next.topic,
-                  question: next.question,
-                  error_reason: next.error_reason,
-                  sugestao_revisao: next.sugestao_revisao,
-                })
-                setFlashcardData(result)
-                setFlashcardLoading(false)
-              }
+              const queue = [...dueForReview]
+              setFlashcardQueue(queue)
+              setFcIndex(0)
+              setFcRevealed(false)
+              setFlashcardData(null)
+              setFlashcardLoading(true)
+              const result = await generateErrorFlashcard({
+                topic: queue[0].topic,
+                question: queue[0].question,
+                error_reason: queue[0].error_reason,
+                sugestao_revisao: queue[0].sugestao_revisao,
+              })
+              setFlashcardData(result)
+              setFlashcardLoading(false)
             }}
             className="flex items-center gap-2 rounded-lg border border-violet-500/30 bg-violet-500/10 px-4 py-2 text-sm font-medium text-violet-300 transition-colors hover:bg-violet-500/20"
           >
@@ -232,28 +242,54 @@ export function ErrorBank() {
         </div>
       )}
 
-      {flashcardReview && (
+      {flashcardQueue && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-lg rounded-xl border border-zinc-700 bg-zinc-900 p-6 shadow-2xl">
-            {flashcardLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-400 border-t-transparent" />
-                <span className="ml-3 text-sm text-zinc-400">Gerando flashcard...</span>
-              </div>
-            ) : !flashcardReview.revealed ? (
+            {fcIndex >= flashcardQueue.length ? (
               <>
+                <div className="flex flex-col items-center py-8">
+                  <CheckCircle2 size={48} className="mb-4 text-emerald-400" />
+                  <p className="text-lg font-semibold text-zinc-100">Todas revisadas!</p>
+                  <p className="mt-1 text-sm text-zinc-500">
+                    {flashcardQueue.length} flashcard{flashcardQueue.length > 1 ? 's' : ''} concluído{flashcardQueue.length > 1 ? 's' : ''}
+                  </p>
+                </div>
+                <button
+                  onClick={exitQueue}
+                  className="mt-4 w-full rounded-lg bg-violet-600 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-500"
+                >
+                  Fechar
+                </button>
+              </>
+            ) : flashcardLoading ? (
+              <>
+                <div className="mb-4 flex items-center justify-between">
+                  <span className="text-xs text-zinc-500">{fcIndex + 1} / {flashcardQueue.length}</span>
+                  <button onClick={exitQueue} className="text-xs text-zinc-600 hover:text-zinc-400">Sair</button>
+                </div>
+                <div className="flex items-center justify-center py-12">
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-400 border-t-transparent" />
+                  <span className="ml-3 text-sm text-zinc-400">Gerando flashcard...</span>
+                </div>
+              </>
+            ) : !fcRevealed ? (
+              <>
+                <div className="mb-4 flex items-center justify-between">
+                  <span className="text-xs text-zinc-500">{fcIndex + 1} / {flashcardQueue.length}</span>
+                  <button onClick={exitQueue} className="text-xs text-zinc-600 hover:text-zinc-400">Sair</button>
+                </div>
                 <div className="mb-2 text-center text-xs font-medium uppercase tracking-wider text-zinc-500">
-                  {ERROR_REASONS.find((r) => r.value === flashcardReview.error.error_reason)?.label}
+                  {ERROR_REASONS.find((r) => r.value === flashcardQueue[fcIndex].error_reason)?.label}
                 </div>
                 <h2 className="mb-2 text-center text-xl font-bold text-zinc-100">
-                  {flashcardData?.front || flashcardReview.error.topic}
+                  {flashcardData?.front || flashcardQueue[fcIndex].topic}
                 </h2>
                 <p className="mb-6 text-center text-sm text-zinc-500">
                   Tente lembrar a conduta, diagnóstico ou conceito exato...
                 </p>
                 <div className="flex justify-center">
                   <button
-                    onClick={() => setFlashcardReview({ ...flashcardReview, revealed: true })}
+                    onClick={() => setFcRevealed(true)}
                     className="rounded-lg bg-violet-600 px-8 py-3 text-sm font-medium text-white transition-colors hover:bg-violet-500"
                   >
                     Revelar Resposta
@@ -262,29 +298,33 @@ export function ErrorBank() {
               </>
             ) : (
               <>
+                <div className="mb-4 flex items-center justify-between">
+                  <span className="text-xs text-zinc-500">{fcIndex + 1} / {flashcardQueue.length}</span>
+                  <button onClick={exitQueue} className="text-xs text-zinc-600 hover:text-zinc-400">Sair</button>
+                </div>
                 <div className="mb-2 text-center text-xs font-medium uppercase tracking-wider text-zinc-500">
-                  {flashcardReview.error.topic}
+                  {flashcardQueue[fcIndex].topic}
                 </div>
                 <div className="mb-4 rounded-lg border border-zinc-700/50 bg-zinc-800/50 p-4">
                   <p className="text-sm leading-relaxed text-zinc-300">
-                    {flashcardData?.back || flashcardReview.error.question}
+                    {flashcardData?.back || flashcardQueue[fcIndex].question}
                   </p>
                 </div>
-                {flashcardReview.error.history_notes && flashcardReview.error.history_notes.length > 1 && (
+                {flashcardQueue[fcIndex].history_notes && flashcardQueue[fcIndex].history_notes.length > 1 && (
                   <div className="mb-4 rounded-lg border border-amber-500/10 bg-amber-500/5 p-3">
                     <p className="mb-1 text-xs font-medium text-amber-400">
-                      Já errou {flashcardReview.error.occurrence_count}x
+                      Já errou {flashcardQueue[fcIndex].occurrence_count}x
                     </p>
                     <ul className="space-y-0.5">
-                      {flashcardReview.error.history_notes.slice(-3).reverse().map((note, i) => (
+                      {flashcardQueue[fcIndex].history_notes.slice(-3).reverse().map((note, i) => (
                         <li key={i} className="text-xs text-zinc-500">• {note}</li>
                       ))}
                     </ul>
                   </div>
                 )}
-                {flashcardReview.error.sugestao_revisao && (
+                {flashcardQueue[fcIndex].sugestao_revisao && (
                   <div className="mb-4 rounded-lg bg-violet-500/10 p-3 text-center text-xs text-violet-400">
-                    {flashcardReview.error.sugestao_revisao}
+                    {flashcardQueue[fcIndex].sugestao_revisao}
                   </div>
                 )}
                 <p className="mb-3 text-center text-xs text-zinc-500">Como foi sua recuperação?</p>
@@ -295,8 +335,26 @@ export function ErrorBank() {
                       <button
                         key={q.value}
                         onClick={() => {
-                          reviewErrorWithSRS(flashcardReview.error.id, q.value)
-                          setFlashcardReview(null)
+                          const error = flashcardQueue[fcIndex]
+                          const next = fcIndex + 1
+                          reviewErrorWithSRS(error.id, q.value)
+                          if (next < flashcardQueue.length) {
+                            setFcIndex(next)
+                            setFcRevealed(false)
+                            setFlashcardData(null)
+                            setFlashcardLoading(true)
+                            generateErrorFlashcard({
+                              topic: flashcardQueue[next].topic,
+                              question: flashcardQueue[next].question,
+                              error_reason: flashcardQueue[next].error_reason,
+                              sugestao_revisao: flashcardQueue[next].sugestao_revisao,
+                            }).then((result) => {
+                              setFlashcardData(result)
+                              setFlashcardLoading(false)
+                            })
+                          } else {
+                            setFcIndex(next)
+                          }
                         }}
                         className={`flex flex-1 flex-col items-center gap-1 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${q.color}`}
                       >
@@ -308,12 +366,6 @@ export function ErrorBank() {
                 </div>
               </>
             )}
-            <button
-              onClick={() => setFlashcardReview(null)}
-              className="mt-4 w-full text-center text-xs text-zinc-600 hover:text-zinc-400"
-            >
-              Fechar
-            </button>
           </div>
         </div>
       )}
