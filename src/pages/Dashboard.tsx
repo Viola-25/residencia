@@ -48,7 +48,7 @@ export function Dashboard() {
 
       {dueForReview.length > 0 && (
         <a
-          href="/errors"
+          href="/erros"
           className="group mb-6 flex items-center justify-between rounded-xl border border-violet-500/20 bg-gradient-to-r from-violet-500/10 to-transparent p-5 transition-all hover:border-violet-500/40 hover:from-violet-500/20"
         >
           <div className="flex items-center gap-4">
