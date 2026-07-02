@@ -1,6 +1,9 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
-import type { Session } from '@supabase/supabase-js'
+
+interface Session {
+  user: { id: string; email?: string | null } | null
+}
 
 interface UserShape {
   id: string
@@ -17,6 +20,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const auth = supabase.auth as any
+
 function mapSession(session: Session | null): UserShape | null {
   return session?.user ? { id: session.user.id, email: session.user.email ?? undefined } : null
 }
@@ -26,14 +32,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(mapSession(session))
-      setLoading(false)
-    }).catch(() => {
-      setLoading(false)
-    })
+    ;(async () => {
+      try {
+        const { data: { session } } = await auth.getSession()
+        setUser(mapSession(session as Session | null))
+      } catch {
+        // noop
+      } finally {
+        setLoading(false)
+      }
+    })()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = auth.onAuthStateChange((_event: unknown, session: Session | null) => {
       setUser(mapSession(session))
     })
 
@@ -42,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<string | null> => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      const { error } = await auth.signInWithPassword({ email, password })
       return error?.message ?? null
     } catch {
       return 'Erro ao conectar com o servidor'
@@ -51,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signup = async (email: string, password: string): Promise<string | null> => {
     try {
-      const { error } = await supabase.auth.signUp({ email, password })
+      const { error } = await auth.signUp({ email, password })
       return error?.message ?? null
     } catch {
       return 'Erro ao conectar com o servidor'
@@ -59,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = async () => {
-    await supabase.auth.signOut()
+    await auth.signOut()
     setUser(null)
   }
 

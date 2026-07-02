@@ -38,18 +38,20 @@ export function useDailyLogs() {
 
   useEffect(() => {
     if (!user) return
-    supabase
-      .from('daily_logs')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('date', { ascending: false })
-      .then((res) => {
+    ;(async () => {
+      try {
+        const res = await supabase
+          .from('daily_logs')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('date', { ascending: false })
         if (res.data) setLogs(res.data as DailyLog[])
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error('Error fetching daily logs:', err)
-      })
-      .finally(() => setLoading(false))
+      } finally {
+        setLoading(false)
+      }
+    })()
   }, [user])
 
   const addDailyLog = async (formData: DailyLogFormData) => {

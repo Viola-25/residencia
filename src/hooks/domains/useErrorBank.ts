@@ -12,18 +12,20 @@ export function useErrorBank() {
 
   useEffect(() => {
     if (!user) return
-    supabase
-      .from('error_bank')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .then((res) => {
+    ;(async () => {
+      try {
+        const res = await supabase
+          .from('error_bank')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
         if (res.data) setErrors(res.data as ErrorEntry[])
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error('Error fetching errors:', err)
-      })
-      .finally(() => setLoading(false))
+      } finally {
+        setLoading(false)
+      }
+    })()
   }, [user])
 
   const toggleErrorReview = async (id: string) => {

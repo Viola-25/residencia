@@ -33,18 +33,20 @@ export function useMockExams() {
 
   useEffect(() => {
     if (!user) return
-    supabase
-      .from('mock_exams')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('date', { ascending: false })
-      .then((res) => {
+    ;(async () => {
+      try {
+        const res = await supabase
+          .from('mock_exams')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('date', { ascending: false })
         if (res.data) setMocks(res.data as MockExam[])
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error('Error fetching mock exams:', err)
-      })
-      .finally(() => setLoading(false))
+      } finally {
+        setLoading(false)
+      }
+    })()
   }, [user])
 
   const addMockExam = async (formData: MockExamFormData) => {

@@ -1,4 +1,4 @@
-import { useForm } from 'react-hook-form'
+import { useForm, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { MEDICAL_AREAS, MOOD_OPTIONS, REGISTRATION_TYPES } from '../../types'
@@ -92,7 +92,7 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
     setValue,
     formState: { errors },
   } = useForm<DailyLogFormValues>({
-    resolver: zodResolver(dailyLogSchema),
+    resolver: zodResolver(dailyLogSchema) as unknown as Resolver<DailyLogFormValues>,
     defaultValues: defaultValues ? logToFormValues(defaultValues) : defaultFormValues(),
   })
 
