@@ -18,6 +18,14 @@ const tooltipStyle = {
   color: '#e4e4e7',
 }
 
+const tooltipLabelStyle = {
+  color: '#e4e4e7',
+}
+
+const tooltipItemStyle = {
+  color: '#e4e4e7',
+}
+
 interface WeeklyQuestionsChartProps {
   logs: DailyLog[]
 }
@@ -54,7 +62,7 @@ export function WeeklyQuestionsChart({ logs }: WeeklyQuestionsChartProps) {
             <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
             <XAxis dataKey="label" stroke="#71717a" fontSize={12} />
             <YAxis stroke="#71717a" fontSize={12} />
-            <Tooltip contentStyle={tooltipStyle} />
+            <Tooltip contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
             <Bar dataKey="questions" fill="#3b82f6" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>

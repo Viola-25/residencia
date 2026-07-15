@@ -19,6 +19,14 @@ const tooltipStyle = {
   color: '#e4e4e7',
 }
 
+const tooltipLabelStyle = {
+  color: '#e4e4e7',
+}
+
+const tooltipItemStyle = {
+  color: '#e4e4e7',
+}
+
 interface AreaEvolutionChartProps {
   areaPerformance: AreaPerformance[]
 }
@@ -53,6 +61,8 @@ export function AreaEvolutionChart({ areaPerformance }: AreaEvolutionChartProps)
             <YAxis dataKey="name" type="category" stroke="#71717a" fontSize={12} />
             <Tooltip
               contentStyle={tooltipStyle}
+              labelStyle={tooltipLabelStyle}
+              itemStyle={tooltipItemStyle}
               formatter={(value) => [`${value}%`, 'Acerto']}
             />
             <Bar dataKey="hitRate" radius={[0, 4, 4, 0]}>

@@ -18,6 +18,14 @@ const tooltipStyle = {
   color: '#e4e4e7',
 }
 
+const tooltipLabelStyle = {
+  color: '#e4e4e7',
+}
+
+const tooltipItemStyle = {
+  color: '#e4e4e7',
+}
+
 interface WeeklyHitRateChartProps {
   logs: DailyLog[]
 }
@@ -67,7 +75,7 @@ export function WeeklyHitRateChart({ logs }: WeeklyHitRateChartProps) {
               domain={[0, 100]}
               tickFormatter={(v) => `${v}%`}
             />
-            <Tooltip contentStyle={tooltipStyle} />
+            <Tooltip contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
             <Area
               type="monotone"
               dataKey="hitRate"

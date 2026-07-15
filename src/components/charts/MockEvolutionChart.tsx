@@ -17,6 +17,14 @@ const tooltipStyle = {
   color: '#e4e4e7',
 }
 
+const tooltipLabelStyle = {
+  color: '#e4e4e7',
+}
+
+const tooltipItemStyle = {
+  color: '#e4e4e7',
+}
+
 interface MockEvolutionChartProps {
   mocks: MockExam[]
 }
@@ -45,7 +53,7 @@ export function MockEvolutionChart({ mocks }: MockEvolutionChartProps) {
               domain={[0, 100]}
               tickFormatter={(v) => `${v}%`}
             />
-            <Tooltip contentStyle={tooltipStyle} />
+            <Tooltip contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
             <Line
               type="monotone"
               dataKey="percentage"
