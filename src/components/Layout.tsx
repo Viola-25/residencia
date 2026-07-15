@@ -39,16 +39,16 @@ export function Layout() {
           >
             <Menu size={20} />
           </button>
-          <div className="flex items-center gap-2 text-sm text-zinc-500">
+          <div className="flex items-center gap-2 text-sm text-zinc-400">
             <span className="hidden sm:inline">Residência 2027</span>
-            <span className="hidden sm:inline">/</span>
-            <span className="text-zinc-400">{pageTitles[location.pathname] || 'Residência 2027'}</span>
+            <span className="hidden sm:inline text-zinc-600">/</span>
+            <span className="text-zinc-300">{pageTitles[location.pathname] || 'Residência 2027'}</span>
           </div>
           <div className="ml-auto flex items-center gap-3">
-            <span className="text-xs text-zinc-500">{user?.email}</span>
+            <span className="text-xs text-zinc-400">{user?.email}</span>
             <button
               onClick={handleLogout}
-              className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-zinc-900 hover:text-rose-400"
+              className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-900 hover:text-rose-400"
               title="Sair"
             >
               <LogOut size={16} />

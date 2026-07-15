@@ -73,8 +73,12 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                 }`
               }
             >
-              <item.icon size={18} />
-              {item.label}
+              {({ isActive }) => (
+                <>
+                  <item.icon size={18} className={`shrink-0 ${isActive ? 'text-violet-400' : ''}`} />
+                  {item.label}
+                </>
+              )}
             </NavLink>
           ))}
         </nav>

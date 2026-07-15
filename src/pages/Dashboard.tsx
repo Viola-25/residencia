@@ -20,8 +20,31 @@ import { getHitRateTrend, calculateGlobalHitRate } from '../lib/calculations'
 
 import { useData } from '../hooks/useData'
 
+function SkeletonCard() {
+  return (
+    <div className="animate-pulse rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+      <div className="flex items-start justify-between">
+        <div className="h-9 w-9 rounded-lg bg-zinc-800" />
+      </div>
+      <div className="mt-3 space-y-2">
+        <div className="h-7 w-20 rounded bg-zinc-800" />
+        <div className="h-4 w-28 rounded bg-zinc-800" />
+      </div>
+    </div>
+  )
+}
+
+function SkeletonChart() {
+  return (
+    <div className="min-w-0 animate-pulse rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+      <div className="mb-4 h-4 w-32 rounded bg-zinc-800" />
+      <div className="h-64 rounded bg-zinc-800/50" />
+    </div>
+  )
+}
+
 export function Dashboard() {
-  const { dashboardMetrics, logs, mocks, areaPerformance, config, errors } = useData()
+  const { dashboardMetrics, logs, mocks, areaPerformance, config, errors, loading } = useData()
 
   const dueForReview = useMemo(() => {
     const today = new Date()
@@ -37,6 +60,28 @@ export function Dashboard() {
   const metrics = dashboardMetrics
   const hitRate30d = useMemo(() => getHitRateTrend(logs, 30), [logs])
   const globalRate = useMemo(() => calculateGlobalHitRate(logs), [logs])
+
+  if (loading) {
+    return (
+      <div>
+        <PageHeader
+          title="Dashboard Geral"
+          description="Panorama completo da sua preparação"
+          icon={BarChart3}
+        />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
+        <div className="mt-8 grid gap-6 lg:grid-cols-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonChart key={i} />
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -70,7 +115,7 @@ export function Dashboard() {
         </a>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Dias para ENAMED"
           value={metrics.days_to_enamed}
@@ -128,22 +173,22 @@ export function Dashboard() {
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+        <div className="min-w-0 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
           <h3 className="mb-4 text-sm font-semibold text-zinc-200">Acerto por Semana</h3>
           <WeeklyHitRateChart logs={logs} />
         </div>
 
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+        <div className="min-w-0 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
           <h3 className="mb-4 text-sm font-semibold text-zinc-200">Questões por Semana</h3>
           <WeeklyQuestionsChart logs={logs} />
         </div>
 
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+        <div className="min-w-0 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
           <h3 className="mb-4 text-sm font-semibold text-zinc-200">Evolução dos Simulados</h3>
           <MockEvolutionChart mocks={mocks} />
         </div>
 
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+        <div className="min-w-0 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
           <h3 className="mb-4 text-sm font-semibold text-zinc-200">Evolução por Grande Área</h3>
           <AreaEvolutionChart areaPerformance={areaPerformance} />
         </div>
