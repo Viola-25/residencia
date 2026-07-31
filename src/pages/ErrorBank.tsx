@@ -51,7 +51,7 @@ export function ErrorBank() {
   const [flashcardData, setFlashcardData] = useState<GeneratedFlashcard | null>(null)
   const [flashcardLoading, setFlashcardLoading] = useState(false)
 
-  const errors = rawErrors || []
+  const errors = useMemo(() => rawErrors || [], [rawErrors])
 
   const topicStats = useMemo(() => {
     const topicMap = new Map<string, { count: number; lastDate: string; reasons: Set<string> }>()

@@ -1,73 +1,49 @@
-# React + TypeScript + Vite
+# Residência 2027
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+App de estudo para residência médica (Brasil). Rastreia daily logs de estudo, simulados, banco de erros, metas e gera insights com IA.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- React 19 + Vite 8 + TypeScript + Tailwind CSS 4
+- Supabase (PostgreSQL, auth via Clerk)
+- react-router-dom, react-hook-form + zod, recharts, date-fns
+- groq-sdk para insights IA
 
-## React Compiler
+## Como rodar
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Variáveis de ambiente (`.env`, veja `.env.example`):
+- `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`
+- `VITE_GROQ_API_KEY`
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Comandos
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+| Comando | Descrição |
+| --- | --- |
+| `npm run dev` | dev server |
+| `npm run build` | typecheck (`tsc -b`) + build Vite |
+| `npm run lint` | eslint |
+| `npx tsc --noEmit` | typecheck rápido |
+| `npm run db:migrate` | aplicar migrações Supabase |
+| `npm run db:link` | linkar projeto Supabase |
+
+## Estrutura
+
+- `src/types/` — tipos de domínio + constantes, tipos Row/Insert do Supabase
+- `src/lib/` — cálculos, datas, prompts e chamadas IA (groq), cliente Supabase
+- `src/hooks/` — composição de hooks por domínio (`useData`, `hooks/domains/`)
+- `src/pages/` — páginas das rotas
+- `src/components/` — componentes compartilhados, charts, forms, modals
+- `supabase/migrations/` — migrações SQL versionadas
+
+## Rotas
+
+`/` dashboard, `/diario`, `/simulados`, `/desempenho`, `/erros`, `/radar`, `/estrategico`, `/ia`, `/configuracoes`, `/login`
+
+## Banco de dados
+
+Migrações em `supabase/migrations/NNN_nome.sql`, aplicadas via `supabase db push`. Mudança de coluna exige atualizar `src/types/database.ts` e `src/types/index.ts` em paralelo.

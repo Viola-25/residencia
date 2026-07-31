@@ -1,0 +1,53 @@
+# AGENTS.md — Residência 2027
+
+App de estudo para residência médica (Brasil). Rastreia daily logs de estudo, simulados, banco de erros, metas e gera insights com IA.
+
+## Stack
+- React 19 + Vite 8 + TypeScript 6 + Tailwind CSS 4
+- Supabase (auth via Clerk, banco PostgreSQL)
+- react-router-dom v7, react-hook-form + zod, recharts, date-fns
+- groq-sdk para insights IA (`src/lib/groq.ts` + `src/lib/prompts.ts`)
+- Clerk para autenticação
+
+## Commands
+- `npm run dev` — dev server
+- `npm run build` — tsc -b + vite build
+- `npm run lint` — eslint
+- `npx tsc --noEmit` — typecheck rápido
+- `npm run db:migrate` / `db:link` — Supabase CLI
+
+## Estrutura
+- `src/types/index.ts` — tipos de domínio + constantes (MEDICAL_AREAS, MOOD_OPTIONS, etc.)
+- `src/types/database.ts` — tipos Row/Insert do Supabase (espelhar mudanças de schema)
+- `src/lib/calculations.ts` — toda lógica de cálculo (hit rate, score, SRS, area performance)
+- `src/lib/groq.ts` + `src/lib/prompts.ts` — prompts e chamadas IA
+- `src/hooks/useData.ts` — composição de hooks por domínio (useDailyLogs, useMockExams, useErrorBank, useStudyConfig em `hooks/domains/`)
+- `src/pages/` — Dashboard, DailyLog, MockExams, Performance, ErrorBank, ApprovalRadar, StrategicPanel, AIInsights, Settings
+- `src/components/forms/DailyLogForm.tsx` — form de daily log (compartilhado entre criar e editar)
+- `src/components/modals/EditLogModal.tsx` — converte DailyLog → DailyLogFormData
+- `src/components/PlatformPerformance.tsx` — cards de comparação com média da plataforma + inferência estatística (compact no Dashboard, full no Performance)
+- `supabase/migrations/` — migrações SQL versionadas (001–010)
+
+## Rotas
+`/` dashboard, `/diario`, `/simulados`, `/desempenho`, `/erros`, `/radar`, `/estrategico`, `/ia`, `/configuracoes`, `/login`
+
+## Convenções de domínio
+- **hit_rate**: percentual 0–100 (ex: 75.5), arredondado com `roundTo2`
+- **platform_avg_rate** (DB): percentual 0–100. **Form**: input em acertos brutos (ex: 13), convertido via `roundTo2((raw / totalQ) * 100)` no submit. `logToFormValues` converte % → bruto ao editar (`Math.round((pct / 100) * totalQ)`)
+- **score_delta** = userRate − platformAvgRate (pontos percentuais, pode ser negativo)
+- **platform_avg_rate null** quando não informado; score_delta também null
+- Dificuldade (easy/medium/hard): campos opcionais `_correct`/`_total` nullables
+- **Estatística em `calculations.ts`**: `calculatePlatformComparison`, `calculateDifficultyBreakdown`, `calculatePlatformInference` (t-test de 1 amostra sobre score_deltas, IC binomial de Wilson, percentil estimado com `ESTIMATED_PLATFORM_SIGMA = 10`pp — aproximação com σ assumido, sempre rotulada como estimativa)
+- Áreas: `ginecologia`/`obstetricia` → alias para `ginecologia_obstetricia` via `normalizeArea`
+- UI inteira em pt-BR (labels, placeholders, prompts de IA)
+- Sem testes no projeto; validação via `npx tsc --noEmit` + `npm run lint`
+
+## Banco de dados
+- Migrações em `supabase/migrations/NNN_nome.sql`, aplicadas via `supabase db push` (não roda Docker local)
+- Qualquer mudança em coluna: atualizar `src/types/database.ts` + `src/types/index.ts` em paralelo
+
+## Convenções de código
+- Sem comentários no código (a menos que pedido)
+- Tipos explícitos, snake_case para colunas DB, camelCase para vars TS
+- Formulários: react-hook-form + zod, `optNum()` para números opcionais (preprocess vazio → null)
+- Componentes com Tailwind, tema dark zinc + violet accent
