@@ -24,6 +24,13 @@ function logToFormData(log: DailyLog): DailyLogFormData {
     notes: log.notes || '',
     mood: log.mood,
     energy_level: log.energy_level,
+    platform_avg_rate: log.platform_avg_rate,
+    easy_correct: log.easy_correct,
+    easy_total: log.easy_total,
+    medium_correct: log.medium_correct,
+    medium_total: log.medium_total,
+    hard_correct: log.hard_correct,
+    hard_total: log.hard_total,
   }
 }
 

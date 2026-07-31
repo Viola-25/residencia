@@ -42,6 +42,14 @@ export interface DailyLog {
   notes: string | null
   mood: Mood
   energy_level: number
+  platform_avg_rate: number | null
+  score_delta: number | null
+  easy_correct: number | null
+  easy_total: number | null
+  medium_correct: number | null
+  medium_total: number | null
+  hard_correct: number | null
+  hard_total: number | null
   created_at: string
 }
 
@@ -63,6 +71,13 @@ export interface DailyLogFormData {
   notes: string
   mood: Mood
   energy_level: number
+  platform_avg_rate: number | null
+  easy_correct: number | null
+  easy_total: number | null
+  medium_correct: number | null
+  medium_total: number | null
+  hard_correct: number | null
+  hard_total: number | null
 }
 
 export interface MockExam {

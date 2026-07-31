@@ -1,9 +1,12 @@
+import { useState } from 'react'
 import { useForm, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { Plus, Minus } from 'lucide-react'
 import { MEDICAL_AREAS, MOOD_OPTIONS, REGISTRATION_TYPES } from '../../types'
 import type { DailyLogFormData, Mood, RegistrationType } from '../../types'
 import { getTodayDateString } from '../../lib/dates'
+import { calculateLogScore, formatScoreBadge } from '../../lib/calculations'
 
 const registrationTypeColors: Record<string, string> = {
   questoes: 'border-violet-500/20 bg-violet-500/5',
@@ -23,6 +26,11 @@ const areaSchema = z.object({
   correct: z.coerce.number().min(0).default(0),
 })
 
+const optNum = () => z.preprocess(
+  (v) => (v === '' || v === undefined ? null : Number(v)),
+  z.number().nullable()
+).default(null)
+
 const dailyLogSchema = z.object({
   date: z.string().min(1, 'Data é obrigatória'),
   registration_type: z.enum(['questoes', 'simulado', 'revisao'] as const),
@@ -33,6 +41,13 @@ const dailyLogSchema = z.object({
   notes: z.string().default(''),
   mood: z.enum(['excelente', 'bom', 'medio', 'ruim'] as const),
   energy_level: z.coerce.number().min(0).max(10).default(7),
+  platform_avg_rate: optNum(),
+  easy_correct: optNum(),
+  easy_total: optNum(),
+  medium_correct: optNum(),
+  medium_total: optNum(),
+  hard_correct: optNum(),
+  hard_total: optNum(),
 })
 
 type DailyLogFormValues = z.infer<typeof dailyLogSchema>
@@ -51,6 +66,13 @@ function defaultFormValues(): DailyLogFormValues {
     notes: '',
     mood: 'bom' as Mood,
     energy_level: 7,
+    platform_avg_rate: null,
+    easy_correct: null,
+    easy_total: null,
+    medium_correct: null,
+    medium_total: null,
+    hard_correct: null,
+    hard_total: null,
   }
 }
 
@@ -67,13 +89,20 @@ function logToFormValues(log: DailyLogFormData): DailyLogFormValues {
   return {
     date: log.date,
     registration_type: log.registration_type,
-      hours_studied: Math.round(log.hours_studied * 60),
+    hours_studied: Math.round(log.hours_studied * 60),
     areas,
     core_review_done: log.core_review_done,
     flashcards_done: log.flashcards_done,
     notes: log.notes,
     mood: log.mood,
     energy_level: log.energy_level,
+    platform_avg_rate: log.platform_avg_rate ?? null,
+    easy_correct: log.easy_correct ?? null,
+    easy_total: log.easy_total ?? null,
+    medium_correct: log.medium_correct ?? null,
+    medium_total: log.medium_total ?? null,
+    hard_correct: log.hard_correct ?? null,
+    hard_total: log.hard_total ?? null,
   }
 }
 
@@ -85,6 +114,8 @@ interface DailyLogFormProps {
 }
 
 export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 'Salvar Registro' }: DailyLogFormProps) {
+  const [difficultyOpen, setDifficultyOpen] = useState(false)
+
   const {
     register,
     handleSubmit,
@@ -102,6 +133,15 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
   const hitRate = totalQuestions > 0
     ? Math.round((totalCorrect / totalQuestions) * 100 * 100) / 100
     : 0
+
+  const platformAvg = formValues.platform_avg_rate
+  const scorePreview = platformAvg !== null && platformAvg > 0 && totalQuestions > 0
+    ? (() => {
+        const { scoreDelta } = calculateLogScore(totalCorrect, totalQuestions, platformAvg)
+        if (scoreDelta !== null) return formatScoreBadge(scoreDelta)
+        return null
+      })()
+    : null
 
   const onFormSubmit = (values: DailyLogFormValues) => {
     const areas = Object.fromEntries(
@@ -121,6 +161,13 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
       notes: values.notes,
       mood: values.mood,
       energy_level: Number(values.energy_level),
+      platform_avg_rate: values.platform_avg_rate,
+      easy_correct: values.easy_correct,
+      easy_total: values.easy_total,
+      medium_correct: values.medium_correct,
+      medium_total: values.medium_total,
+      hard_correct: values.hard_correct,
+      hard_total: values.hard_total,
     })
   }
 
@@ -167,7 +214,7 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
             className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
           />
         </div>
-        <div className="flex items-center gap-4 rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-2">
+        <div className="flex flex-wrap items-center gap-4 rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-2">
           <div>
             <p className="text-xs text-zinc-500">Total</p>
             <p className="text-lg font-bold text-zinc-100">{totalQuestions}</p>
@@ -186,6 +233,32 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
               {hitRate}%
             </p>
           </div>
+          <div className="h-8 w-px bg-zinc-700" />
+          <div>
+            <p className="text-xs text-zinc-500">Média Plataforma</p>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              step="0.1"
+              placeholder="Ex: 65"
+              {...register('platform_avg_rate')}
+              className="w-20 rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
+            />
+          </div>
+          {scorePreview && (
+            <>
+              <div className="h-8 w-px bg-zinc-700" />
+              <div>
+                <p className="text-xs text-zinc-500">Score</p>
+                <p className={`text-lg font-bold ${
+                  scorePreview.variant === 'green' ? 'text-emerald-400' : scorePreview.variant === 'red' ? 'text-rose-400' : 'text-amber-400'
+                }`}>
+                  {scorePreview.text}
+                </p>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -223,6 +296,92 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
             </div>
           ))}
         </div>
+      </div>
+
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/30">
+        <button
+          type="button"
+          onClick={() => setDifficultyOpen(!difficultyOpen)}
+          className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-zinc-300 hover:text-zinc-100"
+        >
+          <span>Detalhamento por Dificuldade <span className="text-zinc-500">(Opcional / Experimental)</span></span>
+          {difficultyOpen ? <Minus size={16} /> : <Plus size={16} />}
+        </button>
+        {difficultyOpen && (
+          <div className="space-y-3 border-t border-zinc-800 px-4 pb-4 pt-3">
+            <div className="grid grid-cols-3 gap-3">
+              <div className="rounded-lg border border-emerald-500/10 bg-emerald-500/5 p-3">
+                <p className="mb-2 text-xs font-medium text-emerald-400">Fácil</p>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <label className="text-[10px] text-zinc-500">Acertos</label>
+                    <input
+                      type="number"
+                      min="0"
+                      {...register('easy_correct')}
+                      className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-[10px] text-zinc-500">Total</label>
+                    <input
+                      type="number"
+                      min="0"
+                      {...register('easy_total')}
+                      className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-lg border border-amber-500/10 bg-amber-500/5 p-3">
+                <p className="mb-2 text-xs font-medium text-amber-400">Médio</p>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <label className="text-[10px] text-zinc-500">Acertos</label>
+                    <input
+                      type="number"
+                      min="0"
+                      {...register('medium_correct')}
+                      className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-[10px] text-zinc-500">Total</label>
+                    <input
+                      type="number"
+                      min="0"
+                      {...register('medium_total')}
+                      className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-lg border border-rose-500/10 bg-rose-500/5 p-3">
+                <p className="mb-2 text-xs font-medium text-rose-400">Difícil</p>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <label className="text-[10px] text-zinc-500">Acertos</label>
+                    <input
+                      type="number"
+                      min="0"
+                      {...register('hard_correct')}
+                      className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-[10px] text-zinc-500">Total</label>
+                    <input
+                      type="number"
+                      min="0"
+                      {...register('hard_total')}
+                      className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div>

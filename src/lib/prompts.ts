@@ -96,6 +96,8 @@ Regras:
 - Sugira ações práticas
 - Destaque áreas com desempenho abaixo de 70%
 - Compare áreas entre si
+- AVALIE o Score (diferença entre a taxa de acerto do usuário e a média da plataforma). Se o score_delta for positivo consistente, o usuário está acima da média dos concorrentes — destaque isso como indicador de competitividade real para a prova. Se for negativo ou alternado, aponte como alerta e sugira estratégias para superar a média.
+- Se houver dados de dificuldade preenchidos, analise a taxa de acerto específica nas questões de nível difícil (hard). Um desempenho baixo em difíceis combinado com score positivo em fáceis/médias sugere estagnação — recomende aumentar o nível de desafio.
 - Apenas JSON válido, sem texto extra`
 
 export const FLASHCARD_GENERATION_PROMPT = `Você é um especialista em criação de flashcards médicos para residência.

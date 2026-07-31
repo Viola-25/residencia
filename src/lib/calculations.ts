@@ -5,6 +5,25 @@ export function roundTo2(value: number): number {
   return Math.round(value * 100) / 100
 }
 
+export function calculateLogScore(userCorrect: number, userTotal: number, platformAvgRate?: number): {
+  userRate: number
+  scoreDelta: number | null
+} {
+  const userRate = userTotal > 0 ? roundTo2((userCorrect / userTotal) * 100) : 0
+  const scoreDelta = platformAvgRate !== undefined ? roundTo2(userRate - platformAvgRate) : null
+  return { userRate, scoreDelta }
+}
+
+export function formatScoreBadge(scoreDelta: number): {
+  text: string
+  variant: 'green' | 'yellow' | 'red'
+} {
+  const sign = scoreDelta > 0 ? '+' : ''
+  const text = `${sign}${scoreDelta.toFixed(1)} pts`
+  const variant = scoreDelta > 0 ? 'green' : scoreDelta < 0 ? 'red' : 'yellow'
+  return { text, variant }
+}
+
 export function calculateRecentHitRate(logs: DailyLog[], days: number): number {
   const cutoffDate = new Date()
   cutoffDate.setHours(0, 0, 0, 0)

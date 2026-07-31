@@ -290,6 +290,23 @@ export async function generateInsights(data: {
     totalCorrect: m.total_score,
   }))
 
+  const logsWithScore = data.logs.filter((l) => l.score_delta !== null)
+  const avgScoreDelta = logsWithScore.length > 0
+    ? Math.round((logsWithScore.reduce((s, l) => s + (l.score_delta ?? 0), 0) / logsWithScore.length) * 10) / 10
+    : null
+  const positiveScores = logsWithScore.filter((l) => (l.score_delta ?? 0) > 0).length
+  const negativeScores = logsWithScore.filter((l) => (l.score_delta ?? 0) < 0).length
+
+  const hardLogs = data.logs.filter((l) => l.hard_total !== null && l.hard_total > 0)
+  const hardTotal = hardLogs.reduce((s, l) => s + (l.hard_total ?? 0), 0)
+  const hardCorrect = hardLogs.reduce((s, l) => s + (l.hard_correct ?? 0), 0)
+  const hardHitRate = hardTotal > 0 ? Math.round((hardCorrect / hardTotal) * 100 * 10) / 10 : null
+
+  const easyLogs = data.logs.filter((l) => l.easy_total !== null && l.easy_total > 0)
+  const easyTotal = easyLogs.reduce((s, l) => s + (l.easy_total ?? 0), 0)
+  const easyCorrect = easyLogs.reduce((s, l) => s + (l.easy_correct ?? 0), 0)
+  const easyHitRate = easyTotal > 0 ? Math.round((easyCorrect / easyTotal) * 100 * 10) / 10 : null
+
   const userPrompt = `DADOS DE ESTUDO:
 - Total de dias registrados: ${data.logs.length}
 - Total de questões: ${totalQuestions}
@@ -299,6 +316,16 @@ export async function generateInsights(data: {
 - Total de erros registrados: ${data.errors.length}
 - Meta semanal: ${data.config.weekly_goal} questões
 - Dias sem estudar: ${calculateDaysSinceLastLog(data.logs)}
+
+SCORE VS MÉDIA DA PLATAFORMA:
+- Dias com score registrado: ${logsWithScore.length}
+- Score médio (score_delta médio): ${avgScoreDelta !== null ? `${avgScoreDelta > 0 ? '+' : ''}${avgScoreDelta} pts` : 'N/A'}
+- Dias acima da média: ${positiveScores}
+- Dias abaixo da média: ${negativeScores}
+
+DIFICULDADE DAS QUESTÕES:
+- Fáceis: ${easyTotal} questões (${easyCorrect} acertos, ${easyHitRate !== null ? `${easyHitRate}%` : 'N/A'})
+- Difíceis: ${hardTotal} questões (${hardCorrect} acertos, ${hardHitRate !== null ? `${hardHitRate}%` : 'N/A'})
 
 DESEMPENHO POR ÁREA:
 ${JSON.stringify(areasSummary, null, 2)}

@@ -61,6 +61,10 @@ export function useDailyLogs() {
       ? roundTo2((totalCorrect / totalQuestions) * 100)
       : 0
 
+    const scoreDelta = formData.platform_avg_rate !== null && totalQuestions > 0
+      ? roundTo2(hit_rate - formData.platform_avg_rate)
+      : null
+
     const newLog: DailyLog = {
       id: crypto.randomUUID(),
       date: formData.date,
@@ -74,6 +78,14 @@ export function useDailyLogs() {
       notes: formData.notes || null,
       mood: formData.mood,
       energy_level: formData.energy_level,
+      platform_avg_rate: formData.platform_avg_rate,
+      score_delta: scoreDelta,
+      easy_correct: formData.easy_correct,
+      easy_total: formData.easy_total,
+      medium_correct: formData.medium_correct,
+      medium_total: formData.medium_total,
+      hard_correct: formData.hard_correct,
+      hard_total: formData.hard_total,
       created_at: new Date().toISOString(),
     }
 
@@ -97,6 +109,10 @@ export function useDailyLogs() {
       ? roundTo2((totalCorrect / totalQuestions) * 100)
       : 0
 
+    const scoreDelta = formData.platform_avg_rate !== null && totalQuestions > 0
+      ? roundTo2(hit_rate - formData.platform_avg_rate)
+      : null
+
     const updated: Partial<DailyLog> = {
       date: formData.date,
       registration_type: formData.registration_type,
@@ -109,6 +125,14 @@ export function useDailyLogs() {
       notes: formData.notes || null,
       mood: formData.mood,
       energy_level: formData.energy_level,
+      platform_avg_rate: formData.platform_avg_rate,
+      score_delta: scoreDelta,
+      easy_correct: formData.easy_correct,
+      easy_total: formData.easy_total,
+      medium_correct: formData.medium_correct,
+      medium_total: formData.medium_total,
+      hard_correct: formData.hard_correct,
+      hard_total: formData.hard_total,
     }
 
     const previousLogs = logs

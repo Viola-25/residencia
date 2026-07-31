@@ -17,6 +17,14 @@ export interface Database {
           notes: string | null
           mood: string
           energy_level: number
+          platform_avg_rate: number | null
+          score_delta: number | null
+          easy_correct: number | null
+          easy_total: number | null
+          medium_correct: number | null
+          medium_total: number | null
+          hard_correct: number | null
+          hard_total: number | null
           created_at: string
           user_id: string
         }
@@ -33,6 +41,14 @@ export interface Database {
           notes?: string | null
           mood: string
           energy_level: number
+          platform_avg_rate?: number | null
+          score_delta?: number | null
+          easy_correct?: number | null
+          easy_total?: number | null
+          medium_correct?: number | null
+          medium_total?: number | null
+          hard_correct?: number | null
+          hard_total?: number | null
           created_at?: string
           user_id: string
         }
