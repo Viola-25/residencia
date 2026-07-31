@@ -183,7 +183,7 @@ export function AIInsights() {
       </div>
 
       {loading && (
-        <div className="mb-8 rounded-xl border border-zinc-800 bg-zinc-900/50 p-8 text-center">
+        <div className="mb-8 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 text-center">
           <Sparkles size={32} className="mx-auto animate-pulse text-violet-500" />
           <p className="mt-3 text-sm font-medium text-zinc-300">
             Analisando seus dados...
@@ -317,7 +317,7 @@ export function AIInsights() {
             </div>
           </div>
         ) : !error ? (
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-8 text-center">
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 text-center">
             <Sparkles size={32} className="mx-auto text-zinc-600" />
             <p className="mt-3 text-sm text-zinc-500">
               Nenhum insight disponível. Clique em "Atualizar" para gerar análises.

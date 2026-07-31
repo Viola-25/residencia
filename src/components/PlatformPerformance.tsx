@@ -199,7 +199,7 @@ export function PlatformPerformance({ logs, compact = false }: PlatformPerforman
 
   if (compact) {
     return (
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+      <div className="mb-8 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Activity size={16} className="text-violet-400" />

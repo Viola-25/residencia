@@ -95,7 +95,7 @@ export function Dashboard() {
       {dueForReview.length > 0 && (
         <a
           href="/erros"
-          className="group mb-6 flex flex-col items-start justify-between gap-4 rounded-xl border border-violet-500/20 bg-gradient-to-r from-violet-500/10 to-transparent p-5 transition-all hover:border-violet-500/40 hover:from-violet-500/20 sm:flex-row sm:items-center"
+          className="group mb-8 flex flex-col items-start justify-between gap-4 rounded-xl border border-violet-500/20 bg-gradient-to-r from-violet-500/10 to-transparent p-5 transition-all hover:border-violet-500/40 hover:from-violet-500/20 sm:flex-row sm:items-center"
         >
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/20">
@@ -116,7 +116,7 @@ export function Dashboard() {
         </a>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Dias para ENAMED"
           value={metrics.days_to_enamed}
@@ -175,7 +175,7 @@ export function Dashboard() {
 
       <PlatformPerformance logs={logs} compact />
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+      <div className="mb-8 grid gap-6 lg:grid-cols-2">
         <div className="min-w-0 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
           <h3 className="mb-4 text-sm font-semibold text-zinc-200">Acerto por Semana</h3>
           <WeeklyHitRateChart logs={logs} />

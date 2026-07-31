@@ -145,7 +145,7 @@ export function ErrorBank() {
         icon={AlertTriangle}
       />
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total de Erros"
           value={errors.length}
@@ -173,7 +173,7 @@ export function ErrorBank() {
       </div>
 
       {dueForReview.length > 0 && (
-        <div className="mb-6 rounded-xl border border-violet-500/20 bg-violet-500/5 p-5">
+        <div className="mb-8 rounded-xl border border-violet-500/20 bg-violet-500/5 p-5">
           <div className="mb-4 flex items-center justify-between">
             <h3 className="flex items-center gap-2 text-sm font-semibold text-violet-200">
               <Brain size={16} />
@@ -370,7 +370,7 @@ export function ErrorBank() {
         </div>
       )}
 
-      <div className="mb-6 grid gap-6 lg:grid-cols-3">
+      <div className="mb-8 grid gap-6 lg:grid-cols-3">
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
           <h3 className="mb-4 text-sm font-semibold text-zinc-200">Assuntos Mais Errados</h3>
           <div className="space-y-2">
@@ -430,7 +430,7 @@ export function ErrorBank() {
         </div>
       </div>
 
-      <div className="mb-6">
+      <div className="mb-8">
         <div className="flex flex-wrap gap-3">
           <div className="relative flex-1">
             <Search

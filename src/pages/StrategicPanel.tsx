@@ -25,7 +25,7 @@ export function StrategicPanel() {
         icon={Brain}
       />
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 max-sm:p-3">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-rose-500/10 p-2">
@@ -84,7 +84,7 @@ export function StrategicPanel() {
         </div>
       </div>
 
-      <div className="mb-6 grid gap-6 lg:grid-cols-2">
+      <div className="mb-8 grid gap-6 lg:grid-cols-2">
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
           <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-emerald-400">
             <TrendingUp size={16} />
@@ -199,7 +199,7 @@ export function StrategicPanel() {
       </div>
 
       {strategicData.best_week && (
-        <div className="mt-6 rounded-xl border border-amber-500/20 bg-amber-500/5 p-5">
+        <div className="mt-8 rounded-xl border border-amber-500/20 bg-amber-500/5 p-5">
           <div className="flex items-center gap-3">
             <Trophy size={20} className="text-amber-400" />
             <div>

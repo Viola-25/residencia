@@ -65,7 +65,7 @@ export function DailyLog() {
         }
       />
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total de Dias"
           value={new Set(logs.map(l => l.date.split('T')[0])).size}

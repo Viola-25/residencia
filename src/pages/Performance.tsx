@@ -125,7 +125,7 @@ export function Performance() {
         icon={BarChart3}
       />
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total de Questões"
           value={dashboardMetrics.total_questions.toLocaleString()}
@@ -157,7 +157,7 @@ export function Performance() {
       <PlatformPerformance logs={logs} />
 
       {srsStats && (
-        <div className="mb-6 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+        <div className="mb-8 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
           <div className="mb-4 flex items-center gap-2">
             <Brain size={16} className="text-violet-400" />
             <h3 className="text-sm font-semibold text-zinc-200">Consolidação por Revisão Espacada</h3>
