@@ -16,6 +16,7 @@ import { WeeklyHitRateChart } from '../components/charts/WeeklyHitRateChart'
 import { WeeklyQuestionsChart } from '../components/charts/WeeklyQuestionsChart'
 import { MockEvolutionChart } from '../components/charts/MockEvolutionChart'
 import { AreaEvolutionChart } from '../components/charts/AreaEvolutionChart'
+import { PlatformPerformance } from '../components/PlatformPerformance'
 import { getHitRateTrend, calculateGlobalHitRate } from '../lib/calculations'
 
 import { useData } from '../hooks/useData'
@@ -171,6 +172,8 @@ export function Dashboard() {
           trend={metrics.evolution_percentage > 0 ? 'up' : 'down'}
         />
       </div>
+
+      <PlatformPerformance logs={logs} compact />
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <div className="min-w-0 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">

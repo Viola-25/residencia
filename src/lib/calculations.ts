@@ -24,15 +24,6 @@ export function formatScoreBadge(scoreDelta: number): {
   return { text, variant }
 }
 
-export function calculateRecentHitRate(logs: DailyLog[], days: number): number {
-  const cutoffDate = new Date()
-  cutoffDate.setHours(0, 0, 0, 0)
-  cutoffDate.setDate(cutoffDate.getDate() - days)
-
-  const recentLogs = logs.filter(log => new Date(log.date + 'T00:00:00') >= cutoffDate)
-  return calculateGlobalHitRate(recentLogs)
-}
-
 export function getHitRateTrend(logs: DailyLog[], days: number = 30) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -67,6 +58,247 @@ export function getHitRateTrend(logs: DailyLog[], days: number = 30) {
 export function calculateTotalQuestions(logs: DailyLog[]): number {
   return logs.reduce((sum, log) => sum + log.questions_done, 0)
 }
+
+export interface DifficultyBreakdown {
+  level: 'easy' | 'medium' | 'hard'
+  label: string
+  correct: number
+  total: number
+  hit_rate: number | null
+}
+
+export function calculateDifficultyBreakdown(logs: DailyLog[]): DifficultyBreakdown[] {
+  const levels: { level: DifficultyBreakdown['level']; label: string }[] = [
+    { level: 'easy', label: 'Fáceis' },
+    { level: 'medium', label: 'Médias' },
+    { level: 'hard', label: 'Difíceis' },
+  ]
+
+  return levels.map(({ level, label }) => {
+    let correct = 0
+    let total = 0
+    for (const log of logs) {
+      const c = log[`${level}_correct`]
+      const t = log[`${level}_total`]
+      if (c !== null && t !== null) {
+        correct += c
+        total += t
+      }
+    }
+    return {
+      level,
+      label,
+      correct,
+      total,
+      hit_rate: total > 0 ? roundTo2((correct / total) * 100) : null,
+    }
+  })
+}
+
+export interface PlatformComparison {
+  logs_with_platform: number
+  avg_score_delta: number | null
+  above_average: number
+  above_average_pct: number | null
+  user_hit_rate: number
+  platform_avg_rate: number | null
+}
+
+export function calculatePlatformComparison(logs: DailyLog[]): PlatformComparison {
+  const withPlatform = logs.filter(
+    (l) => l.platform_avg_rate !== null && l.score_delta !== null
+  )
+  const userRate = calculateGlobalHitRate(logs)
+
+  if (withPlatform.length === 0) {
+    return {
+      logs_with_platform: 0,
+      avg_score_delta: null,
+      above_average: 0,
+      above_average_pct: null,
+      user_hit_rate: userRate,
+      platform_avg_rate: null,
+    }
+  }
+
+  const avgDelta = roundTo2(
+    withPlatform.reduce((s, l) => s + (l.score_delta ?? 0), 0) / withPlatform.length
+  )
+  const above = withPlatform.filter((l) => (l.score_delta ?? 0) > 0).length
+  const platformTotalQ = withPlatform.reduce((s, l) => s + l.questions_done, 0)
+  const platformAvg = roundTo2(
+    withPlatform.reduce((s, l) => s + (l.platform_avg_rate ?? 0) * l.questions_done, 0) /
+      platformTotalQ
+  )
+
+  return {
+    logs_with_platform: withPlatform.length,
+    avg_score_delta: avgDelta,
+    above_average: above,
+    above_average_pct: roundTo2((above / withPlatform.length) * 100),
+    user_hit_rate: userRate,
+    platform_avg_rate: platformAvg,
+  }
+}
+
+function lgamma(x: number): number {
+  const cof = [
+    76.18009172947146,
+    -86.5053203294168,
+    24.01409824083091,
+    -1.231739572450155,
+    0.1208650973866179e-2,
+    -0.5395239384953e-5,
+  ]
+  let y = x
+  let tmp = x + 5.5
+  tmp -= (x + 0.5) * Math.log(tmp)
+  let ser = 1.000000000190015
+  for (const c of cof) ser += c / ++y
+  return -tmp + Math.log((2.506628274631 * ser) / x)
+}
+
+function betacf(a: number, b: number, x: number): number {
+  const MAXIT = 100
+  const EPS = 3e-7
+  const FPMIN = 1e-30
+  const qab = a + b
+  const qap = a + 1
+  const qam = a - 1
+  let c = 1
+  let d = 1 - (qab * x) / qap
+  if (Math.abs(d) < FPMIN) d = FPMIN
+  d = 1 / d
+  let h = d
+  for (let m = 1; m <= MAXIT; m++) {
+    const m2 = 2 * m
+    let aa = (m * (b - m) * x) / ((qam + m2) * (a + m2))
+    d = 1 + aa * d
+    if (Math.abs(d) < FPMIN) d = FPMIN
+    c = 1 + aa / c
+    if (Math.abs(c) < FPMIN) c = FPMIN
+    d = 1 / d
+    h *= d * c
+    aa = (-(a + m) * (qab + m) * x) / ((a + m2) * (qap + m2))
+    d = 1 + aa * d
+    if (Math.abs(d) < FPMIN) d = FPMIN
+    c = 1 + aa / c
+    if (Math.abs(c) < FPMIN) c = FPMIN
+    d = 1 / d
+    const del = d * c
+    h *= del
+    if (Math.abs(del - 1) < EPS) break
+  }
+  return h
+}
+
+function betai(a: number, b: number, x: number): number {
+  if (x <= 0) return 0
+  if (x >= 1) return 1
+  const bt = Math.exp(
+    lgamma(a + b) - lgamma(a) - lgamma(b) + a * Math.log(x) + b * Math.log(1 - x)
+  )
+  if (x < (a + 1) / (a + b + 2)) return (bt * betacf(a, b, x)) / a
+  return 1 - (bt * betacf(b, a, 1 - x)) / b
+}
+
+function twoTailedTTestPValue(t: number, df: number): number {
+  const x = df / (df + t * t)
+  return betai(df / 2, 0.5, x)
+}
+
+function normalCdf(x: number): number {
+  const sign = x < 0 ? -1 : 1
+  const ax = Math.abs(x) / Math.SQRT2
+  const p = 0.3275911
+  const a1 = 0.254829592
+  const a2 = -0.284496736
+  const a3 = 1.421413741
+  const a4 = -1.453152027
+  const a5 = 1.061405429
+  const t = 1 / (1 + p * ax)
+  const y = 1 - (((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-ax * ax))
+  return 0.5 * (1 + sign * y)
+}
+
+function wilsonInterval(correct: number, total: number, z = 1.96): { low: number; high: number } {
+  const phat = correct / total
+  const z2 = z * z
+  const denom = 1 + z2 / total
+  const center = (phat + z2 / (2 * total)) / denom
+  const margin =
+    (z * Math.sqrt((phat * (1 - phat)) / total + z2 / (4 * total * total))) / denom
+  return {
+    low: Math.max(0, roundTo2((center - margin) * 100)),
+    high: Math.min(100, roundTo2((center + margin) * 100)),
+  }
+}
+
+export const ESTIMATED_PLATFORM_SIGMA = 10
+
+export interface PlatformInference {
+  sessions: number
+  t_stat: number | null
+  p_value: number | null
+  significant: boolean
+  hit_rate_ci: { low: number; high: number } | null
+  estimated_z: number | null
+  estimated_percentile: number | null
+  estimated_quartile: 'Q1' | 'Q2' | 'Q3' | 'Q4' | null
+}
+
+export function calculatePlatformInference(
+  logs: DailyLog[],
+  sigma: number = ESTIMATED_PLATFORM_SIGMA
+): PlatformInference {
+  const deltas = logs
+    .map((l) => l.score_delta)
+    .filter((d): d is number => d !== null)
+
+  let tStat: number | null = null
+  let pValue: number | null = null
+  let significant = false
+
+  if (deltas.length >= 2) {
+    const mean = deltas.reduce((s, d) => s + d, 0) / deltas.length
+    const sd = Math.sqrt(
+      deltas.reduce((s, d) => s + (d - mean) ** 2, 0) / (deltas.length - 1)
+    )
+    if (sd > 0) {
+      tStat = roundTo2(mean / (sd / Math.sqrt(deltas.length)))
+      pValue = Math.round(twoTailedTTestPValue(tStat, deltas.length - 1) * 10000) / 10000
+      significant = pValue < 0.05
+    }
+  }
+
+  const totalQ = calculateTotalQuestions(logs)
+  const totalCorrect = calculateTotalCorrect(logs)
+  const hitRateCi = totalQ > 0 ? wilsonInterval(totalCorrect, totalQ) : null
+
+  const avgDelta = deltas.length > 0 ? deltas.reduce((s, d) => s + d, 0) / deltas.length : null
+  const estimatedZ = avgDelta !== null ? roundTo2(avgDelta / sigma) : null
+  const estimatedPercentile =
+    estimatedZ !== null ? Math.round(normalCdf(estimatedZ) * 1000) / 10 : null
+  let estimatedQuartile: PlatformInference['estimated_quartile'] = null
+  if (estimatedPercentile !== null) {
+    if (estimatedPercentile <= 25) estimatedQuartile = 'Q1'
+    else if (estimatedPercentile <= 50) estimatedQuartile = 'Q2'
+    else if (estimatedPercentile <= 75) estimatedQuartile = 'Q3'
+    else estimatedQuartile = 'Q4'
+  }
+
+  return {
+    sessions: deltas.length,
+    t_stat: tStat,
+    p_value: pValue,
+    significant,
+    hit_rate_ci: hitRateCi,
+    estimated_z: estimatedZ,
+    estimated_percentile: estimatedPercentile,
+    estimated_quartile: estimatedQuartile,
+  }
+}
+
 
 export function calculateTotalCorrect(logs: DailyLog[]): number {
   return logs.reduce((sum, log) => sum + Math.round(log.questions_done * (log.hit_rate / 100)), 0)
@@ -236,36 +468,6 @@ export function calculateApprovalScore(
       review_score: reviewScore,
       error_bank_score: errorBankScore,
     },
-  }
-}
-
-export function generateWeeklySummary(logs: DailyLog[], weekStart: string): WeeklySummary {
-  const weekLogs = logs.filter((log) => log.date >= weekStart)
-  const weekEnd = new Date(weekStart + 'T00:00:00')
-  weekEnd.setDate(weekEnd.getDate() + 7)
-  const weekLogsFiltered = weekLogs.filter((log) => {
-    const logDate = new Date(log.date + 'T00:00:00')
-    return logDate < weekEnd
-  })
-
-  const questions_done = weekLogsFiltered.reduce((s, l) => s + l.questions_done, 0)
-  const correct = weekLogsFiltered.reduce(
-    (s, l) => s + Math.round(l.questions_done * (l.hit_rate / 100)),
-    0
-  )
-  const hit_rate = questions_done > 0 ? roundTo2((correct / questions_done) * 100) : 0
-  const hours_studied =
-    Math.round(weekLogsFiltered.reduce((s, l) => s + l.hours_studied, 0) * 100) / 100
-  const days_studied = new Set(weekLogsFiltered.map((l) => l.date)).size
-
-  return {
-    id: weekStart,
-    week_start: weekStart,
-    questions_done,
-    correct,
-    hit_rate,
-    hours_studied,
-    days_studied,
   }
 }
 

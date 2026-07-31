@@ -25,6 +25,7 @@ import {
 import { PageHeader } from '../components/PageHeader'
 import { StatCard } from '../components/StatCard'
 import { Badge } from '../components/Badge'
+import { PlatformPerformance } from '../components/PlatformPerformance'
 import { getWeekLabel } from '../lib/dates'
 import { AREA_LABELS } from '../types'
 import { getHitRateTrend, calculateGlobalHitRate } from '../lib/calculations'
@@ -152,6 +153,8 @@ export function Performance() {
           trend={hitRate30d.trend}
         />
       </div>
+
+      <PlatformPerformance logs={logs} />
 
       {srsStats && (
         <div className="mb-6 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">

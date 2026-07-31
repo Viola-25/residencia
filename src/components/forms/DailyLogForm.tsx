@@ -6,7 +6,7 @@ import { Plus, Minus } from 'lucide-react'
 import { MEDICAL_AREAS, MOOD_OPTIONS, REGISTRATION_TYPES } from '../../types'
 import type { DailyLogFormData, Mood, RegistrationType } from '../../types'
 import { getTodayDateString } from '../../lib/dates'
-import { calculateLogScore, formatScoreBadge } from '../../lib/calculations'
+import { calculateLogScore, formatScoreBadge, roundTo2 } from '../../lib/calculations'
 
 const registrationTypeColors: Record<string, string> = {
   questoes: 'border-violet-500/20 bg-violet-500/5',
@@ -86,6 +86,10 @@ function logToFormValues(log: DailyLogFormData): DailyLogFormValues {
       },
     ])
   )
+  const totalQ = Object.values(areas).reduce((s, a) => s + a.questions_done, 0)
+  const platformRaw = log.platform_avg_rate !== null && totalQ > 0
+    ? Math.round((log.platform_avg_rate / 100) * totalQ)
+    : null
   return {
     date: log.date,
     registration_type: log.registration_type,
@@ -96,7 +100,7 @@ function logToFormValues(log: DailyLogFormData): DailyLogFormValues {
     notes: log.notes,
     mood: log.mood,
     energy_level: log.energy_level,
-    platform_avg_rate: log.platform_avg_rate ?? null,
+    platform_avg_rate: platformRaw,
     easy_correct: log.easy_correct ?? null,
     easy_total: log.easy_total ?? null,
     medium_correct: log.medium_correct ?? null,
@@ -134,10 +138,13 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
     ? Math.round((totalCorrect / totalQuestions) * 100 * 100) / 100
     : 0
 
-  const platformAvg = formValues.platform_avg_rate
-  const scorePreview = platformAvg !== null && platformAvg > 0 && totalQuestions > 0
+  const platformRaw = formValues.platform_avg_rate
+  const platformAvgPct = platformRaw !== null && platformRaw > 0 && totalQuestions > 0
+    ? roundTo2((platformRaw / totalQuestions) * 100)
+    : null
+  const scorePreview = platformAvgPct !== null
     ? (() => {
-        const { scoreDelta } = calculateLogScore(totalCorrect, totalQuestions, platformAvg)
+        const { scoreDelta } = calculateLogScore(totalCorrect, totalQuestions, platformAvgPct)
         if (scoreDelta !== null) return formatScoreBadge(scoreDelta)
         return null
       })()
@@ -151,6 +158,12 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
       ])
     ) as DailyLogFormData['areas']
 
+    const totalQ = Object.values(areas).reduce((s, a) => s + a.questions_done, 0)
+    const platformRaw = values.platform_avg_rate
+    const platformAvgPct = platformRaw !== null && platformRaw > 0 && totalQ > 0
+      ? roundTo2((platformRaw / totalQ) * 100)
+      : null
+
     onSubmit({
       date: values.date,
       registration_type: values.registration_type,
@@ -161,7 +174,7 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
       notes: values.notes,
       mood: values.mood,
       energy_level: Number(values.energy_level),
-      platform_avg_rate: values.platform_avg_rate,
+      platform_avg_rate: platformAvgPct,
       easy_correct: values.easy_correct,
       easy_total: values.easy_total,
       medium_correct: values.medium_correct,
@@ -235,16 +248,19 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
           </div>
           <div className="h-8 w-px bg-zinc-700" />
           <div>
-            <p className="text-xs text-zinc-500">Média Plataforma</p>
-            <input
-              type="number"
-              min="0"
-              max="100"
-              step="0.1"
-              placeholder="Ex: 65"
-              {...register('platform_avg_rate')}
-              className="w-20 rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
-            />
+            <p className="text-xs text-zinc-500">Média da plataforma</p>
+            <div className="flex items-baseline gap-1">
+              <input
+                type="number"
+                min="0"
+                max="999"
+                step="1"
+                placeholder="0"
+                {...register('platform_avg_rate')}
+                className="w-16 rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
+              />
+              <span className="text-xs text-zinc-600">de {totalQuestions} questões</span>
+            </div>
           </div>
           {scorePreview && (
             <>
@@ -260,6 +276,9 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
             </>
           )}
         </div>
+        <p className="mt-2 text-xs text-zinc-600">
+          Média da plataforma: preencha o <span className="text-zinc-400">número de questões acertadas</span> que a plataforma mostrou (ex: 13), não o percentual. O Score compara sua % com essa média.
+        </p>
       </div>
 
       <div>
