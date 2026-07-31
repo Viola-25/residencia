@@ -18,6 +18,7 @@ export interface Database {
           mood: string
           energy_level: number
           platform_avg_rate: number | null
+          platform_total_questions: number | null
           score_delta: number | null
           easy_correct: number | null
           easy_total: number | null
@@ -42,6 +43,7 @@ export interface Database {
           mood: string
           energy_level: number
           platform_avg_rate?: number | null
+          platform_total_questions?: number | null
           score_delta?: number | null
           easy_correct?: number | null
           easy_total?: number | null

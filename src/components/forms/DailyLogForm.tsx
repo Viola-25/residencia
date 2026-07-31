@@ -42,6 +42,7 @@ const dailyLogSchema = z.object({
   mood: z.enum(['excelente', 'bom', 'medio', 'ruim'] as const),
   energy_level: z.coerce.number().min(0).max(10).default(7),
   platform_avg_rate: optNum(),
+  platform_total_questions: optNum(),
   easy_correct: optNum(),
   easy_total: optNum(),
   medium_correct: optNum(),
@@ -67,6 +68,7 @@ function defaultFormValues(): DailyLogFormValues {
     mood: 'bom' as Mood,
     energy_level: 7,
     platform_avg_rate: null,
+    platform_total_questions: null,
     easy_correct: null,
     easy_total: null,
     medium_correct: null,
@@ -87,8 +89,9 @@ function logToFormValues(log: DailyLogFormData): DailyLogFormValues {
     ])
   )
   const totalQ = Object.values(areas).reduce((s, a) => s + a.questions_done, 0)
-  const platformRaw = log.platform_avg_rate !== null && totalQ > 0
-    ? Math.round((log.platform_avg_rate / 100) * totalQ)
+  const platformTotalQ = log.platform_total_questions ?? (log.platform_avg_rate !== null ? totalQ : null)
+  const platformRaw = log.platform_avg_rate !== null && platformTotalQ !== null && platformTotalQ > 0
+    ? Math.round((log.platform_avg_rate / 100) * platformTotalQ)
     : null
   return {
     date: log.date,
@@ -101,6 +104,7 @@ function logToFormValues(log: DailyLogFormData): DailyLogFormValues {
     mood: log.mood,
     energy_level: log.energy_level,
     platform_avg_rate: platformRaw,
+    platform_total_questions: platformTotalQ,
     easy_correct: log.easy_correct ?? null,
     easy_total: log.easy_total ?? null,
     medium_correct: log.medium_correct ?? null,
@@ -139,8 +143,9 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
     : 0
 
   const platformRaw = formValues.platform_avg_rate
-  const platformAvgPct = platformRaw !== null && platformRaw > 0 && totalQuestions > 0
-    ? roundTo2((platformRaw / totalQuestions) * 100)
+  const platformTotalQ = formValues.platform_total_questions ?? totalQuestions
+  const platformAvgPct = platformRaw !== null && platformRaw > 0 && platformTotalQ > 0
+    ? roundTo2((platformRaw / platformTotalQ) * 100)
     : null
   const scorePreview = platformAvgPct !== null
     ? (() => {
@@ -160,8 +165,9 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
 
     const totalQ = Object.values(areas).reduce((s, a) => s + a.questions_done, 0)
     const platformRaw = values.platform_avg_rate
-    const platformAvgPct = platformRaw !== null && platformRaw > 0 && totalQ > 0
-      ? roundTo2((platformRaw / totalQ) * 100)
+    const platformTotalQ = values.platform_total_questions ?? totalQ
+    const platformAvgPct = platformRaw !== null && platformRaw > 0 && platformTotalQ > 0
+      ? roundTo2((platformRaw / platformTotalQ) * 100)
       : null
 
     onSubmit({
@@ -175,6 +181,7 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
       mood: values.mood,
       energy_level: Number(values.energy_level),
       platform_avg_rate: platformAvgPct,
+      platform_total_questions: values.platform_total_questions ?? null,
       easy_correct: values.easy_correct,
       easy_total: values.easy_total,
       medium_correct: values.medium_correct,
@@ -249,7 +256,7 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
           <div className="h-8 w-px bg-zinc-700" />
           <div>
             <p className="text-xs text-zinc-500">Média da plataforma</p>
-            <div className="flex items-baseline gap-1">
+            <div className="flex items-center gap-1.5">
               <input
                 type="number"
                 min="0"
@@ -259,7 +266,17 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
                 {...register('platform_avg_rate')}
                 className="w-16 rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
               />
-              <span className="text-xs text-zinc-600">de {totalQuestions} questões</span>
+              <span className="text-xs text-zinc-600">de</span>
+              <input
+                type="number"
+                min="0"
+                max="999"
+                step="1"
+                placeholder={String(totalQuestions)}
+                {...register('platform_total_questions')}
+                className="w-16 rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
+              />
+              <span className="text-xs text-zinc-600">questões</span>
             </div>
           </div>
           {scorePreview && (
@@ -277,7 +294,7 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
           )}
         </div>
         <p className="mt-2 text-xs text-zinc-600">
-          Média da plataforma: preencha o <span className="text-zinc-400">número de questões acertadas</span> que a plataforma mostrou (ex: 13), não o percentual. O Score compara sua % com essa média.
+          Média da plataforma: preencha o <span className="text-zinc-400">número de questões acertadas</span> que a plataforma mostrou (ex: 13) e o <span className="text-zinc-400">total de questões</span> da sessão na plataforma (ex: 20). O Score compara sua % com essa média.
         </p>
       </div>
 

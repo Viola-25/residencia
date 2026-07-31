@@ -25,19 +25,19 @@ App de estudo para residência médica (Brasil). Rastreia daily logs de estudo, 
 - `src/pages/` — Dashboard, DailyLog, MockExams, Performance, ErrorBank, ApprovalRadar, StrategicPanel, AIInsights, Settings
 - `src/components/forms/DailyLogForm.tsx` — form de daily log (compartilhado entre criar e editar)
 - `src/components/modals/EditLogModal.tsx` — converte DailyLog → DailyLogFormData
+- `src/components/modals/ViewLogModal.tsx` — preview do log (plataforma + dificuldade quando presentes)
 - `src/components/PlatformPerformance.tsx` — cards de comparação com média da plataforma + inferência estatística (compact no Dashboard, full no Performance)
-- `supabase/migrations/` — migrações SQL versionadas (001–010)
+- `supabase/migrations/` — migrações SQL versionadas (001–011)
 
 ## Rotas
 `/` dashboard, `/diario`, `/simulados`, `/desempenho`, `/erros`, `/radar`, `/estrategico`, `/ia`, `/configuracoes`, `/login`
 
 ## Convenções de domínio
 - **hit_rate**: percentual 0–100 (ex: 75.5), arredondado com `roundTo2`
-- **platform_avg_rate** (DB): percentual 0–100. **Form**: input em acertos brutos (ex: 13), convertido via `roundTo2((raw / totalQ) * 100)` no submit. `logToFormValues` converte % → bruto ao editar (`Math.round((pct / 100) * totalQ)`)
+- **platform_avg_rate** (DB): percentual 0–100. **Form**: inputs em acertos brutos — "Média da plataforma" (ex: 13) e "Total de questões" da sessão na plataforma (`platform_total_questions`, ex: 20) — convertido via `roundTo2((raw / platformTotalQ) * 100)` no submit, onde `platformTotalQ = platform_total_questions ?? questions_done`. `logToFormValues` converte % → bruto ao editar usando `platform_total_questions` quando presente
 - **score_delta** = userRate − platformAvgRate (pontos percentuais, pode ser negativo)
-- **platform_avg_rate null** quando não informado; score_delta também null
-- Dificuldade (easy/medium/hard): campos opcionais `_correct`/`_total` nullables
-- **Estatística em `calculations.ts`**: `calculatePlatformComparison`, `calculateDifficultyBreakdown`, `calculatePlatformInference` (t-test de 1 amostra sobre score_deltas, IC binomial de Wilson, percentil estimado com `ESTIMATED_PLATFORM_SIGMA = 10`pp — aproximação com σ assumido, sempre rotulada como estimativa)
+- **platform_avg_rate null** quando não informado; score_delta também null. `platform_total_questions` é a base da média bruta da plataforma (pode diferir de `questions_done` do usuário)
+- **Estatística em `calculations.ts`**: `calculatePlatformComparison` (ponderado por `platform_total_questions ?? questions_done`, restrito a sessões com plataforma), `calculateDifficultyBreakdown`, `calculatePlatformInference` (t-test de 1 amostra sobre score_deltas, IC binomial de Wilson global sobre todos os registros, percentil estimado com `ESTIMATED_PLATFORM_SIGMA = 10`pp — aproximação com σ assumido, sempre rotulada como estimativa)
 - Áreas: `ginecologia`/`obstetricia` → alias para `ginecologia_obstetricia` via `normalizeArea`
 - UI inteira em pt-BR (labels, placeholders, prompts de IA)
 - Sem testes no projeto; validação via `npx tsc --noEmit` + `npm run lint`

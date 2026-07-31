@@ -152,7 +152,7 @@ function InferenceCard({ logs }: { logs: DailyLog[] }) {
                 {inference.hit_rate_ci.low}% – {inference.hit_rate_ci.high}%
               </p>
               <p className="mt-1 text-xs text-zinc-500">
-                intervalo de confiança de 95% (Wilson)
+                intervalo de confiança de 95% (Wilson), sobre todos os registros
               </p>
             </>
           ) : (

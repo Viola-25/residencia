@@ -65,6 +65,39 @@ export function ViewLogModal({ log, onClose }: ViewLogModalProps) {
               {log.hit_rate}%
             </Badge>
           </div>
+          {log.platform_avg_rate !== null && (
+            <>
+              <div className="flex justify-between border-b border-zinc-800 pb-2">
+                <span className="text-zinc-400">Média da plataforma</span>
+                <span className="text-zinc-200">
+                  {log.platform_avg_rate}%
+                  <span className="ml-1 text-xs text-zinc-500">
+                    (
+                    {Math.round(
+                      (log.platform_avg_rate / 100) *
+                        (log.platform_total_questions ?? log.questions_done)
+                    )}
+                    /{log.platform_total_questions ?? log.questions_done})
+                  </span>
+                </span>
+              </div>
+              <div className="flex justify-between border-b border-zinc-800 pb-2">
+                <span className="text-zinc-400">Seu desempenho vs plataforma</span>
+                {log.score_delta !== null ? (
+                  <Badge
+                    variant={
+                      log.score_delta > 0 ? 'green' : log.score_delta < 0 ? 'red' : 'yellow'
+                    }
+                  >
+                    {log.score_delta > 0 ? '+' : ''}
+                    {log.score_delta} pts
+                  </Badge>
+                ) : (
+                  <span className="text-zinc-600">—</span>
+                )}
+              </div>
+            </>
+          )}
           <div className="flex justify-between border-b border-zinc-800 pb-2">
             <span className="text-zinc-400">Revisão Núcleo</span>
             <span className={log.core_review_done ? 'text-emerald-400' : 'text-zinc-600'}>
@@ -97,6 +130,31 @@ export function ViewLogModal({ log, onClose }: ViewLogModalProps) {
                 .join(', ')}
             </span>
           </div>
+          {(log.easy_total || log.medium_total || log.hard_total) && (
+            <div className="border-b border-zinc-800 pb-2">
+              <div className="mb-1 text-zinc-400">Dificuldade</div>
+              <div className="space-y-0.5 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Fáceis</span>
+                  <span className="text-zinc-200">
+                    {log.easy_total ? `${log.easy_correct}/${log.easy_total}` : '—'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Médias</span>
+                  <span className="text-zinc-200">
+                    {log.medium_total ? `${log.medium_correct}/${log.medium_total}` : '—'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Difíceis</span>
+                  <span className="text-zinc-200">
+                    {log.hard_total ? `${log.hard_correct}/${log.hard_total}` : '—'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         <button
           onClick={onClose}

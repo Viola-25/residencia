@@ -25,6 +25,7 @@ function logToFormData(log: DailyLog): DailyLogFormData {
     mood: log.mood,
     energy_level: log.energy_level,
     platform_avg_rate: log.platform_avg_rate,
+    platform_total_questions: log.platform_total_questions,
     easy_correct: log.easy_correct,
     easy_total: log.easy_total,
     medium_correct: log.medium_correct,

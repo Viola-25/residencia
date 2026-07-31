@@ -120,16 +120,17 @@ export function calculatePlatformComparison(logs: DailyLog[]): PlatformCompariso
     }
   }
 
+  const sessionWeight = (l: DailyLog) => l.platform_total_questions ?? l.questions_done
   const userRate = calculateGlobalHitRate(withPlatform)
-  const platformTotalQ = withPlatform.reduce((s, l) => s + l.questions_done, 0)
+  const platformTotalQ = withPlatform.reduce((s, l) => s + sessionWeight(l), 0)
   const platformAvg = roundTo2(
-    withPlatform.reduce((s, l) => s + (l.platform_avg_rate ?? 0) * l.questions_done, 0) /
+    withPlatform.reduce((s, l) => s + (l.platform_avg_rate ?? 0) * sessionWeight(l), 0) /
       platformTotalQ
   )
   const avgDelta =
     platformTotalQ > 0
       ? roundTo2(
-          withPlatform.reduce((s, l) => s + (l.score_delta ?? 0) * l.questions_done, 0) /
+          withPlatform.reduce((s, l) => s + (l.score_delta ?? 0) * sessionWeight(l), 0) /
             platformTotalQ
         )
       : roundTo2(
