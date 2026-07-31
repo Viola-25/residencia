@@ -108,7 +108,6 @@ export function calculatePlatformComparison(logs: DailyLog[]): PlatformCompariso
   const withPlatform = logs.filter(
     (l) => l.platform_avg_rate !== null && l.score_delta !== null
   )
-  const userRate = calculateGlobalHitRate(logs)
 
   if (withPlatform.length === 0) {
     return {
@@ -116,20 +115,27 @@ export function calculatePlatformComparison(logs: DailyLog[]): PlatformCompariso
       avg_score_delta: null,
       above_average: 0,
       above_average_pct: null,
-      user_hit_rate: userRate,
+      user_hit_rate: calculateGlobalHitRate(logs),
       platform_avg_rate: null,
     }
   }
 
-  const avgDelta = roundTo2(
-    withPlatform.reduce((s, l) => s + (l.score_delta ?? 0), 0) / withPlatform.length
-  )
-  const above = withPlatform.filter((l) => (l.score_delta ?? 0) > 0).length
+  const userRate = calculateGlobalHitRate(withPlatform)
   const platformTotalQ = withPlatform.reduce((s, l) => s + l.questions_done, 0)
   const platformAvg = roundTo2(
     withPlatform.reduce((s, l) => s + (l.platform_avg_rate ?? 0) * l.questions_done, 0) /
       platformTotalQ
   )
+  const avgDelta =
+    platformTotalQ > 0
+      ? roundTo2(
+          withPlatform.reduce((s, l) => s + (l.score_delta ?? 0) * l.questions_done, 0) /
+            platformTotalQ
+        )
+      : roundTo2(
+          withPlatform.reduce((s, l) => s + (l.score_delta ?? 0), 0) / withPlatform.length
+        )
+  const above = withPlatform.filter((l) => (l.score_delta ?? 0) > 0).length
 
   return {
     logs_with_platform: withPlatform.length,

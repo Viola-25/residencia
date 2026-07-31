@@ -60,9 +60,11 @@ function DifficultyRows({ logs, compact }: { logs: DailyLog[]; compact?: boolean
 
   if (!hasData) {
     return (
-      <p className="text-xs text-zinc-500">
-        Preencha o nível de dificuldade ao registrar atividades para ver o desempenho por dificuldade.
-      </p>
+      <div className="flex min-h-40 items-center justify-center text-center">
+        <p className="max-w-xs text-xs text-zinc-500">
+          Preencha o nível de dificuldade ao registrar atividades para ver o desempenho por dificuldade.
+        </p>
+      </div>
     )
   }
 
@@ -227,8 +229,8 @@ export function PlatformPerformance({ logs, compact = false }: PlatformPerforman
   }
 
   return (
-    <div className="mb-8">
-      <div className="mb-6 grid gap-6 lg:grid-cols-2">
+    <div className="mb-8 space-y-6">
+      <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
           <div className="mb-4 flex items-center gap-2">
             <Activity size={16} className="text-violet-400" />
@@ -266,6 +268,12 @@ export function PlatformPerformance({ logs, compact = false }: PlatformPerforman
             userRate={comparison.user_hit_rate}
             platformAvg={comparison.platform_avg_rate}
           />
+
+          <p className="mt-3 text-xs text-zinc-600">
+            Comparação nas {comparison.logs_with_platform}{' '}
+            {comparison.logs_with_platform === 1 ? 'sessão' : 'sessões'} com média da plataforma
+            registrada — não inclui o restante dos seus registros.
+          </p>
 
           <div className="mt-5 grid grid-cols-2 gap-4 border-t border-zinc-800 pt-4">
             <div>
