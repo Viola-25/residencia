@@ -276,7 +276,7 @@ export function MockExams() {
             </div>
           </div>
 
-          <div className="mb-4 flex items-center gap-6 rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-3">
+          <div className="mb-4 flex flex-wrap items-center gap-4 rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-3">
             <div>
               <p className="text-xs text-zinc-500">Total de Questões</p>
               <p className="text-lg font-bold text-zinc-100">{totalFormQuestions}</p>

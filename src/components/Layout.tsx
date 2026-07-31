@@ -45,7 +45,7 @@ export function Layout() {
             <span className="text-zinc-300">{pageTitles[location.pathname] || 'Residência 2027'}</span>
           </div>
           <div className="ml-auto flex items-center gap-3">
-            <span className="text-xs text-zinc-400">{user?.email}</span>
+            <span className="hidden sm:block text-xs text-zinc-400">{user?.email}</span>
             <button
               onClick={handleLogout}
               className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-900 hover:text-rose-400"

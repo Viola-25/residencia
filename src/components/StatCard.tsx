@@ -33,7 +33,7 @@ const trendColor: Record<string, string> = {
 
 export function StatCard({ title, value, subtitle, icon: Icon, trend, color = 'blue' }: StatCardProps) {
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 backdrop-blur-sm transition-colors hover:border-zinc-700">
+    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 backdrop-blur-sm transition-colors hover:border-zinc-700 max-sm:p-3">
       <div className="flex items-start justify-between">
         <div className={`rounded-lg border p-2 ${colorMap[color]}`}>
           <Icon size={18} />

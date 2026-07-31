@@ -94,7 +94,7 @@ export function Dashboard() {
       {dueForReview.length > 0 && (
         <a
           href="/erros"
-          className="group mb-6 flex items-center justify-between rounded-xl border border-violet-500/20 bg-gradient-to-r from-violet-500/10 to-transparent p-5 transition-all hover:border-violet-500/40 hover:from-violet-500/20"
+          className="group mb-6 flex flex-col items-start justify-between gap-4 rounded-xl border border-violet-500/20 bg-gradient-to-r from-violet-500/10 to-transparent p-5 transition-all hover:border-violet-500/40 hover:from-violet-500/20 sm:flex-row sm:items-center"
         >
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/20">

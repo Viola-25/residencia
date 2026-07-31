@@ -26,7 +26,7 @@ export function StrategicPanel() {
       />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 max-sm:p-3">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-rose-500/10 p-2">
               <Clock size={18} className="text-rose-400" />
@@ -39,7 +39,7 @@ export function StrategicPanel() {
             </div>
           </div>
         </div>
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 max-sm:p-3">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-emerald-500/10 p-2">
               <Zap size={18} className="text-emerald-400" />
@@ -52,7 +52,7 @@ export function StrategicPanel() {
             </div>
           </div>
         </div>
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 max-sm:p-3">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-amber-500/10 p-2">
               <TrendingUp size={18} className="text-amber-400" />
@@ -67,7 +67,7 @@ export function StrategicPanel() {
             </div>
           </div>
         </div>
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 max-sm:p-3">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-rose-500/10 p-2">
               <TrendingDown size={18} className="text-rose-400" />

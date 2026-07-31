@@ -450,7 +450,7 @@ export function ErrorBank() {
             onChange={(e) =>
               setFilterReason(e.target.value as MotivoErro | 'all')
             }
-            className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
+            className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none max-sm:flex-1"
           >
             <option value="all">Todos os motivos</option>
             {ERROR_REASONS.map((r) => (
@@ -464,7 +464,7 @@ export function ErrorBank() {
             onChange={(e) =>
               setFilterReview(e.target.value as 'all' | 'pending' | 'reviewed')
             }
-            className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
+            className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none max-sm:flex-1"
           >
             <option value="all">Todos</option>
             <option value="pending">Pendentes</option>
