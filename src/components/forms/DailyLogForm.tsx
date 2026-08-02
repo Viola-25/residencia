@@ -27,7 +27,7 @@ const areaSchema = z.object({
 })
 
 const optNum = () => z.preprocess(
-  (v) => (v === '' || v === undefined ? null : Number(v)),
+  (v) => (v === '' || v === undefined || v === null ? null : Number(v)),
   z.number().nullable()
 ).default(null)
 
@@ -89,8 +89,11 @@ function logToFormValues(log: DailyLogFormData): DailyLogFormValues {
     ])
   )
   const totalQ = Object.values(areas).reduce((s, a) => s + a.questions_done, 0)
-  const platformTotalQ = log.platform_total_questions ?? (log.platform_avg_rate !== null ? totalQ : null)
-  const platformRaw = log.platform_avg_rate !== null && platformTotalQ !== null && platformTotalQ > 0
+  const typedTotal = log.platform_total_questions != null && log.platform_total_questions > 0
+    ? log.platform_total_questions
+    : null
+  const platformTotalQ = typedTotal ?? (log.platform_avg_rate != null ? totalQ : null)
+  const platformRaw = log.platform_avg_rate != null && platformTotalQ != null && platformTotalQ > 0
     ? Math.round((log.platform_avg_rate / 100) * platformTotalQ)
     : null
   return {
@@ -143,9 +146,12 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
     : 0
 
   const platformRaw = formValues.platform_avg_rate
-  const platformTotalQ = formValues.platform_total_questions ?? totalQuestions
-  const platformAvgPct = platformRaw !== null && platformRaw > 0 && platformTotalQ > 0
-    ? roundTo2((platformRaw / platformTotalQ) * 100)
+  const typedTotal = formValues.platform_total_questions != null && Number(formValues.platform_total_questions) > 0
+    ? Number(formValues.platform_total_questions)
+    : null
+  const platformTotalQ = typedTotal ?? totalQuestions
+  const platformAvgPct = platformRaw != null && Number(platformRaw) > 0 && platformTotalQ > 0
+    ? roundTo2((Number(platformRaw) / platformTotalQ) * 100)
     : null
   const scorePreview = platformAvgPct !== null
     ? (() => {
@@ -155,7 +161,7 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
       })()
     : null
 
-  const onFormSubmit = (values: DailyLogFormValues) => {
+  const onFormSubmit = (values: DailyLogFormValues, submitEvent?: { currentTarget?: HTMLFormElement | null }) => {
     const areas = Object.fromEntries(
       Object.entries(values.areas).map(([key, val]) => [
         key,
@@ -164,10 +170,23 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
     ) as DailyLogFormData['areas']
 
     const totalQ = Object.values(areas).reduce((s, a) => s + a.questions_done, 0)
-    const platformRaw = values.platform_avg_rate
-    const platformTotalQ = values.platform_total_questions ?? totalQ
-    const platformAvgPct = platformRaw !== null && platformRaw > 0 && platformTotalQ > 0
-      ? roundTo2((platformRaw / platformTotalQ) * 100)
+
+    const liveValue = (name: string): number | null => {
+      const el = submitEvent?.currentTarget?.elements?.namedItem(name) as HTMLInputElement | null
+      const v = el?.value
+      if (v === undefined || v === null || v.trim() === '') return null
+      const n = Number(v)
+      return Number.isFinite(n) ? n : null
+    }
+
+    const platformRaw = values.platform_avg_rate ?? liveValue('platform_avg_rate')
+    const platformTotalRaw = values.platform_total_questions ?? liveValue('platform_total_questions')
+    const typedTotal = platformTotalRaw != null && platformTotalRaw > 0
+      ? platformTotalRaw
+      : null
+    const platformTotalQ = typedTotal ?? totalQ
+    const platformAvgPct = platformRaw != null && platformTotalQ > 0
+      ? roundTo2(Math.max(0, platformRaw) / platformTotalQ * 100)
       : null
 
     onSubmit({
@@ -181,7 +200,7 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
       mood: values.mood,
       energy_level: Number(values.energy_level),
       platform_avg_rate: platformAvgPct,
-      platform_total_questions: values.platform_total_questions ?? null,
+      platform_total_questions: platformAvgPct !== null ? platformTotalQ : null,
       easy_correct: values.easy_correct,
       easy_total: values.easy_total,
       medium_correct: values.medium_correct,
