@@ -32,6 +32,10 @@ function logToFormData(log: DailyLog): DailyLogFormData {
     medium_total: log.medium_total,
     hard_correct: log.hard_correct,
     hard_total: log.hard_total,
+    name: log.name ?? '',
+    ranking: log.ranking != null ? String(log.ranking) : '',
+    participants: log.participants != null ? String(log.participants) : '',
+    time_spent_minutes: log.time_spent_minutes != null ? String(log.time_spent_minutes) : '',
   }
 }
 

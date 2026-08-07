@@ -2,7 +2,6 @@ import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard,
   CalendarCheck,
-  FileText,
   BarChart3,
   AlertTriangle,
   Target,
@@ -17,7 +16,6 @@ import { useAuth } from '../contexts/AuthContext'
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/diario', icon: CalendarCheck, label: 'Registro Diário' },
-  { to: '/simulados', icon: FileText, label: 'Simulados' },
   { to: '/desempenho', icon: BarChart3, label: 'Desempenho' },
   { to: '/erros', icon: AlertTriangle, label: 'Banco de Erros' },
   { to: '/radar', icon: Target, label: 'Radar' },

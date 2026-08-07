@@ -2,10 +2,9 @@ import { useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useDailyLogs } from './domains/useDailyLogs'
-import { useMockExams } from './domains/useMockExams'
 import { useErrorBank } from './domains/useErrorBank'
 import { useStudyConfig } from './domains/useStudyConfig'
-import type { MedicalArea, DashboardMetrics, StrategicData, MockExamFormData, DailyLogFormData, ErrorEntry } from '../types'
+import type { MedicalArea, DashboardMetrics, StrategicData, MockExam, DailyLog, DailyLogFormData, ErrorEntry } from '../types'
 import {
   roundTo2,
   calculateTotalQuestions,
@@ -23,6 +22,21 @@ import {
 import { getDaysUntil, getCurrentWeekStart, getTodayDateString } from '../lib/dates'
 import { extractErrorsFromNotesAI } from '../lib/groq'
 
+function logToMock(log: DailyLog): MockExam {
+  return {
+    id: log.id,
+    date: log.date,
+    name: log.name || 'Simulado',
+    total_score: log.areas_data.reduce((s, a) => s + a.correct, 0),
+    percentage: log.hit_rate,
+    areas_data: log.areas_data,
+    ranking: log.ranking,
+    participants: log.participants,
+    time_spent_minutes: log.time_spent_minutes,
+    created_at: log.created_at,
+  }
+}
+
 export function useData() {
   const { user } = useAuth()
 
@@ -33,13 +47,6 @@ export function useData() {
     updateDailyLog,
     deleteDailyLog,
   } = useDailyLogs()
-
-  const {
-    mocks,
-    loading: mocksLoading,
-    addMockExam: addMockExamRaw,
-    deleteMockExam,
-  } = useMockExams()
 
   const {
     errors,
@@ -57,7 +64,7 @@ export function useData() {
     updateConfig,
   } = useStudyConfig()
 
-  const loading = logsLoading || mocksLoading || errorsLoading || configLoading
+  const loading = logsLoading || errorsLoading || configLoading
 
   const saveAreaPerformance = async (area: MedicalArea, questions_done: number, correct: number) => {
     const hit_rate = questions_done > 0 ? roundTo2((correct / questions_done) * 100) : 0
@@ -112,14 +119,14 @@ export function useData() {
     }
   }
 
-  const addMockExam = async (formData: MockExamFormData) => {
-    for (const [area, data] of Object.entries(formData.areas)) {
-      if (data.questions_done > 0) {
-        saveAreaPerformance(area as MedicalArea, data.questions_done, data.correct)
-      }
-    }
-    await addMockExamRaw(formData)
-  }
+  const mocks = useMemo(
+    () =>
+      logs
+        .filter((l) => l.registration_type === 'simulado')
+        .sort((a, b) => b.date.localeCompare(a.date))
+        .map(logToMock),
+    [logs]
+  )
 
   const areaPerformance = useMemo(
     () => calculateAreaPerformanceFromLogs(logs),
@@ -187,12 +194,10 @@ export function useData() {
     approvalScore,
     strategicData,
     addDailyLog,
-    addMockExam,
     toggleErrorReview,
     reviewErrorWithSRS,
     deleteDailyLog,
     updateDailyLog,
-    deleteMockExam,
     deleteError,
     updateConfig,
     addSmartError,

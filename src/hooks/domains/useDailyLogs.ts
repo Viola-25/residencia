@@ -87,6 +87,10 @@ export function useDailyLogs() {
       medium_total: formData.medium_total,
       hard_correct: formData.hard_correct,
       hard_total: formData.hard_total,
+      name: formData.name || null,
+      ranking: formData.ranking ? Number(formData.ranking) : null,
+      participants: formData.participants ? Number(formData.participants) : null,
+      time_spent_minutes: formData.time_spent_minutes ? Number(formData.time_spent_minutes) : null,
       created_at: new Date().toISOString(),
     }
 
@@ -135,6 +139,10 @@ export function useDailyLogs() {
       medium_total: formData.medium_total,
       hard_correct: formData.hard_correct,
       hard_total: formData.hard_total,
+      name: formData.name || null,
+      ranking: formData.ranking ? Number(formData.ranking) : null,
+      participants: formData.participants ? Number(formData.participants) : null,
+      time_spent_minutes: formData.time_spent_minutes ? Number(formData.time_spent_minutes) : null,
     }
 
     const previousLogs = logs

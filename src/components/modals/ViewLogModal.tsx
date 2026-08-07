@@ -122,6 +122,31 @@ export function ViewLogModal({ log, onClose }: ViewLogModalProps) {
               <div className="text-zinc-200 whitespace-pre-wrap">{log.notes}</div>
             </div>
           )}
+          {log.registration_type === 'simulado' && (
+            <>
+              {log.name && (
+                <div className="flex justify-between border-b border-zinc-800 pb-2">
+                  <span className="text-zinc-400">Nome</span>
+                  <span className="text-zinc-200">{log.name}</span>
+                </div>
+              )}
+              {log.ranking != null && (
+                <div className="flex justify-between border-b border-zinc-800 pb-2">
+                  <span className="text-zinc-400">Classificação</span>
+                  <span className="text-zinc-200">
+                    {log.ranking}
+                    {log.participants != null ? ` / ${log.participants}` : ''}
+                  </span>
+                </div>
+              )}
+              {log.time_spent_minutes != null && (
+                <div className="flex justify-between border-b border-zinc-800 pb-2">
+                  <span className="text-zinc-400">Tempo</span>
+                  <span className="text-zinc-200">{log.time_spent_minutes} min</span>
+                </div>
+              )}
+            </>
+          )}
           <div className="flex justify-between border-b border-zinc-800 pb-2">
             <span className="text-zinc-400">Áreas</span>
             <span className="text-zinc-200">

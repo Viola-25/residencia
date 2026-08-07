@@ -49,6 +49,10 @@ const dailyLogSchema = z.object({
   medium_total: optNum(),
   hard_correct: optNum(),
   hard_total: optNum(),
+  name: z.string().default(''),
+  ranking: z.string().default(''),
+  participants: z.string().default(''),
+  time_spent_minutes: z.string().default(''),
 })
 
 type DailyLogFormValues = z.infer<typeof dailyLogSchema>
@@ -75,6 +79,10 @@ function defaultFormValues(): DailyLogFormValues {
     medium_total: null,
     hard_correct: null,
     hard_total: null,
+    name: '',
+    ranking: '',
+    participants: '',
+    time_spent_minutes: '',
   }
 }
 
@@ -114,6 +122,10 @@ function logToFormValues(log: DailyLogFormData): DailyLogFormValues {
     medium_total: log.medium_total ?? null,
     hard_correct: log.hard_correct ?? null,
     hard_total: log.hard_total ?? null,
+    name: log.name ?? '',
+    ranking: log.ranking != null ? String(log.ranking) : '',
+    participants: log.participants != null ? String(log.participants) : '',
+    time_spent_minutes: log.time_spent_minutes != null ? String(log.time_spent_minutes) : '',
   }
 }
 
@@ -207,6 +219,10 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
       medium_total: values.medium_total,
       hard_correct: values.hard_correct,
       hard_total: values.hard_total,
+      name: values.name,
+      ranking: values.ranking,
+      participants: values.participants,
+      time_spent_minutes: values.time_spent_minutes,
     })
   }
 
@@ -438,6 +454,53 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
           </div>
         )}
       </div>
+
+      {formValues.registration_type === 'simulado' && (
+        <div className="rounded-xl border border-emerald-500/10 bg-emerald-500/5 p-4">
+          <p className="mb-3 text-sm font-medium text-emerald-400">Dados do Simulado</p>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-zinc-400">Nome</label>
+              <input
+                type="text"
+                {...register('name')}
+                placeholder="Ex: Simulado Medcof"
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-zinc-400">Classificação</label>
+              <input
+                type="number"
+                min="0"
+                {...register('ranking')}
+                placeholder="Ex: 120"
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-zinc-400">Participantes</label>
+              <input
+                type="number"
+                min="0"
+                {...register('participants')}
+                placeholder="Ex: 500"
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-zinc-400">Tempo (min)</label>
+              <input
+                type="number"
+                min="0"
+                {...register('time_spent_minutes')}
+                placeholder="Ex: 120"
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       <div>
         <label className="mb-1 block text-xs font-medium text-zinc-400">Humor</label>

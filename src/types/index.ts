@@ -51,6 +51,10 @@ export interface DailyLog {
   medium_total: number | null
   hard_correct: number | null
   hard_total: number | null
+  name: string | null
+  ranking: number | null
+  participants: number | null
+  time_spent_minutes: number | null
   created_at: string
 }
 
@@ -80,6 +84,10 @@ export interface DailyLogFormData {
   medium_total: number | null
   hard_correct: number | null
   hard_total: number | null
+  name: string
+  ranking: string
+  participants: string
+  time_spent_minutes: string
 }
 
 export interface MockExam {
@@ -93,15 +101,6 @@ export interface MockExam {
   participants: number | null
   time_spent_minutes: number | null
   created_at: string
-}
-
-export interface MockExamFormData {
-  date: string
-  name: string
-  areas: Record<MedicalArea, { questions_done: number; correct: number }>
-  ranking: string
-  participants: string
-  time_spent_minutes: string
 }
 
 export interface ErrorEntry {
@@ -243,7 +242,7 @@ export const MOOD_OPTIONS: { value: Mood; label: string }[] = [
 
 export const REGISTRATION_TYPES: { value: RegistrationType; label: string }[] = [
   { value: 'questoes', label: 'Rodada de Questões' },
-  { value: 'simulado', label: 'Simulado' },
+  { value: 'simulado', label: 'Simulado/Prova Antiga' },
   { value: 'revisao', label: 'Revisão Núcleo' },
 ]
 

@@ -7,7 +7,6 @@ import { useAuth } from '../contexts/AuthContext'
 const pageTitles: Record<string, string> = {
   '/': 'Painel de Performance',
   '/diario': 'Diário de Estudos',
-  '/simulados': 'Simulados',
   '/desempenho': 'Desempenho por Área',
   '/erros': 'Banco de Erros',
   '/radar': 'Radar de Aprovação',

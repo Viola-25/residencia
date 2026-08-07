@@ -8,7 +8,6 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 const Login = lazy(() => import('./pages/Login').then((m) => ({ default: m.Login })))
 const Dashboard = lazy(() => import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })))
 const DailyLog = lazy(() => import('./pages/DailyLog').then((m) => ({ default: m.DailyLog })))
-const MockExams = lazy(() => import('./pages/MockExams').then((m) => ({ default: m.MockExams })))
 const Performance = lazy(() => import('./pages/Performance').then((m) => ({ default: m.Performance })))
 const ErrorBank = lazy(() => import('./pages/ErrorBank').then((m) => ({ default: m.ErrorBank })))
 const ApprovalRadar = lazy(() => import('./pages/ApprovalRadar').then((m) => ({ default: m.ApprovalRadar })))
@@ -35,7 +34,6 @@ export default function App() {
               <Route element={<Layout />}>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/diario" element={<DailyLog />} />
-                <Route path="/simulados" element={<MockExams />} />
                 <Route path="/desempenho" element={<Performance />} />
                 <Route path="/erros" element={<ErrorBoundary><ErrorBank /></ErrorBoundary>} />
                 <Route path="/radar" element={<ApprovalRadar />} />

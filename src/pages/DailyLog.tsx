@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CalendarCheck, Plus, Moon, Zap, Trash2, Edit, Eye, Brain, Clock } from 'lucide-react'
+import { CalendarCheck, Plus, Moon, Zap, Trash2, Edit, Eye, Brain, Clock, FileText, TrendingUp, Activity } from 'lucide-react'
 import { PageHeader } from '../components/PageHeader'
 import { StatCard } from '../components/StatCard'
 import { Badge } from '../components/Badge'
@@ -7,8 +7,10 @@ import { DailyLogForm } from '../components/forms/DailyLogForm'
 import { QuickErrorModal } from '../components/modals/QuickErrorModal'
 import { EditLogModal } from '../components/modals/EditLogModal'
 import { ViewLogModal } from '../components/modals/ViewLogModal'
+import { MockEvolutionChart } from '../components/charts/MockEvolutionChart'
 import { useData } from '../hooks/useData'
 import { formatDateShort } from '../lib/dates'
+import { getMockAverage, getMockTrend } from '../lib/calculations'
 import type { DailyLog, Mood, MedicalArea } from '../types'
 import { MOOD_OPTIONS, REGISTRATION_TYPES } from '../types'
 
@@ -20,7 +22,7 @@ const moodColors: Record<Mood, string> = {
 }
 
 export function DailyLog() {
-  const { logs, dashboardMetrics, addDailyLog, updateDailyLog, deleteDailyLog, addSmartError } = useData()
+  const { logs, mocks, dashboardMetrics, addDailyLog, updateDailyLog, deleteDailyLog, addSmartError } = useData()
   const [showForm, setShowForm] = useState(false)
   const [editLog, setEditLog] = useState<DailyLog | null>(null)
   const [viewLog, setViewLog] = useState<DailyLog | null>(null)
@@ -128,6 +130,36 @@ export function DailyLog() {
         </div>
       )}
 
+      {mocks.length > 0 && (
+        <div className="mb-8 rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
+          <div className="mb-4 flex items-center gap-2">
+            <FileText size={16} className="text-emerald-400" />
+            <h3 className="text-sm font-semibold text-zinc-200">Simulados e Provas Antigas</h3>
+          </div>
+          <div className="mb-4 grid gap-4 sm:grid-cols-3">
+            <StatCard
+              title="Total de Simulados"
+              value={mocks.length}
+              icon={FileText}
+              color="violet"
+            />
+            <StatCard
+              title="Média de Aproveitamento"
+              value={`${getMockAverage(mocks)}%`}
+              icon={Activity}
+              color="emerald"
+            />
+            <StatCard
+              title="Tendência (último − 1º)"
+              value={`${getMockTrend(mocks) > 0 ? '+' : ''}${getMockTrend(mocks)}pp`}
+              icon={TrendingUp}
+              color={getMockTrend(mocks) >= 0 ? 'emerald' : 'rose'}
+            />
+          </div>
+          <MockEvolutionChart mocks={mocks} />
+        </div>
+      )}
+
       <div className="rounded-xl border border-zinc-800 bg-zinc-900/50">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -139,6 +171,8 @@ export function DailyLog() {
                 <th className="px-4 py-3">Questões</th>
                 <th className="px-4 py-3">Acertos</th>
                 <th className="px-4 py-3">%</th>
+                <th className="px-4 py-3">Classificação</th>
+                <th className="px-4 py-3">Tempo</th>
                 <th className="px-4 py-3">Revisão</th>
                 <th className="px-4 py-3">Humor</th>
                 <th className="px-4 py-3">Energia</th>
@@ -164,6 +198,9 @@ export function DailyLog() {
                     >
                       {REGISTRATION_TYPES.find((t) => t.value === log.registration_type)?.label}
                     </Badge>
+                    {log.registration_type === 'simulado' && log.name && (
+                      <span className="ml-2 text-xs text-zinc-500">{log.name}</span>
+                    )}
                   </td>
                   <td className="px-4 py-3">{Math.round(log.hours_studied * 60)}min</td>
                   <td className="px-4 py-3">{log.questions_done}</td>
@@ -180,6 +217,23 @@ export function DailyLog() {
                     >
                       {log.hit_rate}%
                     </Badge>
+                  </td>
+                  <td className="px-4 py-3">
+                    {log.ranking != null ? (
+                      <span className="text-zinc-300">
+                        {log.ranking}
+                        {log.participants != null ? ` / ${log.participants}` : ''}
+                      </span>
+                    ) : (
+                      <span className="text-zinc-600">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {log.time_spent_minutes != null ? (
+                      <span className="text-zinc-300">{log.time_spent_minutes}min</span>
+                    ) : (
+                      <span className="text-zinc-600">—</span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     {log.core_review_done ? (
@@ -227,7 +281,7 @@ export function DailyLog() {
               ))}
               {logs.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-4 py-12 text-center text-sm text-zinc-500">
+                  <td colSpan={12} className="px-4 py-12 text-center text-sm text-zinc-500">
                     Nenhum registro encontrado. Clique em "Novo Registro" para começar.
                   </td>
                 </tr>

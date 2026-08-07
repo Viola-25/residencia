@@ -26,6 +26,10 @@ export interface Database {
           medium_total: number | null
           hard_correct: number | null
           hard_total: number | null
+          name: string | null
+          ranking: number | null
+          participants: number | null
+          time_spent_minutes: number | null
           created_at: string
           user_id: string
         }
@@ -51,31 +55,7 @@ export interface Database {
           medium_total?: number | null
           hard_correct?: number | null
           hard_total?: number | null
-          created_at?: string
-          user_id: string
-        }
-      }
-      mock_exams: {
-        Row: {
-          id: string
-          date: string
-          name: string
-          total_score: number
-          percentage: number
-          areas_data: Json
-          ranking: number | null
-          participants: number | null
-          time_spent_minutes: number | null
-          created_at: string
-          user_id: string
-        }
-        Insert: {
-          id?: string
-          date: string
-          name: string
-          total_score: number
-          percentage: number
-          areas_data?: Json
+          name?: string | null
           ranking?: number | null
           participants?: number | null
           time_spent_minutes?: number | null
