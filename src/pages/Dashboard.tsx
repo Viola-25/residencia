@@ -9,8 +9,6 @@ import {
   Clock,
   Brain,
   RefreshCw,
-  ArrowUpRight,
-  ArrowDownRight,
 } from 'lucide-react'
 
 import { PageHeader } from '../components/PageHeader'
@@ -70,7 +68,7 @@ export function Dashboard() {
   const recentVsGlobal = roundTo2(recentHitRate - globalRate)
   const recentTrend = recentVsGlobal > 0 ? 'up' : recentVsGlobal < 0 ? 'down' : 'neutral'
   const recentTrendColor = recentTrend === 'up' ? 'text-emerald-400' : recentTrend === 'down' ? 'text-rose-400' : 'text-zinc-400'
-  const RecentTrendIcon = recentTrend === 'up' ? ArrowUpRight : recentTrend === 'down' ? ArrowDownRight : RefreshCw
+  const RecentTrendIcon = recentTrend === 'up' ? TrendingUp : recentTrend === 'down' ? TrendingUp : RefreshCw
 
   if (loading) {
     return (

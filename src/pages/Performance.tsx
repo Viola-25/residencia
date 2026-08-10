@@ -10,8 +10,6 @@ import {
   LineChart,
   Brain,
   RefreshCw,
-  ArrowUpRight,
-  ArrowDownRight,
 } from 'lucide-react'
 import {
   BarChart,
@@ -182,7 +180,7 @@ export function Performance() {
             const recentRate = recent?.hit_rate ?? 0
             const diff = roundTo2(recentRate - globalRate)
             const trend = diff > 0 ? 'up' : diff < 0 ? 'down' : 'neutral'
-            const TrendIcon = trend === 'up' ? ArrowUpRight : trend === 'down' ? ArrowDownRight : Minus
+            const TrendIcon = trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : Minus
             const trendColor = trend === 'up' ? 'text-emerald-400' : trend === 'down' ? 'text-rose-400' : 'text-zinc-400'
             const config = priorityConfig[area.priority]
             return (
