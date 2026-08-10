@@ -9,6 +9,9 @@ import {
   XCircle,
   LineChart,
   Brain,
+  RefreshCw,
+  ArrowUpRight,
+  ArrowDownRight,
 } from 'lucide-react'
 import {
   BarChart,
@@ -25,10 +28,11 @@ import {
 import { PageHeader } from '../components/PageHeader'
 import { StatCard } from '../components/StatCard'
 import { Badge } from '../components/Badge'
+import { RecentWindowSelector } from '../components/RecentWindowSelector'
 import { PlatformPerformance } from '../components/PlatformPerformance'
 import { getWeekLabel } from '../lib/dates'
 import { AREA_LABELS } from '../types'
-import { getHitRateTrend, calculateGlobalHitRate } from '../lib/calculations'
+import { getHitRateTrend, calculateGlobalHitRate, roundTo2 } from '../lib/calculations'
 import { useData } from '../hooks/useData'
 import { MEDICAL_AREAS } from '../types'
 import type { MedicalArea } from '../types'
@@ -40,7 +44,7 @@ const priorityConfig = {
 }
 
 export function Performance() {
-  const { areaPerformance, logs, dashboardMetrics, errors } = useData()
+  const { areaPerformance, logs, dashboardMetrics, errors, recentMetrics, recentWindow, setRecentWindow } = useData()
 
   const srsStats = useMemo(() => {
     if (errors.length === 0) return null
@@ -57,8 +61,11 @@ export function Performance() {
   const hitRate30d = useMemo(() => getHitRateTrend(logs, 30), [logs])
   const globalRate = useMemo(() => calculateGlobalHitRate(logs), [logs])
 
+  const recentAreaPerf = recentMetrics.area_performance
+  const globalAreaPerf = areaPerformance
+
   const allAreas = MEDICAL_AREAS.map(({ value }) => {
-    const perf = areaPerformance.find((a) => a.area === value)
+    const perf = globalAreaPerf.find((a) => a.area === value)
     return perf || {
       id: value,
       area: value as MedicalArea,
@@ -70,16 +77,20 @@ export function Performance() {
     }
   })
 
-  const chartData = allAreas.map((a) => ({
-    name: AREA_LABELS[a.area as MedicalArea].split(' ')[0],
-    hitRate: a.hit_rate,
-    fill:
-      a.hit_rate >= 80
-        ? '#10b981'
-        : a.hit_rate >= 70
-          ? '#f59e0b'
-          : '#ef4444',
-  }))
+  const chartData = allAreas.map((a) => {
+    const recent = recentAreaPerf.find((r) => r.area === a.area)
+    return {
+      name: AREA_LABELS[a.area as MedicalArea].split(' ')[0],
+      hitRate: a.hit_rate,
+      recentHitRate: recent?.hit_rate ?? 0,
+      fill:
+        a.hit_rate >= 80
+          ? '#10b981'
+          : a.hit_rate >= 70
+            ? '#f59e0b'
+            : '#ef4444',
+    }
+  })
 
   const weeklyChartData = useMemo(() => {
     const weekMap = new Map<string, { questions: number; hits: number; total: number }>()
@@ -123,6 +134,9 @@ export function Performance() {
         title="Desempenho"
         description="Análise completa do seu desempenho nos estudos"
         icon={BarChart3}
+        action={
+          <RecentWindowSelector value={recentWindow} onChange={setRecentWindow} className="w-48" />
+        }
       />
 
       <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -155,6 +169,50 @@ export function Performance() {
       </div>
 
       <PlatformPerformance logs={logs} />
+
+      <div className="mb-8 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+        <div className="mb-4 flex items-center gap-2">
+          <RefreshCw size={16} className="text-violet-400" />
+          <h3 className="text-sm font-semibold text-zinc-200">Áreas: Recente ({recentWindow} dias) vs Global</h3>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {allAreas.map((area) => {
+            const recent = recentAreaPerf.find((r) => r.area === area.area)
+            const globalRate = area.hit_rate
+            const recentRate = recent?.hit_rate ?? 0
+            const diff = roundTo2(recentRate - globalRate)
+            const trend = diff > 0 ? 'up' : diff < 0 ? 'down' : 'neutral'
+            const TrendIcon = trend === 'up' ? ArrowUpRight : trend === 'down' ? ArrowDownRight : Minus
+            const trendColor = trend === 'up' ? 'text-emerald-400' : trend === 'down' ? 'text-rose-400' : 'text-zinc-400'
+            const config = priorityConfig[area.priority]
+            return (
+              <div key={area.area} className={`rounded-lg border bg-zinc-800/50 p-4 ${config.border}`}>
+                <div className="mb-2 flex items-center justify-between">
+                  <h4 className="text-sm font-semibold text-zinc-200">{AREA_LABELS[area.area as MedicalArea]}</h4>
+                  <Badge variant={config.badge as 'red' | 'yellow' | 'green'}>{config.label}</Badge>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <p className="text-xs text-zinc-500">Global</p>
+                    <p className="font-bold text-zinc-200">{globalRate}%</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-zinc-500">Recente</p>
+                    <p className="font-bold text-zinc-200">{recentRate}%</p>
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center gap-2">
+                  <span className={`text-lg font-bold ${trendColor}`}>{diff > 0 ? '+' : ''}{diff}pp</span>
+                  <TrendIcon size={16} className={trendColor} />
+                  <span className="text-xs text-zinc-500">
+                    {trend === 'up' ? 'Subindo' : trend === 'down' ? 'Caindo' : 'Estável'}
+                  </span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
 
       {srsStats && (
         <div className="mb-8 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">

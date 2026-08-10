@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useDailyLogs } from './domains/useDailyLogs'
@@ -18,9 +18,14 @@ import {
   calculateApprovalScore,
   calculateAreaPerformanceFromLogs,
   extractErrorsFromNotes,
+  calculateRecentMetrics,
+  RECENT_WINDOW_DAYS,
 } from '../lib/calculations'
 import { getDaysUntil, getCurrentWeekStart, getTodayDateString } from '../lib/dates'
 import { extractErrorsFromNotesAI } from '../lib/groq'
+
+export const RECENT_WINDOW_OPTIONS = [30, 60, 90] as const
+export type RecentWindow = typeof RECENT_WINDOW_OPTIONS[number]
 
 function logToMock(log: DailyLog): MockExam {
   return {
@@ -65,6 +70,23 @@ export function useData() {
   } = useStudyConfig()
 
   const loading = logsLoading || errorsLoading || configLoading
+
+  const [recentWindow, setRecentWindow] = useState<RecentWindow>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('recentWindow')
+      if (stored) {
+        const parsed = Number(stored)
+        if (RECENT_WINDOW_OPTIONS.includes(parsed as RecentWindow)) {
+          return parsed as RecentWindow
+        }
+      }
+    }
+    return RECENT_WINDOW_DAYS
+  })
+
+  useEffect(() => {
+    localStorage.setItem('recentWindow', String(recentWindow))
+  }, [recentWindow])
 
   const saveAreaPerformance = async (area: MedicalArea, questions_done: number, correct: number) => {
     const hit_rate = questions_done > 0 ? roundTo2((correct / questions_done) * 100) : 0
@@ -183,6 +205,11 @@ export function useData() {
     }
   }, [areaPerformance, dashboardMetrics])
 
+  const recentMetrics = useMemo(
+    () => calculateRecentMetrics(logs, recentWindow),
+    [logs, recentWindow]
+  )
+
   return {
     loading,
     logs,
@@ -193,6 +220,9 @@ export function useData() {
     dashboardMetrics,
     approvalScore,
     strategicData,
+    recentMetrics,
+    recentWindow,
+    setRecentWindow,
     addDailyLog,
     toggleErrorReview,
     reviewErrorWithSRS,

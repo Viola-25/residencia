@@ -474,8 +474,8 @@ export function ErrorBank() {
       </div>
 
       <div className="rounded-xl border border-zinc-800 bg-zinc-900/50">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto max-w-full">
+          <table className="w-full text-sm table-fixed">
             <thead>
               <tr className="border-b border-zinc-800 text-left text-xs font-medium text-zinc-500">
                 <th className="px-4 py-3">Erro / Descrição</th>

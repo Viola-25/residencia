@@ -8,16 +8,20 @@ import {
   LineChart,
   Clock,
   Brain,
+  RefreshCw,
+  ArrowUpRight,
+  ArrowDownRight,
 } from 'lucide-react'
 
 import { PageHeader } from '../components/PageHeader'
 import { StatCard } from '../components/StatCard'
+import { RecentWindowSelector } from '../components/RecentWindowSelector'
 import { WeeklyHitRateChart } from '../components/charts/WeeklyHitRateChart'
 import { WeeklyQuestionsChart } from '../components/charts/WeeklyQuestionsChart'
 import { MockEvolutionChart } from '../components/charts/MockEvolutionChart'
 import { AreaEvolutionChart } from '../components/charts/AreaEvolutionChart'
 import { PlatformPerformance } from '../components/PlatformPerformance'
-import { getHitRateTrend, calculateGlobalHitRate } from '../lib/calculations'
+import { getHitRateTrend, calculateGlobalHitRate, roundTo2 } from '../lib/calculations'
 
 import { useData } from '../hooks/useData'
 
@@ -45,7 +49,7 @@ function SkeletonChart() {
 }
 
 export function Dashboard() {
-  const { dashboardMetrics, logs, mocks, areaPerformance, config, errors, loading } = useData()
+  const { dashboardMetrics, logs, mocks, areaPerformance, config, errors, loading, recentMetrics, recentWindow, setRecentWindow } = useData()
 
   const dueForReview = useMemo(() => {
     const today = new Date()
@@ -61,6 +65,12 @@ export function Dashboard() {
   const metrics = dashboardMetrics
   const hitRate30d = useMemo(() => getHitRateTrend(logs, 30), [logs])
   const globalRate = useMemo(() => calculateGlobalHitRate(logs), [logs])
+
+  const recentHitRate = recentMetrics.hit_rate
+  const recentVsGlobal = roundTo2(recentHitRate - globalRate)
+  const recentTrend = recentVsGlobal > 0 ? 'up' : recentVsGlobal < 0 ? 'down' : 'neutral'
+  const recentTrendColor = recentTrend === 'up' ? 'text-emerald-400' : recentTrend === 'down' ? 'text-rose-400' : 'text-zinc-400'
+  const RecentTrendIcon = recentTrend === 'up' ? ArrowUpRight : recentTrend === 'down' ? ArrowDownRight : RefreshCw
 
   if (loading) {
     return (
@@ -90,6 +100,9 @@ export function Dashboard() {
         title="Dashboard Geral"
         description="Panorama completo da sua preparação"
         icon={BarChart3}
+        action={
+          <RecentWindowSelector value={recentWindow} onChange={setRecentWindow} className="w-48" />
+        }
       />
 
       {dueForReview.length > 0 && (
@@ -174,6 +187,49 @@ export function Dashboard() {
       </div>
 
       <PlatformPerformance logs={logs} compact />
+
+      <div className="mb-8 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+        <div className="mb-4 flex items-center gap-2">
+          <RefreshCw size={16} className="text-violet-400" />
+          <h3 className="text-sm font-semibold text-zinc-200">Recente ({recentWindow} dias) vs Global</h3>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="rounded-lg border border-zinc-800/50 bg-zinc-800/30 p-4">
+            <p className="text-xs text-zinc-500">Taxa de Acerto Global</p>
+            <p className="mt-1 text-2xl font-bold text-zinc-200">{globalRate}%</p>
+          </div>
+          <div className="rounded-lg border border-zinc-800/50 bg-zinc-800/30 p-4">
+            <p className="text-xs text-zinc-500">Taxa de Acerto Recente</p>
+            <p className="mt-1 text-2xl font-bold text-zinc-200">{recentHitRate}%</p>
+          </div>
+          <div className="rounded-lg border border-zinc-800/50 bg-zinc-800/30 p-4">
+            <p className="text-xs text-zinc-500">Diferença</p>
+            <div className="mt-1 flex items-center gap-2">
+              <p className={`text-2xl font-bold ${recentTrendColor}`}>
+                {recentVsGlobal > 0 ? '+' : ''}{recentVsGlobal}pp
+              </p>
+              <RecentTrendIcon size={20} className={recentTrendColor} />
+            </div>
+            <p className="mt-1 text-xs text-zinc-500">
+              {recentTrend === 'up' ? 'Melhorando' : recentTrend === 'down' ? 'Piorando' : 'Estável'} vs histórico
+            </p>
+          </div>
+        </div>
+        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+          <div className="rounded-lg border border-zinc-800/50 bg-zinc-800/30 p-4">
+            <p className="text-xs text-zinc-500">Questões Recentes</p>
+            <p className="mt-1 text-2xl font-bold text-zinc-200">{recentMetrics.total_questions.toLocaleString()}</p>
+          </div>
+          <div className="rounded-lg border border-zinc-800/50 bg-zinc-800/30 p-4">
+            <p className="text-xs text-zinc-500">Acertos Recentes</p>
+            <p className="mt-1 text-2xl font-bold text-zinc-200">{recentMetrics.total_correct.toLocaleString()}</p>
+          </div>
+          <div className="rounded-lg border border-zinc-800/50 bg-zinc-800/30 p-4">
+            <p className="text-xs text-zinc-500">Sessões c/ Plataforma</p>
+            <p className="mt-1 text-2xl font-bold text-zinc-200">{recentMetrics.platform_comparison.logs_with_platform}</p>
+          </div>
+        </div>
+      </div>
 
       <div className="mb-8 grid gap-6 lg:grid-cols-2">
         <div className="min-w-0 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">

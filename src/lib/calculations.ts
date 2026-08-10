@@ -1,6 +1,18 @@
 import type { DailyLog, MockExam, WeeklySummary, AreaPerformance, ApprovalScore, MedicalArea, MotivoErro, ErrorEntry } from '../types'
 import { MEDICAL_AREAS } from '../types'
 
+export const RECENT_WINDOW_DAYS = 90
+
+export function filterRecentLogs(logs: DailyLog[], days: number = RECENT_WINDOW_DAYS): DailyLog[] {
+  const cutoff = new Date()
+  cutoff.setHours(0, 0, 0, 0)
+  cutoff.setDate(cutoff.getDate() - days)
+  return logs.filter(log => {
+    const d = new Date(log.date + 'T00:00:00')
+    return d >= cutoff
+  })
+}
+
 export function roundTo2(value: number): number {
   return Math.round(value * 100) / 100
 }
@@ -542,6 +554,27 @@ export function calculateAreaPerformanceFromLogs(logs: DailyLog[]): AreaPerforma
       priority: 'red' as const,
     }
   })
+}
+
+export interface RecentMetrics {
+  hit_rate: number
+  total_questions: number
+  total_correct: number
+  platform_comparison: ReturnType<typeof calculatePlatformComparison>
+  platform_inference: ReturnType<typeof calculatePlatformInference>
+  area_performance: AreaPerformance[]
+}
+
+export function calculateRecentMetrics(logs: DailyLog[], days: number = RECENT_WINDOW_DAYS): RecentMetrics {
+  const recentLogs = filterRecentLogs(logs, days)
+  return {
+    hit_rate: calculateGlobalHitRate(recentLogs),
+    total_questions: calculateTotalQuestions(recentLogs),
+    total_correct: calculateTotalCorrect(recentLogs),
+    platform_comparison: calculatePlatformComparison(recentLogs),
+    platform_inference: calculatePlatformInference(recentLogs),
+    area_performance: calculateAreaPerformanceFromLogs(recentLogs),
+  }
 }
 
 export function extractErrorsFromNotes(notes: string): { topic: string; error_reason: MotivoErro; nivel_confianca: 'baixo' | 'medio' | 'alto' }[] {
