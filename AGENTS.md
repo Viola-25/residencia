@@ -19,9 +19,10 @@ App de estudo para residência médica (Brasil). Rastreia daily logs de estudo, 
 ## Estrutura
 - `src/types/index.ts` — tipos de domínio + constantes (MEDICAL_AREAS, MOOD_OPTIONS, etc.)
 - `src/types/database.ts` — tipos Row/Insert do Supabase (espelhar mudanças de schema)
-- `src/lib/calculations.ts` — toda lógica de cálculo (hit rate, score, SRS, area performance)
+- `src/lib/calculations.ts` — toda lógica de cálculo (hit rate, score, SRS, area performance); **novos**: `RECENT_WINDOW_DAYS=90`, `filterRecentLogs()`, `calculateRecentMetrics()` (hit rate, questions, platform comparison, inference, area performance para janela móvel)
 - `src/lib/groq.ts` + `src/lib/prompts.ts` — prompts e chamadas IA
-- `src/hooks/useData.ts` — composição de hooks por domínio (useDailyLogs, useErrorBank, useStudyConfig em `hooks/domains/`); `mocks` é derivado de `logs` com `registration_type === 'simulado'` (função `logToMock`)
+- `src/hooks/useData.ts` — composição de hooks por domínio; expõe `recentMetrics`, `recentWindow` (30/60/90 dias), `setRecentWindow` com persistência no `localStorage`
+- `src/components/RecentWindowSelector.tsx` — dropdown para escolher janela recente
 - `src/pages/` — Dashboard, DailyLog, Performance, ErrorBank, ApprovalRadar, StrategicPanel, AIInsights, Settings
 - `src/components/forms/DailyLogForm.tsx` — form de daily log (compartilhado entre criar e editar); bloco "Dados do Simulado" (name, ranking, participants, time_spent_minutes) aparece quando tipo = simulado
 - `src/components/modals/EditLogModal.tsx` — converte DailyLog → DailyLogFormData
