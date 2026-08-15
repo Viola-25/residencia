@@ -10,6 +10,7 @@ import {
   LineChart,
   Brain,
   RefreshCw,
+  Download,
 } from 'lucide-react'
 import {
   BarChart,
@@ -29,8 +30,10 @@ import { Badge } from '../components/Badge'
 import { RecentWindowSelector } from '../components/RecentWindowSelector'
 import { PlatformPerformance } from '../components/PlatformPerformance'
 import { getWeekLabel } from '../lib/dates'
+import { getTodayDateString } from '../lib/dates'
 import { AREA_LABELS } from '../types'
 import { getHitRateTrend, calculateGlobalHitRate, roundTo2 } from '../lib/calculations'
+import { buildPerformanceReport, downloadPerformanceReport } from '../lib/report'
 import { useData } from '../hooks/useData'
 import { MEDICAL_AREAS } from '../types'
 import type { MedicalArea } from '../types'
@@ -42,7 +45,35 @@ const priorityConfig = {
 }
 
 export function Performance() {
-  const { areaPerformance, logs, dashboardMetrics, errors, recentMetrics, recentWindow, setRecentWindow } = useData()
+  const {
+    areaPerformance,
+    logs,
+    dashboardMetrics,
+    errors,
+    recentMetrics,
+    recentWindow,
+    setRecentWindow,
+    mocks,
+    config,
+    approvalScore,
+    strategicData,
+  } = useData()
+
+  const handleExport = () => {
+    const report = buildPerformanceReport({
+      logs,
+      mocks,
+      errors,
+      areaPerformance,
+      recentMetrics,
+      recentWindow,
+      dashboardMetrics,
+      approvalScore,
+      config,
+      strategicData,
+    })
+    downloadPerformanceReport(report, `relatorio-desempenho-${getTodayDateString()}.txt`)
+  }
 
   const srsStats = useMemo(() => {
     if (errors.length === 0) return null
@@ -133,7 +164,17 @@ export function Performance() {
         description="Análise completa do seu desempenho nos estudos"
         icon={BarChart3}
         action={
-          <RecentWindowSelector value={recentWindow} onChange={setRecentWindow} className="w-48" />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExport}
+              title="Exportar relatório de desempenho em TXT"
+              className="flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm font-medium text-zinc-200 transition-colors hover:border-violet-500/40 hover:bg-zinc-800"
+            >
+              <Download size={16} className="text-violet-400" />
+              Exportar
+            </button>
+            <RecentWindowSelector value={recentWindow} onChange={setRecentWindow} className="w-48" />
+          </div>
         }
       />
 
