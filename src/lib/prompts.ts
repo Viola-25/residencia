@@ -98,6 +98,9 @@ Regras:
 - Compare áreas entre si
 - AVALIE o Score (diferença entre a taxa de acerto do usuário e a média da plataforma). Se o score_delta for positivo consistente, o usuário está acima da média dos concorrentes — destaque isso como indicador de competitividade real para a prova. Se for negativo ou alternado, aponte como alerta e sugira estratégias para superar a média.
 - Se houver dados de dificuldade preenchidos, analise a taxa de acerto específica nas questões de nível difícil (hard). Um desempenho baixo em difíceis combinado com score positivo em fáceis/médias sugere estagnação — recomende aumentar o nível de desafio.
+- INCLUA SEMPRE pelo menos 1 insight do tipo "weekly": um relatório sintetizando a evolução da última semana (questões, taxa de acerto, ritmo vs meta semanal) com recomendação prática.
+- INCLUA 1 insight do tipo "monthly" quando houver dados de 4 ou mais semanas: relatório mensal com tendência, áreas em evolução/queda e projeção de ritmo vs meta anual. Se houver menos de 4 semanas, NÃO gere monthly.
+- Os demais insights devem ser "suggestion" ou "priority".
 - Apenas JSON válido, sem texto extra`
 
 export const FLASHCARD_GENERATION_PROMPT = `Você é um especialista em criação de flashcards médicos para residência.

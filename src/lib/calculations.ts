@@ -1,3 +1,5 @@
+import { startOfWeek, format, parseISO } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 import type { DailyLog, MockExam, WeeklySummary, AreaPerformance, ApprovalScore, MedicalArea, MotivoErro, ErrorEntry } from '../types'
 import { MEDICAL_AREAS } from '../types'
 
@@ -329,6 +331,37 @@ export function calculateGlobalHitRate(logs: DailyLog[]): number {
   return roundTo2((calculateTotalCorrect(logs) / total) * 100)
 }
 
+export function calculateWeeklySummaries(logs: DailyLog[]): WeeklySummary[] {
+  const byWeek = new Map<string, WeeklySummary>()
+
+  for (const log of logs) {
+    const d = parseISO(log.date + 'T00:00:00')
+    const weekStart = format(startOfWeek(d, { weekStartsOn: 1 }), 'yyyy-MM-dd', { locale: ptBR })
+    const existing = byWeek.get(weekStart) || {
+      id: weekStart,
+      week_start: weekStart,
+      questions_done: 0,
+      correct: 0,
+      hit_rate: 0,
+      hours_studied: 0,
+      days_studied: 0,
+    }
+    existing.questions_done += log.questions_done
+    existing.correct += Math.round(log.questions_done * (log.hit_rate / 100))
+    existing.hours_studied = roundTo2(existing.hours_studied + log.hours_studied)
+    existing.days_studied += 1
+    byWeek.set(weekStart, existing)
+  }
+
+  const summaries = Array.from(byWeek.values())
+  for (const s of summaries) {
+    s.hit_rate =
+      s.questions_done > 0 ? roundTo2((s.correct / s.questions_done) * 100) : 0
+  }
+
+  return summaries.sort((a, b) => a.week_start.localeCompare(b.week_start))
+}
+
 export function calculateWeeklyProgress(
   logs: DailyLog[],
   weeklyGoal: number,
@@ -505,39 +538,66 @@ export function normalizeArea(area: string): MedicalArea {
   return AREA_ALIAS[area] || (area as MedicalArea)
 }
 
-export function calculateAreaPerformanceFromLogs(logs: DailyLog[]): AreaPerformance[] {
-  const areaMap = new Map<MedicalArea, { questions_done: number; correct: number }>()
-
+function aggregateAreasInWindow(
+  logs: DailyLog[],
+  from: Date,
+  to: Date
+): Map<MedicalArea, { questions_done: number; correct: number }> {
+  const map = new Map<MedicalArea, { questions_done: number; correct: number }>()
   for (const log of logs) {
+    const d = new Date(log.date + 'T00:00:00')
+    if (d < from || d >= to) continue
     if (log.areas_data && log.areas_data.length > 0) {
       for (const ad of log.areas_data) {
         const normalized = normalizeArea(ad.area)
-        const existing = areaMap.get(normalized) || { questions_done: 0, correct: 0 }
+        const existing = map.get(normalized) || { questions_done: 0, correct: 0 }
         existing.questions_done += ad.questions_done
         existing.correct += ad.correct
-        areaMap.set(normalized, existing)
+        map.set(normalized, existing)
       }
     } else if (log.questions_done > 0) {
       const correct = Math.round(log.questions_done * (log.hit_rate / 100))
       const area = 'clinica_medica' as MedicalArea
-      const existing = areaMap.get(area) || { questions_done: 0, correct: 0 }
+      const existing = map.get(area) || { questions_done: 0, correct: 0 }
       existing.questions_done += log.questions_done
       existing.correct += correct
-      areaMap.set(area, existing)
+      map.set(area, existing)
     }
   }
+  return map
+}
+
+function areaHitRate(data: { questions_done: number; correct: number }): number {
+  return data.questions_done > 0 ? roundTo2((data.correct / data.questions_done) * 100) : 0
+}
+
+export function calculateAreaPerformanceFromLogs(logs: DailyLog[]): AreaPerformance[] {
+  const areaMap = aggregateAreasInWindow(logs, new Date(0), new Date('2999-12-31'))
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const recentStart = new Date(today)
+  recentStart.setDate(today.getDate() - RECENT_WINDOW_DAYS)
+  const priorStart = new Date(recentStart)
+  priorStart.setDate(recentStart.getDate() - RECENT_WINDOW_DAYS)
+
+  const recentMap = aggregateAreasInWindow(logs, recentStart, today)
+  const priorMap = aggregateAreasInWindow(logs, priorStart, recentStart)
 
   const areas = Array.from(areaMap.entries()).map(([area, data]) => {
-    const hit_rate = data.questions_done > 0
-      ? roundTo2((data.correct / data.questions_done) * 100)
-      : 0
+    const hit_rate = areaHitRate(data)
+    const recentRate = areaHitRate(recentMap.get(area) || { questions_done: 0, correct: 0 })
+    const priorRate = areaHitRate(priorMap.get(area) || { questions_done: 0, correct: 0 })
+    let trend: 'up' | 'down' | 'stable' = 'stable'
+    if (recentRate > priorRate) trend = 'up'
+    else if (recentRate < priorRate) trend = 'down'
     return {
       id: area,
       area,
       questions_done: data.questions_done,
       correct: data.correct,
       hit_rate,
-      trend: 'stable' as const,
+      trend,
       priority: getAreaPriority(hit_rate),
     }
   })
@@ -612,6 +672,14 @@ export function extractErrorsFromNotes(notes: string): { topic: string; error_re
   return results
 }
 
+export function classifyErrorReason(text: string): MotivoErro {
+  const lower = text.toLowerCase()
+  if (/pegadinha/.test(lower)) return 'Pegadinha'
+  if (/pressa|li r[aá]pido|n[aã]o vi|pulei|desatent/.test(lower)) return 'Falta de atenção'
+  if (/esqueci|lembrava|deu branco|sabia mas/.test(lower)) return 'Esqueci'
+  if (/confund[iuí]|interpret|pensei que|achava que|troquei/.test(lower)) return 'Dificuldade de interpretação'
+  return 'Não sabia'
+}
 export interface SRSRating {
   id: string
   quality: 'easy' | 'good' | 'hard' | 'forgot'

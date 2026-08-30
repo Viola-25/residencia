@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import type { ErrorEntry, MedicalArea } from '../../types'
-import { calculateNextSRSState } from '../../lib/calculations'
+import { calculateNextSRSState, classifyErrorReason } from '../../lib/calculations'
 import { analyzeAndClusterError } from '../../lib/groq'
 
 export function useErrorBank() {
@@ -165,7 +165,7 @@ export function useErrorBank() {
         topic: analysis.suggestedCleanTitle,
         subtopic: null,
         area,
-        error_reason: 'Não sabia',
+        error_reason: classifyErrorReason(notes),
         needs_review: false,
         reviewed: false,
         origem_atividade: null,

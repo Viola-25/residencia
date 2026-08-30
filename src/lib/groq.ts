@@ -1,6 +1,6 @@
 import Groq from 'groq-sdk'
 import { supabase } from './supabase'
-import { getTodayRangeUTC } from './dates'
+import { getTodayRangeUTC, getCurrentWeekStart } from './dates'
 import type { DailyLog, MockExam, ErrorEntry, AreaPerformance, StudyConfig, AIInsight, MotivoErro } from '../types'
 import {
   ERROR_EXTRACTION_SYSTEM_PROMPT,
@@ -401,6 +401,20 @@ function fallbackInsights(data: {
       area: area.area,
     })
   }
+
+  const weekStart = getCurrentWeekStart()
+  const weekLogs = data.logs.filter((l) => l.date >= weekStart)
+  if (weekLogs.length > 0) {
+    const weekQs = weekLogs.reduce((s, l) => s + l.questions_done, 0)
+    const weekHr = Math.round(weekLogs.reduce((s, l) => s + l.hours_studied, 0) * 10) / 10
+    insights.push({
+      type: 'weekly',
+      title: 'Resumo da semana',
+      description: `Você registrou ${weekLogs.length} dia(s), ${weekQs} questões e ${weekHr}h de estudo nesta semana. Mantenha o ritmo para cumprir sua meta.`,
+      priority: 'medium',
+    })
+  }
+
   if (data.logs.length === 0) {
     insights.push({
       type: 'suggestion',

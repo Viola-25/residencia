@@ -17,6 +17,7 @@ import {
   calculateDaysWithoutStudy,
   calculateApprovalScore,
   calculateAreaPerformanceFromLogs,
+  calculateWeeklySummaries,
   extractErrorsFromNotes,
   calculateRecentMetrics,
   RECENT_WINDOW_DAYS,
@@ -171,9 +172,16 @@ export function useData() {
     }
   }, [logs, config])
 
+  const weeklySummaries = useMemo(() => calculateWeeklySummaries(logs), [logs])
+
   const approvalScore = useMemo(
-    () => calculateApprovalScore(logs, mocks, [], areaPerformance, errors),
-    [logs, mocks, areaPerformance, errors]
+    () => calculateApprovalScore(logs, mocks, weeklySummaries, areaPerformance, errors),
+    [logs, mocks, weeklySummaries, areaPerformance, errors]
+  )
+
+  const recentMetrics = useMemo(
+    () => calculateRecentMetrics(logs, recentWindow),
+    [logs, recentWindow]
   )
 
   const strategicData = useMemo((): StrategicData => {
@@ -182,33 +190,44 @@ export function useData() {
     const sortedAsc = [...areaPerformance].sort((a, b) => a.hit_rate - b.hit_rate)
     const topWeaknesses = sortedAsc.slice(0, 3).map((a) => ({ area: a.area, hit_rate: a.hit_rate }))
 
-    const growthAreas = areaPerformance.filter((a) => a.trend === 'up')
-    const declineAreas = areaPerformance.filter((a) => a.trend === 'down')
-    const globalAvg = areaPerformance.length > 0
-      ? areaPerformance.reduce((s, a) => s + a.hit_rate, 0) / areaPerformance.length
-      : 0
-    const mostGrowth = growthAreas.length > 0
-      ? { area: growthAreas[0].area, growth: roundTo2(Math.abs(growthAreas[0].hit_rate - globalAvg)) }
+    const recentByArea = new Map(
+      recentMetrics.area_performance.map((a) => [a.area, a.hit_rate])
+    )
+
+    const deltas = areaPerformance
+      .map((a) => {
+        const recent = recentByArea.get(a.area)
+        if (recent === undefined) return null
+        return { area: a.area, delta: roundTo2(recent - a.hit_rate) }
+      })
+      .filter((d): d is { area: MedicalArea; delta: number } => d !== null)
+
+    const mostGrowth = deltas.length > 0
+      ? deltas.reduce((max, d) => (d.delta > max.delta ? d : max))
       : null
-    const mostDecline = declineAreas.length > 0
-      ? { area: declineAreas[0].area, decline: roundTo2(Math.abs(declineAreas[0].hit_rate - globalAvg)) }
+    const mostDecline = deltas.length > 0
+      ? deltas.reduce((min, d) => (d.delta < min.delta ? d : min))
       : null
 
     return {
       top_strengths: topStrengths,
       top_weaknesses: topWeaknesses,
-      most_growth: mostGrowth,
-      most_decline: mostDecline,
+      most_growth:
+        mostGrowth !== null && mostGrowth.delta > 0
+          ? { area: mostGrowth.area, growth: mostGrowth.delta }
+          : null,
+      most_decline:
+        mostDecline !== null && mostDecline.delta < 0
+          ? { area: mostDecline.area, decline: Math.abs(mostDecline.delta) }
+          : null,
       days_without_study: dashboardMetrics.days_without_study,
       current_streak: dashboardMetrics.current_streak,
-      best_week: null,
+      best_week:
+        weeklySummaries.length > 0
+          ? [...weeklySummaries].sort((a, b) => b.questions_done - a.questions_done)[0]
+          : null,
     }
-  }, [areaPerformance, dashboardMetrics])
-
-  const recentMetrics = useMemo(
-    () => calculateRecentMetrics(logs, recentWindow),
-    [logs, recentWindow]
-  )
+  }, [areaPerformance, dashboardMetrics, weeklySummaries, recentMetrics])
 
   return {
     loading,
