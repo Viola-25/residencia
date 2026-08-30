@@ -5,6 +5,8 @@ import { MEDICAL_AREAS } from '../types'
 
 export const RECENT_WINDOW_DAYS = 90
 
+export const APPROVAL_WINDOW_DAYS = 30
+
 export function filterRecentLogs(logs: DailyLog[], days: number = RECENT_WINDOW_DAYS): DailyLog[] {
   const cutoff = new Date()
   cutoff.setHours(0, 0, 0, 0)
@@ -456,29 +458,37 @@ export function calculateDaysWithoutStudy(logs: DailyLog[]): number {
 export function calculateApprovalScore(
   logs: DailyLog[],
   mocks: MockExam[],
-  weeklySummaries: WeeklySummary[],
   areaPerformance: AreaPerformance[],
   errors?: ErrorEntry[]
 ): ApprovalScore {
-  const hitRate = calculateGlobalHitRate(logs)
-  const mockAvg = getMockAverage(mocks)
+  const recentLogs = filterRecentLogs(logs, APPROVAL_WINDOW_DAYS)
+  const cutoff = new Date()
+  cutoff.setHours(0, 0, 0, 0)
+  cutoff.setDate(cutoff.getDate() - APPROVAL_WINDOW_DAYS)
+  const recentMocks = mocks.filter((m) => new Date(m.date + 'T00:00:00') >= cutoff)
+  const recentSummaries = calculateWeeklySummaries(recentLogs)
+
+  const hitRate = calculateGlobalHitRate(recentLogs)
+  const mockAvg = getMockAverage(recentMocks)
 
   const hitRateScore = Math.min(100, Math.round(hitRate * 1.2))
   const mockEvolutionScore = Math.min(100, Math.round(mockAvg * 1.1))
   const consistencyScore = Math.min(
     100,
-    weeklySummaries.length > 0
+    recentSummaries.length > 0
       ? Math.round(
-          (weeklySummaries.filter((w) => w.days_studied >= 5).length /
-            weeklySummaries.length) *
+          (recentSummaries.filter((w) => w.days_studied >= 5).length /
+            recentSummaries.length) *
             100
         )
       : 0
   )
+  const studyDays = new Set(recentLogs.map((l) => l.date))
+  const reviewDays = new Set(recentLogs.filter((l) => l.core_review_done).map((l) => l.date))
   const reviewScore = Math.min(
     100,
-    logs.length > 0
-      ? Math.round((logs.filter((l) => l.core_review_done).length / logs.length) * 100)
+    studyDays.size > 0
+      ? Math.round((reviewDays.size / studyDays.size) * 100)
       : 0
   )
   let errorBankScore = 0

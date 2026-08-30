@@ -175,8 +175,8 @@ export function useData() {
   const weeklySummaries = useMemo(() => calculateWeeklySummaries(logs), [logs])
 
   const approvalScore = useMemo(
-    () => calculateApprovalScore(logs, mocks, weeklySummaries, areaPerformance, errors),
-    [logs, mocks, weeklySummaries, areaPerformance, errors]
+    () => calculateApprovalScore(logs, mocks, areaPerformance, errors),
+    [logs, mocks, areaPerformance, errors]
   )
 
   const recentMetrics = useMemo(
