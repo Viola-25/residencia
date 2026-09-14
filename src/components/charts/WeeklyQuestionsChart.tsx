@@ -8,7 +8,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts'
-import { getWeekLabel } from '../../lib/dates'
+import { getWeekLabel, getWeekStartKey } from '../../lib/dates'
 import { tooltipStyle, tooltipLabelStyle, tooltipItemStyle } from '../../lib/chartStyles'
 import type { DailyLog } from '../../types'
 
@@ -20,12 +20,7 @@ export function WeeklyQuestionsChart({ logs }: WeeklyQuestionsChartProps) {
   const data = useMemo(() => {
     const weekMap = new Map<string, { questions: number }>()
     for (const log of logs) {
-      const d = new Date(log.date + 'T00:00:00')
-      const dayOfWeek = d.getDay()
-      const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1
-      const weekStart = new Date(d)
-      weekStart.setDate(d.getDate() - diff)
-      const key = weekStart.toISOString().split('T')[0]
+      const key = getWeekStartKey(log.date)
       const existing = weekMap.get(key) || { questions: 0 }
       existing.questions += log.questions_done
       weekMap.set(key, existing)

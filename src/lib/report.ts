@@ -26,7 +26,7 @@ import {
   roundTo2,
   isErrorDue,
 } from './calculations'
-import { formatDate, formatDateShort } from './dates'
+import { formatDate, formatDateShort, getWeekStartKey } from './dates'
 
 interface PerformanceReportInput {
   logs: DailyLog[]
@@ -91,12 +91,7 @@ export function buildPerformanceReport(input: PerformanceReportInput): string {
 
   const weekMap = new Map<string, { questions: number; hits: number }>()
   for (const log of logs) {
-    const d = new Date(log.date + 'T00:00:00')
-    const dayOfWeek = d.getDay()
-    const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1
-    const weekStart = new Date(d)
-    weekStart.setDate(d.getDate() - diff)
-    const key = weekStart.toISOString().split('T')[0]
+    const key = getWeekStartKey(log.date)
     const existing = weekMap.get(key) || { questions: 0, hits: 0 }
     existing.questions += log.questions_done
     const correct =

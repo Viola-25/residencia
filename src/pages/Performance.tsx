@@ -29,7 +29,7 @@ import { StatCard } from '../components/StatCard'
 import { Badge } from '../components/Badge'
 import { RecentWindowSelector } from '../components/RecentWindowSelector'
 import { PlatformPerformance } from '../components/PlatformPerformance'
-import { getWeekLabel, getTodayDateString } from '../lib/dates'
+import { getWeekLabel, getTodayDateString, getWeekStartKey } from '../lib/dates'
 import { AREA_LABELS, MEDICAL_AREAS } from '../types'
 import { tooltipStyle } from '../lib/chartStyles'
 import { getHitRateTrend, calculateGlobalHitRate, roundTo2, isErrorDue } from '../lib/calculations'
@@ -120,12 +120,7 @@ export function Performance() {
   const weeklyChartData = useMemo(() => {
     const weekMap = new Map<string, { questions: number; hits: number; total: number }>()
     for (const log of logs) {
-      const d = new Date(log.date + 'T00:00:00')
-      const dayOfWeek = d.getDay()
-      const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1
-      const weekStart = new Date(d)
-      weekStart.setDate(d.getDate() - diff)
-      const key = weekStart.toISOString().split('T')[0]
+      const key = getWeekStartKey(log.date)
       const existing = weekMap.get(key) || { questions: 0, hits: 0, total: 0 }
       existing.questions += log.questions_done
       existing.total += log.questions_done

@@ -43,3 +43,12 @@ export function getWeekLabel(weekStart: string): string {
   const d = new Date(weekStart + 'T00:00:00')
   return `Sem ${d.getMonth() + 1}/${d.getDate()}`
 }
+
+export function getWeekStartKey(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00')
+  const dayOfWeek = d.getDay()
+  const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+  const weekStart = new Date(d)
+  weekStart.setDate(d.getDate() - diff)
+  return weekStart.toISOString().split('T')[0]
+}
