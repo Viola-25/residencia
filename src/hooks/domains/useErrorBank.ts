@@ -179,6 +179,8 @@ export function useErrorBank() {
         repetitions: 0,
         occurrence_count: 1,
         history_notes: [notes],
+        flashcard_front: null,
+        flashcard_back: null,
         created_at: new Date().toISOString(),
       }
 
@@ -204,5 +206,19 @@ export function useErrorBank() {
     }
   }
 
-  return { errors, loading, toggleErrorReview, reviewErrorWithSRS, deleteError, addSmartError, addExtractedErrors }
+  const persistFlashcard = async (id: string, front: string, back: string) => {
+    setErrors((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, flashcard_front: front, flashcard_back: back } : e))
+    )
+    try {
+      await supabase
+        .from('error_bank')
+        .update({ flashcard_front: front, flashcard_back: back })
+        .eq('id', id)
+    } catch (err) {
+      console.error('Error persisting flashcard:', err)
+    }
+  }
+
+  return { errors, loading, toggleErrorReview, reviewErrorWithSRS, deleteError, addSmartError, addExtractedErrors, persistFlashcard }
 }

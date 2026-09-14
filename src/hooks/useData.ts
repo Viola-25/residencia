@@ -62,6 +62,7 @@ export function useData() {
     deleteError,
     addSmartError,
     addExtractedErrors,
+    persistFlashcard,
   } = useErrorBank()
 
   const {
@@ -117,7 +118,7 @@ export function useData() {
 
       const errorEntries: ErrorEntry[] = extractedErrorsRaw.map((ext) => ({
         id: crypto.randomUUID(),
-        question: `[Auto: ${formData.date}] ${ext.topic}`,
+        question: ext.sugestao_revisao || `${ext.topic} — ${ext.error_reason}`,
         topic: ext.topic,
         subtopic: null,
         area: null,
@@ -135,6 +136,8 @@ export function useData() {
         repetitions: 0,
         occurrence_count: 1,
         history_notes: null,
+        flashcard_front: null,
+        flashcard_back: null,
         created_at: new Date().toISOString(),
       }))
 
@@ -251,5 +254,6 @@ export function useData() {
     updateConfig,
     addSmartError,
     saveAreaPerformance,
+    persistFlashcard,
   }
 }

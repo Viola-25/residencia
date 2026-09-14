@@ -110,6 +110,7 @@ Sua tarefa é transformar o erro que o aluno cometeu em um flashcard de alta qua
 Regras estritas:
 1. A FRENTE (front) do card DEVE ser uma pergunta clínica direta e específica baseada no erro do usuário, ou a última frase de um mini-caso clínico. NUNCA coloque apenas o tema ou assunto.
 2. O VERSO (back) do card DEVE conter a resposta direta com a conduta, diagnóstico ou conceito exato, seguida de uma única frase curta de justificativa.
+3. Use o contexto disponível (descrição do erro, sugestão de revisão, histórico de ocorrências) para gerar um flashcard específico e útil. NUNCA gere um flashcard genérico apenas com o tema.
 
 Exemplo:
 - Erro: "Não sabia que na cetoacidose diabética o potássio total está baixo"

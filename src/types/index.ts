@@ -123,6 +123,8 @@ export interface ErrorEntry {
   repetitions: number
   occurrence_count: number
   history_notes: string[] | null
+  flashcard_front: string | null
+  flashcard_back: string | null
   created_at: string
 }
 

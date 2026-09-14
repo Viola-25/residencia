@@ -450,16 +450,16 @@ export async function generateErrorFlashcard(error: {
   question: string
   error_reason: MotivoErro | string
   sugestao_revisao: string | null
-}): Promise<GeneratedFlashcard> {
+  history_notes?: string[] | null
+}): Promise<GeneratedFlashcard | null> {
   const apiKey = import.meta.env.VITE_GROQ_API_KEY
-  if (!apiKey) {
-    return {
-      front: error.topic,
-      back: error.question,
-    }
-  }
+  if (!apiKey) return null
 
   try {
+    const historyBlock = error.history_notes && error.history_notes.length > 0
+      ? `\nHistórico de ocorrências:\n${error.history_notes.slice(-3).map((n, i) => `${i + 1}. ${n}`).join('\n')}`
+      : ''
+
     const completion = await groq.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
       messages: [
@@ -468,7 +468,7 @@ export async function generateErrorFlashcard(error: {
           role: 'user',
           content: `Tema do erro: "${error.topic}"
 Descrição do erro: "${error.question}"
-Motivo: ${error.error_reason}${error.sugestao_revisao ? `\nSugestão de revisão: "${error.sugestao_revisao}"` : ''}
+Motivo: ${error.error_reason}${error.sugestao_revisao ? `\nSugestão de revisão: "${error.sugestao_revisao}"` : ''}${historyBlock}
 
 Gere o flashcard seguindo estritamente as regras do system prompt.`,
         },
@@ -478,16 +478,13 @@ Gere o flashcard seguindo estritamente as regras do system prompt.`,
     })
 
     const text = completion.choices[0]?.message?.content
-    if (!text) return { front: error.topic, back: error.question }
+    if (!text) return null
 
     const parsed = parseJsonSafe<GeneratedFlashcard>(text)
-    if (!parsed) return { front: error.topic, back: error.question }
-    return {
-      front: parsed.front || error.topic,
-      back: parsed.back || error.question,
-    }
+    if (!parsed || !parsed.front || !parsed.back) return null
+    return { front: parsed.front, back: parsed.back }
   } catch {
-    return { front: error.topic, back: error.question }
+    return null
   }
 }
 

@@ -41,7 +41,7 @@ function formatNextReview(dateStr: string | null): string {
 }
 
 export function ErrorBank() {
-  const { errors: rawErrors, loading, reviewErrorWithSRS, deleteError } = useData()
+  const { errors: rawErrors, loading, reviewErrorWithSRS, deleteError, persistFlashcard } = useData()
   const [search, setSearch] = useState('')
   const [filterReason, setFilterReason] = useState<MotivoErro | 'all'>('all')
   const [filterReview, setFilterReview] = useState<'all' | 'pending' | 'reviewed'>('all')
@@ -51,8 +51,37 @@ export function ErrorBank() {
   const [fcRevealed, setFcRevealed] = useState(false)
   const [flashcardData, setFlashcardData] = useState<GeneratedFlashcard | null>(null)
   const [flashcardLoading, setFlashcardLoading] = useState(false)
+  const [fcFailed, setFcFailed] = useState(false)
+  const [fcManualFront, setFcManualFront] = useState('')
+  const [fcManualBack, setFcManualBack] = useState('')
 
   const errors = useMemo(() => rawErrors || [], [rawErrors])
+
+  const loadFlashcard = async (error: ErrorEntry) => {
+    if (error.flashcard_front && error.flashcard_back) {
+      setFlashcardData({ front: error.flashcard_front, back: error.flashcard_back })
+      setFcFailed(false)
+      setFlashcardLoading(false)
+      return
+    }
+    setFlashcardLoading(true)
+    setFcFailed(false)
+    const result = await generateErrorFlashcard({
+      topic: error.topic,
+      question: error.question,
+      error_reason: error.error_reason,
+      sugestao_revisao: error.sugestao_revisao,
+      history_notes: error.history_notes,
+    })
+    if (result) {
+      setFlashcardData(result)
+      persistFlashcard(error.id, result.front, result.back)
+    } else {
+      setFlashcardData(null)
+      setFcFailed(true)
+    }
+    setFlashcardLoading(false)
+  }
 
   const topicStats = useMemo(() => {
     const topicMap = new Map<string, { count: number; lastDate: string; reasons: Set<string> }>()
@@ -120,7 +149,9 @@ export function ErrorBank() {
     setFcIndex(0)
     setFcRevealed(false)
     setFlashcardData(null)
-    setFlashcardLoading(false)
+    setFcFailed(false)
+    setFcManualFront('')
+    setFcManualBack('')
   }
 
   if (loading) {
@@ -218,15 +249,7 @@ export function ErrorBank() {
               setFcIndex(0)
               setFcRevealed(false)
               setFlashcardData(null)
-              setFlashcardLoading(true)
-              const result = await generateErrorFlashcard({
-                topic: queue[0].topic,
-                question: queue[0].question,
-                error_reason: queue[0].error_reason,
-                sugestao_revisao: queue[0].sugestao_revisao,
-              })
-              setFlashcardData(result)
-              setFlashcardLoading(false)
+              await loadFlashcard(queue[0])
             }}
             className="flex items-center gap-2 rounded-lg border border-violet-500/30 bg-violet-500/10 px-4 py-2 text-sm font-medium text-violet-300 transition-colors hover:bg-violet-500/20"
           >
@@ -264,6 +287,74 @@ export function ErrorBank() {
                 <div className="flex items-center justify-center py-12">
                   <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-400 border-t-transparent" />
                   <span className="ml-3 text-sm text-zinc-400">Gerando flashcard...</span>
+                </div>
+              </>
+            ) : fcFailed && !fcRevealed ? (
+              <>
+                <div className="mb-4 flex items-center justify-between">
+                  <span className="text-xs text-zinc-500">{fcIndex + 1} / {flashcardQueue.length}</span>
+                  <button onClick={exitQueue} className="text-xs text-zinc-600 hover:text-zinc-400">Sair</button>
+                </div>
+                <div className="mb-2 text-center text-xs font-medium uppercase tracking-wider text-zinc-500">
+                  {ERROR_REASONS.find((r) => r.value === flashcardQueue[fcIndex].error_reason)?.label}
+                </div>
+                <p className="mb-4 text-center text-sm text-zinc-400">
+                  IA não foi capaz de gerar o flashcard automaticamente.
+                </p>
+                <p className="mb-2 text-center text-xs text-zinc-500">Tema: {flashcardQueue[fcIndex].topic}</p>
+                <div className="mb-3">
+                  <label className="mb-1 block text-xs text-zinc-500">Frente (pergunta)</label>
+                  <textarea
+                    value={fcManualFront}
+                    onChange={(e) => setFcManualFront(e.target.value)}
+                    rows={2}
+                    className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 outline-none focus:border-violet-500"
+                    placeholder="Ex: Qual a conduta para..."
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="mb-1 block text-xs text-zinc-500">Verso (resposta)</label>
+                  <textarea
+                    value={fcManualBack}
+                    onChange={(e) => setFcManualBack(e.target.value)}
+                    rows={3}
+                    className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 outline-none focus:border-violet-500"
+                    placeholder="Ex: Repor potássio assim que..."
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      if (!fcManualFront.trim() || !fcManualBack.trim()) return
+                      await persistFlashcard(flashcardQueue[fcIndex].id, fcManualFront.trim(), fcManualBack.trim())
+                      setFlashcardData({ front: fcManualFront.trim(), back: fcManualBack.trim() })
+                      setFcFailed(false)
+                      setFcManualFront('')
+                      setFcManualBack('')
+                    }}
+                    className="flex-1 rounded-lg bg-violet-600 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-500"
+                  >
+                    Salvar e Continuar
+                  </button>
+                  <button
+                    onClick={() => {
+                      const next = fcIndex + 1
+                      if (next < flashcardQueue.length) {
+                        setFcIndex(next)
+                        setFcRevealed(false)
+                        setFlashcardData(null)
+                        setFcFailed(false)
+                        setFcManualFront('')
+                        setFcManualBack('')
+                        loadFlashcard(flashcardQueue[next])
+                      } else {
+                        setFcIndex(next)
+                      }
+                    }}
+                    className="rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-400 transition-colors hover:bg-zinc-800"
+                  >
+                    Pular
+                  </button>
                 </div>
               </>
             ) : !fcRevealed ? (
@@ -336,16 +427,7 @@ export function ErrorBank() {
                             setFcIndex(next)
                             setFcRevealed(false)
                             setFlashcardData(null)
-                            setFlashcardLoading(true)
-                            generateErrorFlashcard({
-                              topic: flashcardQueue[next].topic,
-                              question: flashcardQueue[next].question,
-                              error_reason: flashcardQueue[next].error_reason,
-                              sugestao_revisao: flashcardQueue[next].sugestao_revisao,
-                            }).then((result) => {
-                              setFlashcardData(result)
-                              setFlashcardLoading(false)
-                            })
+                            loadFlashcard(flashcardQueue[next])
                           } else {
                             setFcIndex(next)
                           }
