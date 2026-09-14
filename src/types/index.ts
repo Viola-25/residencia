@@ -71,6 +71,8 @@ export interface DailyLogFormData {
   registration_type: RegistrationType
   hours_studied: number
   areas: Record<MedicalArea, { questions_done: number; correct: number }>
+  core_review_done?: boolean
+  flashcards_done?: boolean
   notes: string
   mood: Mood
   energy_level: number
