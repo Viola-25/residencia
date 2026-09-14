@@ -1,14 +1,8 @@
+import { useEffect } from 'react'
 import { formatDateShort } from '../../lib/dates'
 import { Badge } from '../Badge'
-import { REGISTRATION_TYPES, MOOD_OPTIONS } from '../../types'
+import { REGISTRATION_TYPES, MOOD_OPTIONS, MOOD_COLORS } from '../../types'
 import type { DailyLog } from '../../types'
-
-const moodColors: Record<string, string> = {
-  excelente: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  bom: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  medio: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-  ruim: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
-}
 
 interface ViewLogModalProps {
   log: DailyLog | null
@@ -16,10 +10,20 @@ interface ViewLogModalProps {
 }
 
 export function ViewLogModal({ log, onClose }: ViewLogModalProps) {
+  useEffect(() => {
+    if (!log) return
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', handleEsc)
+    return () => window.removeEventListener('keydown', handleEsc)
+  }, [log, onClose])
+
   if (!log) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+    >
       <div className="w-full max-w-lg rounded-xl border border-zinc-700 bg-zinc-900 p-6 shadow-2xl mx-4">
         <h3 className="mb-4 text-sm font-semibold text-zinc-200">Detalhes do Registro</h3>
         <div className="space-y-3 text-sm">
@@ -107,7 +111,7 @@ export function ViewLogModal({ log, onClose }: ViewLogModalProps) {
           <div className="flex justify-between border-b border-zinc-800 pb-2">
             <span className="text-zinc-400">Humor</span>
             <span
-              className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${moodColors[log.mood]}`}
+              className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${MOOD_COLORS[log.mood]}`}
             >
               {MOOD_OPTIONS.find((m) => m.value === log.mood)?.label}
             </span>

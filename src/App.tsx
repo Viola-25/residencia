@@ -23,27 +23,40 @@ function PageLoader() {
   )
 }
 
+function NotFound() {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-950 text-zinc-400">
+      <p className="mb-4 text-6xl font-bold text-zinc-600">404</p>
+      <p className="mb-6 text-sm">Página não encontrada</p>
+      <a href="/" className="text-sm text-violet-400 hover:text-violet-300">Voltar ao início</a>
+    </div>
+  )
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route element={<ProtectedRoute />}>
-              <Route element={<Layout />}>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/diario" element={<DailyLog />} />
-                <Route path="/desempenho" element={<Performance />} />
-                <Route path="/erros" element={<ErrorBoundary><ErrorBank /></ErrorBoundary>} />
-                <Route path="/radar" element={<ApprovalRadar />} />
-                <Route path="/estrategico" element={<StrategicPanel />} />
-                <Route path="/ia" element={<AIInsights />} />
-                <Route path="/configuracoes" element={<Settings />} />
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route element={<ProtectedRoute />}>
+                <Route element={<Layout />}>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/diario" element={<DailyLog />} />
+                  <Route path="/desempenho" element={<Performance />} />
+                  <Route path="/erros" element={<ErrorBank />} />
+                  <Route path="/radar" element={<ApprovalRadar />} />
+                  <Route path="/estrategico" element={<StrategicPanel />} />
+                  <Route path="/ia" element={<AIInsights />} />
+                  <Route path="/configuracoes" element={<Settings />} />
+                </Route>
               </Route>
-            </Route>
-          </Routes>
-        </Suspense>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+        </ErrorBoundary>
       </AuthProvider>
     </BrowserRouter>
   )

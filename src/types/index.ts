@@ -242,6 +242,13 @@ export const MOOD_OPTIONS: { value: Mood; label: string }[] = [
   { value: 'ruim', label: 'Ruim' },
 ]
 
+export const MOOD_COLORS: Record<Mood, string> = {
+  excelente: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  bom: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  medio: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  ruim: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+}
+
 export const REGISTRATION_TYPES: { value: RegistrationType; label: string }[] = [
   { value: 'questoes', label: 'Rodada de Questões' },
   { value: 'simulado', label: 'Simulado/Prova Antiga' },

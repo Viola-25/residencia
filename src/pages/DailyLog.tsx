@@ -11,15 +11,8 @@ import { MockEvolutionChart } from '../components/charts/MockEvolutionChart'
 import { useData } from '../hooks/useData'
 import { formatDateShort } from '../lib/dates'
 import { getMockAverage, getMockTrend } from '../lib/calculations'
-import type { DailyLog, Mood, MedicalArea } from '../types'
-import { MOOD_OPTIONS, REGISTRATION_TYPES } from '../types'
-
-const moodColors: Record<Mood, string> = {
-  excelente: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  bom: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  medio: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-  ruim: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
-}
+import type { DailyLog, MedicalArea } from '../types'
+import { MOOD_OPTIONS, MOOD_COLORS, REGISTRATION_TYPES } from '../types'
 
 export function DailyLog() {
   const { logs, mocks, dashboardMetrics, addDailyLog, updateDailyLog, deleteDailyLog, addSmartError } = useData()
@@ -244,7 +237,7 @@ export function DailyLog() {
                   </td>
                   <td className="px-4 py-3">
                     <span
-                      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${moodColors[log.mood]}`}
+                      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${MOOD_COLORS[log.mood]}`}
                     >
                       {MOOD_OPTIONS.find((m) => m.value === log.mood)?.label}
                     </span>
@@ -290,6 +283,12 @@ export function DailyLog() {
           </table>
         </div>
       </div>
+
+      {logs.length > 30 && (
+        <p className="mt-3 text-center text-xs text-zinc-500">
+          Mostrando 30 de {logs.length} registros
+        </p>
+      )}
 
       <QuickErrorModal
         open={quickErrorOpen}

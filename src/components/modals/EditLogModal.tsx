@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import type { DailyLog, DailyLogFormData } from '../../types'
 import { DailyLogForm } from '../forms/DailyLogForm'
 
@@ -40,10 +41,20 @@ function logToFormData(log: DailyLog): DailyLogFormData {
 }
 
 export function EditLogModal({ log, onClose, onSave }: EditLogModalProps) {
+  useEffect(() => {
+    if (!log) return
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', handleEsc)
+    return () => window.removeEventListener('keydown', handleEsc)
+  }, [log, onClose])
+
   if (!log) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 pt-10">
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 pt-10"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+    >
       <div className="relative mb-10 w-full max-w-3xl rounded-xl border border-zinc-700 bg-zinc-900 p-6 shadow-2xl mx-4">
         <h3 className="mb-4 text-sm font-semibold text-zinc-200">Editar Registro</h3>
         <DailyLogForm

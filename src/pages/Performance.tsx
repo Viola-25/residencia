@@ -90,7 +90,7 @@ export function Performance() {
   const recentAreaPerf = recentMetrics.area_performance
   const globalAreaPerf = areaPerformance
 
-  const allAreas = MEDICAL_AREAS.map(({ value }) => {
+  const allAreas = useMemo(() => MEDICAL_AREAS.map(({ value }) => {
     const perf = globalAreaPerf.find((a) => a.area === value)
     return perf || {
       id: value,
@@ -101,9 +101,9 @@ export function Performance() {
       trend: 'stable' as const,
       priority: 'red' as const,
     }
-  })
+  }), [globalAreaPerf])
 
-  const chartData = allAreas.map((a) => {
+  const chartData = useMemo(() => allAreas.map((a) => {
     const recent = recentAreaPerf.find((r) => r.area === a.area)
     return {
       name: AREA_LABELS[a.area as MedicalArea].split(' ')[0],
@@ -116,7 +116,7 @@ export function Performance() {
             ? '#f59e0b'
             : '#ef4444',
     }
-  })
+  }), [allAreas, recentAreaPerf])
 
   const weeklyChartData = useMemo(() => {
     const weekMap = new Map<string, { questions: number; hits: number; total: number }>()

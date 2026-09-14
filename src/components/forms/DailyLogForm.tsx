@@ -3,7 +3,7 @@ import { useForm, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Plus, Minus } from 'lucide-react'
-import { MEDICAL_AREAS, MOOD_OPTIONS, REGISTRATION_TYPES } from '../../types'
+import { MEDICAL_AREAS, MOOD_OPTIONS, MOOD_COLORS, REGISTRATION_TYPES } from '../../types'
 import type { DailyLogFormData, Mood, RegistrationType } from '../../types'
 import { getTodayDateString } from '../../lib/dates'
 import { calculateLogScore, formatScoreBadge, roundTo2 } from '../../lib/calculations'
@@ -12,13 +12,6 @@ const registrationTypeColors: Record<string, string> = {
   questoes: 'border-violet-500/20 bg-violet-500/5',
   simulado: 'border-emerald-500/20 bg-emerald-500/5',
   revisao: 'border-amber-500/20 bg-amber-500/5',
-}
-
-const moodColors: Record<Mood, string> = {
-  excelente: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  bom: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  medio: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-  ruim: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
 }
 
 const areaSchema = z.object({
@@ -512,7 +505,7 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
               onClick={() => setValue('mood', m.value)}
               className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
                 formValues.mood === m.value
-                  ? moodColors[m.value]
+                   ? MOOD_COLORS[m.value]
                   : 'border-zinc-700 bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
               }`}
             >
