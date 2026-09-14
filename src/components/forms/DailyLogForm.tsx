@@ -29,8 +29,6 @@ const dailyLogSchema = z.object({
   registration_type: z.enum(['questoes', 'simulado', 'revisao'] as const),
   hours_studied: z.coerce.number().min(0).max(600),
   areas: z.record(z.string(), areaSchema),
-  core_review_done: z.boolean().default(false),
-  flashcards_done: z.boolean().default(false),
   notes: z.string().default(''),
   mood: z.enum(['excelente', 'bom', 'medio', 'ruim'] as const),
   energy_level: z.coerce.number().min(0).max(10).default(7),
@@ -59,8 +57,6 @@ function defaultFormValues(): DailyLogFormValues {
     registration_type: 'questoes' as RegistrationType,
     hours_studied: 0,
     areas,
-    core_review_done: false,
-    flashcards_done: false,
     notes: '',
     mood: 'bom' as Mood,
     energy_level: 7,
@@ -102,8 +98,6 @@ function logToFormValues(log: DailyLogFormData): DailyLogFormValues {
     registration_type: log.registration_type,
     hours_studied: Math.round(log.hours_studied * 60),
     areas,
-    core_review_done: log.core_review_done,
-    flashcards_done: log.flashcards_done,
     notes: log.notes,
     mood: log.mood,
     energy_level: log.energy_level,
@@ -205,8 +199,6 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
       registration_type: values.registration_type,
       hours_studied: Number(values.hours_studied) / 60,
       areas,
-      core_review_done: values.core_review_done || values.registration_type === 'revisao',
-      flashcards_done: values.flashcards_done,
       notes: values.notes,
       mood: values.mood,
       energy_level: Number(values.energy_level),
@@ -532,25 +524,6 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
           {...register('energy_level')}
           className="w-full accent-violet-500"
         />
-      </div>
-
-      <div className="flex gap-4">
-        <label className="flex items-center gap-2 text-sm text-zinc-300">
-          <input
-            type="checkbox"
-            {...register('core_review_done')}
-            className="accent-violet-500"
-          />
-          Revisão de conceitos centrais
-        </label>
-        <label className="flex items-center gap-2 text-sm text-zinc-300">
-          <input
-            type="checkbox"
-            {...register('flashcards_done')}
-            className="accent-violet-500"
-          />
-          Flashcards revisados
-        </label>
       </div>
 
       <div>
