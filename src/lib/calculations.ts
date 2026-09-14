@@ -257,6 +257,31 @@ function wilsonInterval(correct: number, total: number, z = 1.96): { low: number
   }
 }
 
+export interface AreaCI {
+  area: MedicalArea
+  low: number
+  high: number
+  questions_done: number
+}
+
+export function calculateAreaConfidenceIntervals(logs: DailyLog[]): AreaCI[] {
+  const areaMap = aggregateAreasInWindow(logs, new Date(0), new Date('2999-12-31'))
+  const result: AreaCI[] = []
+
+  for (const [area, data] of areaMap.entries()) {
+    if (data.questions_done < 5) continue
+    const ci = wilsonInterval(data.correct, data.questions_done)
+    result.push({
+      area,
+      low: ci.low,
+      high: ci.high,
+      questions_done: data.questions_done,
+    })
+  }
+
+  return result.sort((a, b) => a.area.localeCompare(b.area))
+}
+
 export const ESTIMATED_PLATFORM_SIGMA = 10
 
 export interface PlatformInference {
@@ -265,6 +290,9 @@ export interface PlatformInference {
   p_value: number | null
   significant: boolean
   hit_rate_ci: { low: number; high: number } | null
+  area_cis: AreaCI[]
+  fatigue: FatigueIndicator | null
+  prediction: PerformancePrediction | null
   estimated_z: number | null
   estimated_percentile: number | null
   estimated_quartile: 'Q1' | 'Q2' | 'Q3' | 'Q4' | null
@@ -272,7 +300,8 @@ export interface PlatformInference {
 
 export function calculatePlatformInference(
   logs: DailyLog[],
-  sigma: number = ESTIMATED_PLATFORM_SIGMA
+  sigma: number = ESTIMATED_PLATFORM_SIGMA,
+  examDate?: Date
 ): PlatformInference {
   const deltas = logs
     .map((l) => l.score_delta)
@@ -310,12 +339,19 @@ export function calculatePlatformInference(
     else estimatedQuartile = 'Q4'
   }
 
+  const areaCis = calculateAreaConfidenceIntervals(logs)
+  const fatigue = calculateFatigueIndicator(logs)
+  const prediction = examDate ? predictPerformance(logs, examDate) : null
+
   return {
     sessions: deltas.length,
     t_stat: tStat,
     p_value: pValue,
     significant,
     hit_rate_ci: hitRateCi,
+    area_cis: areaCis,
+    fatigue,
+    prediction,
     estimated_z: estimatedZ,
     estimated_percentile: estimatedPercentile,
     estimated_quartile: estimatedQuartile,
@@ -483,12 +519,13 @@ export function calculateApprovalScore(
         )
       : 0
   )
-  const studyDays = new Set(recentLogs.map((l) => l.date))
-  const reviewDays = new Set(recentLogs.filter((l) => l.core_review_done).map((l) => l.date))
+  const reviewedWithFlashcards = errors.filter(
+    (e) => e.reviewed && e.flashcard_front && e.flashcard_back
+  ).length
   const reviewScore = Math.min(
     100,
-    studyDays.size > 0
-      ? Math.round((reviewDays.size / studyDays.size) * 100)
+    errors.length > 0
+      ? Math.round((reviewedWithFlashcards / errors.length) * 100)
       : 0
   )
   let errorBankScore = 0
@@ -530,6 +567,86 @@ export function getAreaPriority(hitRate: number): 'red' | 'yellow' | 'green' {
   if (hitRate < 70) return 'red'
   if (hitRate < 80) return 'yellow'
   return 'green'
+}
+
+function linearRegression(points: { x: number; y: number }[]): {
+  slope: number
+  intercept: number
+  r_squared: number
+} {
+  const n = points.length
+  if (n < 2) return { slope: 0, intercept: 0, r_squared: 0 }
+
+  let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0
+  for (const p of points) {
+    sumX += p.x
+    sumY += p.y
+    sumXY += p.x * p.y
+    sumX2 += p.x * p.x
+    sumY2 += p.y * p.y
+  }
+
+  const denom = n * sumX2 - sumX * sumX
+  if (denom === 0) return { slope: 0, intercept: sumY / n, r_squared: 0 }
+
+  const slope = (n * sumXY - sumX * sumY) / denom
+  const intercept = (sumY - slope * sumX) / n
+
+  const ssRes = points.reduce((s, p) => {
+    const pred = slope * p.x + intercept
+    return s + (p.y - pred) ** 2
+  }, 0)
+  const meanY = sumY / n
+  const ssTot = points.reduce((s, p) => s + (p.y - meanY) ** 2, 0)
+  const r_squared = ssTot === 0 ? 0 : 1 - ssRes / ssTot
+
+  return {
+    slope: Math.round(slope * 1000) / 1000,
+    intercept: Math.round(intercept * 100) / 100,
+    r_squared: Math.round(r_squared * 1000) / 1000,
+  }
+}
+
+export function calculateAreaTrendSlope(
+  logs: DailyLog[],
+  area: MedicalArea
+): { slope: number; r_squared: number } {
+  const dayMap = new Map<string, { correct: number; total: number }>()
+
+  for (const log of logs) {
+    const normalized = normalizeArea(area)
+    let data: { correct: number; total: number } | undefined
+
+    if (log.areas_data && log.areas_data.length > 0) {
+      data = log.areas_data.find((ad) => normalizeArea(ad.area) === normalized)
+    } else if (normalized === 'clinica_medica' && log.questions_done > 0) {
+      data = {
+        correct: Math.round(log.questions_done * (log.hit_rate / 100)),
+        total: log.questions_done,
+      }
+    }
+
+    if (data && data.total > 0) {
+      const existing = dayMap.get(log.date) || { correct: 0, total: 0 }
+      existing.correct += data.correct
+      existing.total += data.total
+      dayMap.set(log.date, existing)
+    }
+  }
+
+  const sortedDates = Array.from(dayMap.keys()).sort()
+  if (sortedDates.length < 2) return { slope: 0, r_squared: 0 }
+
+  const firstDate = new Date(sortedDates[0] + 'T00:00:00').getTime()
+  const points = sortedDates.map((date) => {
+    const d = dayMap.get(date)!
+    const daysSinceStart = Math.round(
+      (new Date(date + 'T00:00:00').getTime() - firstDate) / (1000 * 60 * 60 * 24)
+    )
+    return { x: daysSinceStart, y: (d.correct / d.total) * 100 }
+  })
+
+  return linearRegression(points)
 }
 
 const AREA_ALIAS: Record<string, MedicalArea> = {
@@ -594,6 +711,7 @@ export function calculateAreaPerformanceFromLogs(logs: DailyLog[]): AreaPerforma
     let trend: 'up' | 'down' | 'stable' = 'stable'
     if (recentRate > priorRate) trend = 'up'
     else if (recentRate < priorRate) trend = 'down'
+    const { slope, r_squared } = calculateAreaTrendSlope(logs, area)
     return {
       id: area,
       area,
@@ -602,6 +720,8 @@ export function calculateAreaPerformanceFromLogs(logs: DailyLog[]): AreaPerforma
       hit_rate,
       trend,
       priority: getAreaPriority(hit_rate),
+      slope,
+      r_squared,
     }
   })
 
@@ -615,6 +735,8 @@ export function calculateAreaPerformanceFromLogs(logs: DailyLog[]): AreaPerforma
       hit_rate: 0,
       trend: 'stable' as const,
       priority: 'red' as const,
+      slope: 0,
+      r_squared: 0,
     }
   })
 }
@@ -738,5 +860,102 @@ export function calculateNextSRSState(currentState: {
     ease_factor: Math.round(ease_factor * 100) / 100,
     repetitions,
     next_review_date: nextReviewDate.toISOString(),
+  }
+}
+
+export interface FatigueIndicator {
+  early_hit_rate: number
+  late_hit_rate: number
+  delta: number
+  has_fatigue: boolean
+}
+
+export function calculateFatigueIndicator(logs: DailyLog[]): FatigueIndicator | null {
+  const byDate = new Map<string, DailyLog[]>()
+  for (const log of logs) {
+    const existing = byDate.get(log.date) || []
+    existing.push(log)
+    byDate.set(log.date, existing)
+  }
+
+  let earlyTotal = 0, earlyCorrect = 0
+  let lateTotal = 0, lateCorrect = 0
+
+  for (const dayLogs of byDate.values()) {
+    const sorted = dayLogs.sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''))
+    if (sorted.length < 2) continue
+
+    const early = sorted.slice(0, Math.ceil(sorted.length / 2))
+    const late = sorted.slice(Math.ceil(sorted.length / 2))
+
+    for (const log of early) {
+      earlyTotal += log.questions_done
+      earlyCorrect += Math.round(log.questions_done * (log.hit_rate / 100))
+    }
+    for (const log of late) {
+      lateTotal += log.questions_done
+      lateCorrect += Math.round(log.questions_done * (log.hit_rate / 100))
+    }
+  }
+
+  if (earlyTotal < 20 || lateTotal < 20) return null
+
+  const earlyRate = roundTo2((earlyCorrect / earlyTotal) * 100)
+  const lateRate = roundTo2((lateCorrect / lateTotal) * 100)
+  const delta = roundTo2(lateRate - earlyRate)
+
+  return {
+    early_hit_rate: earlyRate,
+    late_hit_rate: lateRate,
+    delta,
+    has_fatigue: delta < -5,
+  }
+}
+
+export interface PerformancePrediction {
+  current_hit_rate: number
+  predicted_hit_rate: number | null
+  days_until_exam: number
+  confidence: 'low' | 'medium' | 'high'
+}
+
+export function predictPerformance(
+  logs: DailyLog[],
+  examDate: Date
+): PerformancePrediction | null {
+  const sorted = [...logs].sort((a, b) => a.date.localeCompare(b.date))
+  if (sorted.length < 5) return null
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const daysUntilExam = Math.round(
+    (examDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+  )
+  if (daysUntilExam <= 0) return null
+
+  const firstDate = new Date(sorted[0].date + 'T00:00:00').getTime()
+  const points = sorted.map((log) => {
+    const daysSinceStart = Math.round(
+      (new Date(log.date + 'T00:00:00').getTime() - firstDate) / (1000 * 60 * 60 * 24)
+    )
+    return { x: daysSinceStart, y: log.hit_rate }
+  })
+
+  const regression = linearRegression(points)
+  const currentHitRate = calculateGlobalHitRate(sorted)
+  const lastDay = points[points.length - 1].x
+  const examDay = lastDay + daysUntilExam
+  const predicted = regression.slope * examDay + regression.intercept
+  const predictedCapped = Math.max(0, Math.min(100, Math.round(predicted * 10) / 10))
+
+  let confidence: PerformancePrediction['confidence'] = 'low'
+  if (regression.r_squared > 0.5 && sorted.length >= 10) confidence = 'medium'
+  if (regression.r_squared > 0.7 && sorted.length >= 20) confidence = 'high'
+
+  return {
+    current_hit_rate: currentHitRate,
+    predicted_hit_rate: predictedCapped,
+    days_until_exam: daysUntilExam,
+    confidence,
   }
 }

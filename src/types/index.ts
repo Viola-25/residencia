@@ -121,6 +121,8 @@ export interface AreaPerformance {
   hit_rate: number
   trend: 'up' | 'down' | 'stable'
   priority: 'red' | 'yellow' | 'green'
+  slope: number
+  r_squared: number
 }
 
 export interface WeeklySummary {

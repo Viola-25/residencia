@@ -98,6 +98,7 @@ function DifficultyRows({ logs, compact }: { logs: DailyLog[]; compact?: boolean
 interface PlatformPerformanceProps {
   logs: DailyLog[]
   compact?: boolean
+  examDate?: Date
 }
 
 function formatP(p: number): string {
@@ -105,8 +106,8 @@ function formatP(p: number): string {
   return p.toFixed(4)
 }
 
-function InferenceCard({ logs }: { logs: DailyLog[] }) {
-  const inference = useMemo(() => calculatePlatformInference(logs), [logs])
+function InferenceCard({ logs, examDate }: { logs: DailyLog[]; examDate?: Date }) {
+  const inference = useMemo(() => calculatePlatformInference(logs, undefined, examDate), [logs, examDate])
   const hasTTest = inference.p_value !== null && inference.t_stat !== null
 
   const tVerdict = (() => {
@@ -183,11 +184,79 @@ function InferenceCard({ logs }: { logs: DailyLog[] }) {
           )}
         </div>
       </div>
+
+      {inference.area_cis.length > 0 && (
+        <div className="mt-6 border-t border-zinc-800 pt-4">
+          <p className="mb-3 text-xs font-medium text-zinc-500">IC 95% por área (Wilson)</p>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {inference.area_cis.map((ci) => (
+              <div key={ci.area} className="flex items-center justify-between rounded-lg bg-zinc-800/50 px-3 py-2">
+                <span className="text-xs text-zinc-400">{ci.area.replace(/_/g, ' ')}</span>
+                <span className="text-xs font-medium text-zinc-200">
+                  {ci.low}%–{ci.high}%
+                  <span className="ml-1 text-zinc-600">(n={ci.questions_done})</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {inference.fatigue && (
+        <div className="mt-6 border-t border-zinc-800 pt-4">
+          <p className="mb-3 text-xs font-medium text-zinc-500">Indicador de fadiga</p>
+          <div className={`rounded-lg px-4 py-3 ${
+            inference.fatigue.has_fatigue
+              ? 'border border-rose-500/20 bg-rose-500/10'
+              : 'border border-emerald-500/20 bg-emerald-500/10'
+          }`}>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-zinc-400">Início do dia</span>
+              <span className="text-sm font-medium text-zinc-200">{inference.fatigue.early_hit_rate}%</span>
+            </div>
+            <div className="mt-1 flex items-center justify-between">
+              <span className="text-xs text-zinc-400">Final do dia</span>
+              <span className="text-sm font-medium text-zinc-200">{inference.fatigue.late_hit_rate}%</span>
+            </div>
+            <div className="mt-2 border-t border-zinc-800 pt-2">
+              <p className={`text-xs font-medium ${
+                inference.fatigue.has_fatigue ? 'text-rose-400' : 'text-emerald-400'
+              }`}>
+                {inference.fatigue.has_fatigue
+                  ? `Fadiga detectada: queda de ${Math.abs(inference.fatigue.delta)}pp`
+                  : `Sem fadiga: variação de ${inference.fatigue.delta >= 0 ? '+' : ''}${inference.fatigue.delta}pp`}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {inference.prediction && (
+        <div className="mt-6 border-t border-zinc-800 pt-4">
+          <p className="mb-3 text-xs font-medium text-zinc-500">Previsão para a prova</p>
+          <div className="rounded-lg border border-zinc-800 bg-zinc-800/50 px-4 py-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-zinc-400">Hit rate atual</span>
+              <span className="text-sm font-medium text-zinc-200">{inference.prediction.current_hit_rate}%</span>
+            </div>
+            <div className="mt-1 flex items-center justify-between">
+              <span className="text-xs text-zinc-400">Previsto para a prova ({inference.prediction.days_until_exam}d)</span>
+              <span className="text-sm font-medium text-violet-400">{inference.prediction.predicted_hit_rate}%</span>
+            </div>
+            <div className="mt-2 border-t border-zinc-800 pt-2">
+              <p className="text-xs text-zinc-500">
+                Confiança: {inference.prediction.confidence === 'high' ? 'Alta' : inference.prediction.confidence === 'medium' ? 'Média' : 'Baixa'}
+                {inference.prediction.confidence === 'low' && ' (poucos dados ou tendência fraca)'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
-export function PlatformPerformance({ logs, compact = false }: PlatformPerformanceProps) {
+export function PlatformPerformance({ logs, compact = false, examDate }: PlatformPerformanceProps) {
   const comparison = useMemo(() => calculatePlatformComparison(logs), [logs])
 
   if (comparison.logs_with_platform === 0) {
@@ -308,7 +377,7 @@ export function PlatformPerformance({ logs, compact = false }: PlatformPerforman
         </div>
       </div>
 
-      <InferenceCard logs={logs} />
+      <InferenceCard logs={logs} examDate={examDate} />
     </div>
   )
 }
