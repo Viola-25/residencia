@@ -20,7 +20,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
-const auth = supabase.auth as {
+const auth = supabase.auth as unknown as {
   getSession(): Promise<{ data: { session: Session | null } }>
   signInWithPassword(args: { email: string; password: string }): Promise<{ error: { message: string } | null }>
   signUp(args: { email: string; password: string }): Promise<{ error: { message: string } | null }>
