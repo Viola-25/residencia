@@ -162,19 +162,19 @@ export function ViewLogModal({ log, onClose }: ViewLogModalProps) {
                 <div className="flex justify-between">
                   <span className="text-zinc-500">Fáceis</span>
                   <span className="text-zinc-200">
-                    {log.easy_total ? `${log.easy_correct}/${log.easy_total}` : '—'}
+                    {log.easy_total != null ? `${log.easy_correct}/${log.easy_total}` : '—'}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-zinc-500">Médias</span>
                   <span className="text-zinc-200">
-                    {log.medium_total ? `${log.medium_correct}/${log.medium_total}` : '—'}
+                    {log.medium_total != null ? `${log.medium_correct}/${log.medium_total}` : '—'}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-zinc-500">Difíceis</span>
                   <span className="text-zinc-200">
-                    {log.hard_total ? `${log.hard_correct}/${log.hard_total}` : '—'}
+                    {log.hard_total != null ? `${log.hard_correct}/${log.hard_total}` : '—'}
                   </span>
                 </div>
               </div>

@@ -121,8 +121,8 @@ export function DailyLog() {
         <div className="mb-8 rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
           <h3 className="mb-4 text-sm font-semibold text-zinc-200">Novo Registro</h3>
           <DailyLogForm
-            onSubmit={(data) => {
-              addDailyLog(data)
+            onSubmit={async (data) => {
+              await addDailyLog(data)
               setShowForm(false)
             }}
             onCancel={() => setShowForm(false)}

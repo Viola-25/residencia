@@ -324,7 +324,7 @@ export function calculatePlatformInference(
 
 
 export function calculateTotalCorrect(logs: DailyLog[]): number {
-  return logs.reduce((sum, log) => sum + Math.round(log.questions_done * (log.hit_rate / 100)), 0)
+  return Math.round(logs.reduce((sum, log) => sum + log.questions_done * (log.hit_rate / 100), 0))
 }
 
 export function calculateGlobalHitRate(logs: DailyLog[]): number {

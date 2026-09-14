@@ -6,14 +6,21 @@ import { useData } from '../hooks/useData'
 export function Settings() {
   const { config, updateConfig, loading } = useData()
   const [saved, setSaved] = useState(false)
+  const [error, setError] = useState(false)
 
   const [form, setForm] = useState(() => ({ ...config }))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    await updateConfig(form)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+    try {
+      await updateConfig(form)
+      setSaved(true)
+      setError(false)
+      setTimeout(() => setSaved(false), 2000)
+    } catch {
+      setError(true)
+      setTimeout(() => setError(false), 2000)
+    }
   }
 
   const set = (field: keyof typeof form, value: string | number) =>
@@ -156,6 +163,11 @@ export function Settings() {
           {saved && (
             <span className="text-sm text-emerald-400 transition-opacity">
               Configurações salvas!
+            </span>
+          )}
+          {error && (
+            <span className="text-sm text-rose-400 transition-opacity">
+              Erro ao salvar. Tente novamente.
             </span>
           )}
         </div>

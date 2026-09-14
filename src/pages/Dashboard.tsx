@@ -4,6 +4,7 @@ import {
   Target,
   CheckCircle2,
   TrendingUp,
+  TrendingDown,
   BarChart3,
   LineChart,
   Clock,
@@ -61,7 +62,7 @@ export function Dashboard() {
   const recentVsGlobal = roundTo2(recentHitRate - globalRate)
   const recentTrend = recentVsGlobal > 0 ? 'up' : recentVsGlobal < 0 ? 'down' : 'neutral'
   const recentTrendColor = recentTrend === 'up' ? 'text-emerald-400' : recentTrend === 'down' ? 'text-rose-400' : 'text-zinc-400'
-  const RecentTrendIcon = recentTrend === 'up' ? TrendingUp : recentTrend === 'down' ? TrendingUp : RefreshCw
+  const RecentTrendIcon = recentTrend === 'up' ? TrendingUp : recentTrend === 'down' ? TrendingDown : RefreshCw
 
   if (loading) {
     return (

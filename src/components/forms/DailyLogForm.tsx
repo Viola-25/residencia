@@ -206,8 +206,8 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
       registration_type: values.registration_type,
       hours_studied: Number(values.hours_studied) / 60,
       areas,
-      core_review_done: values.registration_type === 'revisao',
-      flashcards_done: false,
+      core_review_done: values.core_review_done || values.registration_type === 'revisao',
+      flashcards_done: values.flashcards_done,
       notes: values.notes,
       mood: values.mood,
       energy_level: Number(values.energy_level),
@@ -533,6 +533,25 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
           {...register('energy_level')}
           className="w-full accent-violet-500"
         />
+      </div>
+
+      <div className="flex gap-4">
+        <label className="flex items-center gap-2 text-sm text-zinc-300">
+          <input
+            type="checkbox"
+            {...register('core_review_done')}
+            className="accent-violet-500"
+          />
+          Revisão de conceitos centrais
+        </label>
+        <label className="flex items-center gap-2 text-sm text-zinc-300">
+          <input
+            type="checkbox"
+            {...register('flashcards_done')}
+            className="accent-violet-500"
+          />
+          Flashcards revisados
+        </label>
       </div>
 
       <div>
