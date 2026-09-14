@@ -9,22 +9,8 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { getWeekLabel } from '../../lib/dates'
+import { tooltipStyle, tooltipLabelStyle, tooltipItemStyle } from '../../lib/chartStyles'
 import type { DailyLog } from '../../types'
-
-const tooltipStyle = {
-  backgroundColor: '#18181b',
-  border: '1px solid #27272a',
-  borderRadius: '8px',
-  color: '#e4e4e7',
-}
-
-const tooltipLabelStyle = {
-  color: '#e4e4e7',
-}
-
-const tooltipItemStyle = {
-  color: '#e4e4e7',
-}
 
 interface WeeklyHitRateChartProps {
   logs: DailyLog[]

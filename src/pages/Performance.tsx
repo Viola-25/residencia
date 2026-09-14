@@ -31,6 +31,7 @@ import { RecentWindowSelector } from '../components/RecentWindowSelector'
 import { PlatformPerformance } from '../components/PlatformPerformance'
 import { getWeekLabel, getTodayDateString } from '../lib/dates'
 import { AREA_LABELS, MEDICAL_AREAS } from '../types'
+import { tooltipStyle } from '../lib/chartStyles'
 import { getHitRateTrend, calculateGlobalHitRate, roundTo2, isErrorDue } from '../lib/calculations'
 import { buildPerformanceReport, downloadPerformanceReport } from '../lib/report'
 import { useData } from '../hooks/useData'
@@ -309,12 +310,7 @@ export function Performance() {
                   tickFormatter={(v) => `${v}%`}
                 />
                 <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#18181b',
-                    border: '1px solid #27272a',
-                    borderRadius: '8px',
-                    color: '#e4e4e7',
-                  }}
+                  contentStyle={tooltipStyle}
                   formatter={(value) => [`${value}%`, 'Acerto']}
                 />
                 <Area
@@ -347,12 +343,7 @@ export function Performance() {
                   <XAxis dataKey="label" stroke="#71717a" fontSize={12} />
                   <YAxis stroke="#71717a" fontSize={12} />
                   <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#18181b',
-                      border: '1px solid #27272a',
-                      borderRadius: '8px',
-                      color: '#e4e4e7',
-                    }}
+                    contentStyle={tooltipStyle}
                   />
                   <Bar dataKey="hits" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} />
                   <Bar dataKey="errors" stackId="a" fill="#ef4444" radius={[4, 4, 0, 0]} />
@@ -381,12 +372,7 @@ export function Performance() {
                     tickFormatter={(v) => `${v}%`}
                   />
                   <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#18181b',
-                      border: '1px solid #27272a',
-                      borderRadius: '8px',
-                      color: '#e4e4e7',
-                    }}
+                    contentStyle={tooltipStyle}
                     formatter={(value) => [`${value}%`, 'Acerto']}
                   />
                   <Bar dataKey="hitRate" radius={[4, 4, 0, 0]}>

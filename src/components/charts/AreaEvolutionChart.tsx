@@ -10,22 +10,8 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { AREA_LABELS_SHORT } from '../../types'
+import { tooltipStyle, tooltipLabelStyle, tooltipItemStyle } from '../../lib/chartStyles'
 import type { AreaPerformance } from '../../types'
-
-const tooltipStyle = {
-  backgroundColor: '#18181b',
-  border: '1px solid #27272a',
-  borderRadius: '8px',
-  color: '#e4e4e7',
-}
-
-const tooltipLabelStyle = {
-  color: '#e4e4e7',
-}
-
-const tooltipItemStyle = {
-  color: '#e4e4e7',
-}
 
 interface AreaEvolutionChartProps {
   areaPerformance: AreaPerformance[]
