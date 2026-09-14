@@ -4,7 +4,6 @@ import { getTodayRangeUTC, getCurrentWeekStart } from './dates'
 import type { DailyLog, MockExam, ErrorEntry, AreaPerformance, StudyConfig, AIInsight, MotivoErro } from '../types'
 import {
   ERROR_EXTRACTION_SYSTEM_PROMPT,
-  INLINE_ERROR_ANALYSIS_PROMPT,
   DAILY_ERROR_SUMMARY_PROMPT,
   INSIGHTS_SYSTEM_PROMPT,
   FLASHCARD_GENERATION_PROMPT,
@@ -20,7 +19,7 @@ const groq = new Groq({
  * Sanitiza a resposta bruta do LLM removendo blocos markdown (```json ... ```)
  * e extraindo apenas o JSON válido entre o primeiro { ou [ e o último } ou ].
  */
-export function parseJsonSafe<T>(raw: string): T | null {
+function parseJsonSafe<T>(raw: string): T | null {
   if (!raw) return null
   let cleaned = raw.trim()
   cleaned = cleaned.replace(/```(?:json|JSON)\s*/g, '').replace(/```\s*/g, '').trim()
@@ -43,59 +42,6 @@ export function parseJsonSafe<T>(raw: string): T | null {
     return JSON.parse(cleaned) as T
   } catch {
     return null
-  }
-}
-
-export async function analyzeInlineError(data: {
-  topic: string
-  enunciado: string
-  alternativa_selecionada: string
-  alternativa_certa: string
-  error_reason: MotivoErro | string
-}): Promise<{
-  sugestao_revisao: string | null
-  error_reason_sugerido: MotivoErro | string
-}> {
-  if (!data.enunciado || data.enunciado.trim().length < 10) {
-    return { sugestao_revisao: null, error_reason_sugerido: data.error_reason }
-  }
-
-  const apiKey = import.meta.env.VITE_GROQ_API_KEY
-  if (!apiKey) return { sugestao_revisao: null, error_reason_sugerido: data.error_reason }
-
-  try {
-    const completion = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
-      messages: [
-        { role: 'system', content: INLINE_ERROR_ANALYSIS_PROMPT },
-        {
-          role: 'user',
-          content: `Tema: ${data.topic}
-Enunciado: "${data.enunciado}"
-Alternativa selecionada (errada): "${data.alternativa_selecionada}"
-Alternativa correta: "${data.alternativa_certa}"
-Motivo informado: ${data.error_reason}`,
-        },
-      ],
-      temperature: 0.1,
-      max_tokens: 300,
-    })
-
-    const text = completion.choices[0]?.message?.content
-    if (!text) return { sugestao_revisao: null, error_reason_sugerido: data.error_reason }
-
-    const parsed = parseJsonSafe<{
-      sugestao_revisao: string | null
-      error_reason_sugerido: string
-    }>(text)
-    if (!parsed) return { sugestao_revisao: null, error_reason_sugerido: data.error_reason }
-
-    return {
-      sugestao_revisao: parsed.sugestao_revisao || null,
-      error_reason_sugerido: parsed.error_reason_sugerido || data.error_reason,
-    }
-  } catch {
-    return { sugestao_revisao: null, error_reason_sugerido: data.error_reason }
   }
 }
 

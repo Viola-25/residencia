@@ -26,11 +26,6 @@ function buildAreasData(formData: DailyLogFormData): {
   return { areas_data, totalQuestions, totalCorrect }
 }
 
-export type LogMutationResult = {
-  newLog: DailyLog
-  formData: DailyLogFormData
-}
-
 export function useDailyLogs() {
   const { user } = useAuth()
   const [logs, setLogs] = useState<DailyLog[]>([])

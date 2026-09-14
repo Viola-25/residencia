@@ -693,10 +693,6 @@ export function isErrorDue(error: ErrorEntry, now: Date = new Date()): boolean {
   today.setHours(0, 0, 0, 0)
   return reviewDate <= today
 }
-export interface SRSRating {
-  id: string
-  quality: 'easy' | 'good' | 'hard' | 'forgot'
-}
 
 const SRS_QUALITY_MAP: Record<'easy' | 'good' | 'hard' | 'forgot', number> = {
   forgot: 1,

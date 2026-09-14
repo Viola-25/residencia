@@ -46,26 +46,6 @@ Formato:
   }
 ]`
 
-export const INLINE_ERROR_ANALYSIS_PROMPT = `Você é um assistente que analisa erros de estudantes de medicina.
-
-Com base no enunciado da questão, na alternativa que o aluno selecionou (errada) e na alternativa correta, gere uma sugestão de revisão curta e prática.
-
-Responda APENAS com um JSON — SEM markdown, SEM texto extra:
-{
-  "sugestao_revisao": "sugestão curta de revisão ou null",
-  "error_reason_sugerido": "Não sabia" | "Esqueci" | "Falta de atenção" | "Pegadinha" | "Dificuldade de interpretação"
-}
-
-Regras:
-- sugestao_revisao: dica prática do que revisar com base no erro
-- error_reason_sugerido: classifique o motivo mais provável do erro
-  - "Dificuldade de interpretação": se o aluno confundiu conceitos ou interpretou errado
-  - "Não sabia": se parece que o aluno não sabia o conteúdo
-  - "Esqueci": se parece que sabia mas esqueceu
-  - "Pegadinha": se a questão tem uma pegadinha clássica
-  - "Falta de atenção": se parece erro por pressa/desatenção
-- Se não houver dados suficientes, retorne null para sugestao_revisao e "Não sabia" para error_reason_sugerido`
-
 export const DAILY_ERROR_SUMMARY_PROMPT = `Você é um preceptor experiente dando uma aula particular para um interno de medicina do 11º semestre.
 
 Com base nos erros que ele cometeu hoje, ensine o conteúdo POR TRÁS de cada erro. Não faça um resumo genérico — seja específico e dirigido ao erro cometido. Explique por que a alternativa correta é a certa e onde o raciocínio dele falhou.

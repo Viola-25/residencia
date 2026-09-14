@@ -14,13 +14,6 @@ export type MotivoErro =
   | 'Pegadinha'
   | 'Dificuldade de interpretação'
 
-export type GrandeArea =
-  | 'Clínica Médica'
-  | 'Cirurgia'
-  | 'Ginecologia e Obstetrícia'
-  | 'Pediatria'
-  | 'Preventiva'
-
 export type RegistrationType = 'questoes' | 'simulado' | 'revisao'
 
 export interface AreaDatum {
@@ -56,14 +49,6 @@ export interface DailyLog {
   participants: number | null
   time_spent_minutes: number | null
   created_at: string
-}
-
-export interface InlineError {
-  topic: string
-  enunciado: string
-  alternativa_selecionada: string
-  alternativa_certa: string
-  error_reason: MotivoErro
 }
 
 export interface DailyLogFormData {
@@ -126,14 +111,6 @@ export interface ErrorEntry {
   flashcard_front: string | null
   flashcard_back: string | null
   created_at: string
-}
-
-export interface ErrorEntryFormData {
-  question: string
-  topic: string
-  subtopic: string
-  error_reason: MotivoErro
-  needs_review: boolean
 }
 
 export interface AreaPerformance {
