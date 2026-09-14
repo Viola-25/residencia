@@ -56,7 +56,7 @@ export async function extractErrorsFromNotesAI(notes: string): Promise<{
 
   try {
     const completion = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
+      model: 'openai/gpt-oss-120b',
       messages: [
         { role: 'system', content: ERROR_EXTRACTION_SYSTEM_PROMPT },
         { role: 'user', content: `Texto do estudante: "${notes}"` },
@@ -177,7 +177,7 @@ export async function generateDailyErrorSummary(errors: ErrorEntry[]): Promise<s
 
   try {
     const completion = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
+      model: 'openai/gpt-oss-120b',
       messages: [
         { role: 'system', content: DAILY_ERROR_SUMMARY_PROMPT },
         {
@@ -286,7 +286,7 @@ Gere de 3 a 5 insights com análise realista e recomendações práticas.`
 
   try {
     const completion = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
+      model: 'openai/gpt-oss-120b',
       messages: [
         { role: 'system', content: INSIGHTS_SYSTEM_PROMPT },
         { role: 'user', content: userPrompt },
@@ -407,7 +407,7 @@ export async function generateErrorFlashcard(error: {
       : ''
 
     const completion = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
+      model: 'openai/gpt-oss-120b',
       messages: [
         { role: 'system', content: FLASHCARD_GENERATION_PROMPT },
         {
@@ -447,7 +447,7 @@ export async function analyzeAndClusterError(
 
   try {
     const completion = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
+      model: 'openai/gpt-oss-120b',
       messages: [
         { role: 'system', content: 'Você é um assistente que responta apenas JSON válido.' },
         { role: 'user', content: prompt },
