@@ -701,6 +701,9 @@ const SRS_QUALITY_MAP: Record<'easy' | 'good' | 'hard' | 'forgot', number> = {
   easy: 5,
 }
 
+const EASY_INTERVALS = [14, 45, 90, 180]
+const GOOD_INTERVALS = [6, 15, 30, 60]
+
 export function calculateNextSRSState(currentState: {
   interval_days: number
   ease_factor: number
@@ -713,10 +716,9 @@ export function calculateNextSRSState(currentState: {
     repetitions = 0
     interval_days = 1
   } else {
-    if (repetitions === 0) {
-      interval_days = 1
-    } else if (repetitions === 1) {
-      interval_days = 6
+    const ladder = quality === 'easy' ? EASY_INTERVALS : GOOD_INTERVALS
+    if (repetitions < ladder.length) {
+      interval_days = ladder[repetitions]
     } else {
       interval_days = Math.ceil(interval_days * ease_factor)
     }
