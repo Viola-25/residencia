@@ -45,6 +45,7 @@ export function useDailyLogs() {
           .select('*')
           .eq('user_id', user.id)
           .order('date', { ascending: false })
+        if (res.error) throw res.error
         if (res.data) setLogs(res.data as DailyLog[])
       } catch (err) {
         console.error('Error fetching daily logs:', err)
@@ -55,6 +56,8 @@ export function useDailyLogs() {
   }, [user])
 
   const addDailyLog = async (formData: DailyLogFormData) => {
+    if (!user) throw new Error('User not authenticated')
+
     const { areas_data, totalQuestions, totalCorrect } = buildAreasData(formData)
 
     const hit_rate = totalQuestions > 0
@@ -98,10 +101,12 @@ export function useDailyLogs() {
     setLogs((prev) => [newLog, ...prev])
 
     try {
-      await supabase.from('daily_logs').insert({ ...newLog, user_id: user!.id })
+      const res = await supabase.from('daily_logs').insert({ ...newLog, user_id: user.id })
+      if (res.error) throw res.error
     } catch (err) {
       setLogs(previousLogs)
       console.error('Error inserting daily log:', err)
+      throw err
     }
 
     return { newLog, formData }
@@ -149,7 +154,8 @@ export function useDailyLogs() {
     setLogs((prev) => prev.map((l) => (l.id === id ? { ...l, ...updated } : l)))
 
     try {
-      await supabase.from('daily_logs').update(updated).eq('id', id)
+      const res = await supabase.from('daily_logs').update(updated).eq('id', id)
+      if (res.error) throw res.error
     } catch (err) {
       setLogs(previousLogs)
       console.error('Error updating daily log:', err)
@@ -160,7 +166,8 @@ export function useDailyLogs() {
     const previousLogs = logs
     setLogs((prev) => prev.filter((l) => l.id !== id))
     try {
-      await supabase.from('daily_logs').delete().eq('id', id)
+      const res = await supabase.from('daily_logs').delete().eq('id', id)
+      if (res.error) throw res.error
     } catch (err) {
       setLogs(previousLogs)
       console.error('Error deleting daily log:', err)

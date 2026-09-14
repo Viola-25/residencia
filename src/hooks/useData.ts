@@ -91,17 +91,19 @@ export function useData() {
   }, [recentWindow])
 
   const saveAreaPerformance = async (area: MedicalArea, questions_done: number, correct: number) => {
+    if (!user) return
     const hit_rate = questions_done > 0 ? roundTo2((correct / questions_done) * 100) : 0
     try {
-      await supabase.from('area_performance').upsert({
+      const res = await supabase.from('area_performance').upsert({
         area,
         questions_done,
         correct,
         hit_rate,
         trend: 'stable',
         date: getTodayDateString(),
-        user_id: user!.id,
+        user_id: user.id,
       }, { onConflict: 'user_id,area' })
+      if (res.error) throw res.error
     } catch (err) {
       console.error('Error saving area performance:', err)
     }

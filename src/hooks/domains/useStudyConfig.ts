@@ -29,6 +29,7 @@ export function useStudyConfig() {
           .select('*')
           .eq('user_id', user.id)
           .maybeSingle()
+        if (res.error) throw res.error
         if (res.data) setConfig(res.data as StudyConfig)
       } catch (err) {
         console.error('Error fetching study config:', err)
@@ -39,12 +40,14 @@ export function useStudyConfig() {
   }, [user])
 
   const updateConfig = async (newConfig: Partial<StudyConfig>) => {
+    if (!user) throw new Error('User not authenticated')
+
     const updated = { ...config, ...newConfig }
     const previousConfig = config
     setConfig(updated)
 
     try {
-      await supabase.from('study_config').upsert({
+      const res = await supabase.from('study_config').upsert({
         enamed_date: updated.enamed_date,
         first_exam_date: updated.first_exam_date,
         yearly_goal: updated.yearly_goal,
@@ -53,12 +56,14 @@ export function useStudyConfig() {
         mock_goal_per_week: updated.mock_goal_per_week,
         daily_hours_goal: updated.daily_hours_goal,
         daily_questions_goal: updated.daily_questions_goal,
-        user_id: user!.id,
+        user_id: user.id,
         id: config.id === 'default' ? undefined : config.id,
       }, { onConflict: 'user_id' })
+      if (res.error) throw res.error
     } catch (err) {
       setConfig(previousConfig)
       console.error('Error updating config:', err)
+      throw err
     }
   }
 
