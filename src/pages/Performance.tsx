@@ -32,7 +32,7 @@ import { PlatformPerformance } from '../components/PlatformPerformance'
 import { getWeekLabel } from '../lib/dates'
 import { getTodayDateString } from '../lib/dates'
 import { AREA_LABELS } from '../types'
-import { getHitRateTrend, calculateGlobalHitRate, roundTo2 } from '../lib/calculations'
+import { getHitRateTrend, calculateGlobalHitRate, roundTo2, isErrorDue } from '../lib/calculations'
 import { buildPerformanceReport, downloadPerformanceReport } from '../lib/report'
 import { useData } from '../hooks/useData'
 import { MEDICAL_AREAS } from '../types'
@@ -80,10 +80,7 @@ export function Performance() {
     const total = errors.length
     const consolidated = errors.filter((e) => e.repetitions >= 3 && e.interval_days >= 14 && e.reviewed).length
     const pending = errors.filter((e) => !e.reviewed).length
-    const dueNow = errors.filter((e) => {
-      if (!e.next_review_date) return false
-      return new Date(e.next_review_date) <= new Date() && !e.reviewed
-    }).length
+    const dueNow = errors.filter((e) => isErrorDue(e)).length
     const healthyRate = total > 0 ? Math.round((consolidated / total) * 100) : 0
     return { total, consolidated, pending, dueNow, healthyRate }
   }, [errors])

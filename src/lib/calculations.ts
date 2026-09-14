@@ -493,14 +493,7 @@ export function calculateApprovalScore(
   )
   let errorBankScore = 0
   if (errors && errors.length > 0) {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const overdue = errors.filter((e) => {
-      if (!e.next_review_date) return false
-      const reviewDate = new Date(e.next_review_date)
-      reviewDate.setHours(0, 0, 0, 0)
-      return reviewDate <= today && !e.reviewed
-    }).length
+    const overdue = errors.filter((e) => isErrorDue(e)).length
     errorBankScore = Math.round(((errors.length - overdue) / errors.length) * 100)
   } else if (areaPerformance.length > 0) {
     errorBankScore = 70
@@ -689,6 +682,16 @@ export function classifyErrorReason(text: string): MotivoErro {
   if (/esqueci|lembrava|deu branco|sabia mas/.test(lower)) return 'Esqueci'
   if (/confund[iuí]|interpret|pensei que|achava que|troquei/.test(lower)) return 'Dificuldade de interpretação'
   return 'Não sabia'
+}
+
+export function isErrorDue(error: ErrorEntry, now: Date = new Date()): boolean {
+  if (error.reviewed) return false
+  if (!error.next_review_date) return true
+  const reviewDate = new Date(error.next_review_date)
+  reviewDate.setHours(0, 0, 0, 0)
+  const today = new Date(now)
+  today.setHours(0, 0, 0, 0)
+  return reviewDate <= today
 }
 export interface SRSRating {
   id: string

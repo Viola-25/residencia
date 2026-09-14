@@ -129,7 +129,7 @@ export function useData() {
         recorrencia: 1,
         ultima_ocorrencia: formData.date,
         sugestao_revisao: ext.sugestao_revisao,
-        next_review_date: null,
+        next_review_date: new Date(formData.date + 'T00:00:00').toISOString(),
         interval_days: 0,
         ease_factor: 2.5,
         repetitions: 0,

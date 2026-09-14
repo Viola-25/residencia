@@ -19,7 +19,7 @@ import { WeeklyQuestionsChart } from '../components/charts/WeeklyQuestionsChart'
 import { MockEvolutionChart } from '../components/charts/MockEvolutionChart'
 import { AreaEvolutionChart } from '../components/charts/AreaEvolutionChart'
 import { PlatformPerformance } from '../components/PlatformPerformance'
-import { getHitRateTrend, calculateGlobalHitRate, roundTo2 } from '../lib/calculations'
+import { getHitRateTrend, calculateGlobalHitRate, roundTo2, isErrorDue } from '../lib/calculations'
 
 import { useData } from '../hooks/useData'
 
@@ -50,14 +50,7 @@ export function Dashboard() {
   const { dashboardMetrics, logs, mocks, areaPerformance, config, errors, loading, recentMetrics, recentWindow, setRecentWindow } = useData()
 
   const dueForReview = useMemo(() => {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    return errors.filter((e) => {
-      if (!e.next_review_date) return false
-      const reviewDate = new Date(e.next_review_date)
-      reviewDate.setHours(0, 0, 0, 0)
-      return reviewDate <= today && !e.reviewed
-    })
+    return errors.filter((e) => isErrorDue(e))
   }, [errors])
 
   const metrics = dashboardMetrics

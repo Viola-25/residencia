@@ -106,14 +106,7 @@ export function ErrorBank() {
   }, [errors])
 
   const dueForReview = useMemo(() => {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    return errors.filter((e) => {
-      if (!e.next_review_date) return false
-      const reviewDate = new Date(e.next_review_date)
-      reviewDate.setHours(0, 0, 0, 0)
-      return reviewDate <= today && !e.reviewed
-    })
+    return errors.filter((e) => isErrorDue(e))
   }, [errors])
 
   const handleReview = (id: string, quality: 'easy' | 'good' | 'hard' | 'forgot') => {

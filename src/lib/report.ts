@@ -24,6 +24,7 @@ import {
   getMockTrend,
   calculateRecentMetrics,
   roundTo2,
+  isErrorDue,
 } from './calculations'
 import { formatDate, formatDateShort } from './dates'
 
@@ -128,10 +129,7 @@ export function buildPerformanceReport(input: PerformanceReportInput): string {
     (e) => e.repetitions >= 3 && e.interval_days >= 14 && e.reviewed
   ).length
   const srsPending = errors.filter((e) => !e.reviewed).length
-  const srsDueNow = errors.filter((e) => {
-    if (!e.next_review_date) return false
-    return new Date(e.next_review_date) <= new Date() && !e.reviewed
-  }).length
+  const srsDueNow = errors.filter((e) => isErrorDue(e)).length
   const healthyRate = srsTotal > 0 ? Math.round((srsConsolidated / srsTotal) * 100) : 0
 
   const typeCounts = new Map<RegistrationType, number>()
