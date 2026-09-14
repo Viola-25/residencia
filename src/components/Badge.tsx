@@ -3,7 +3,7 @@ interface BadgeProps {
   children: React.ReactNode
 }
 
-const variantClasses: Record<string, string> = {
+const variantClasses: Record<BadgeProps['variant'], string> = {
   red: 'bg-red-500/10 text-red-400 border-red-500/20',
   yellow: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
   green: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',

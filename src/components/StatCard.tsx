@@ -1,15 +1,18 @@
 import type { LucideIcon } from 'lucide-react'
 
+type StatColor = 'emerald' | 'blue' | 'violet' | 'amber' | 'rose' | 'cyan' | 'indigo'
+type StatTrend = 'up' | 'down' | 'neutral'
+
 interface StatCardProps {
   title: string
   value: string | number
   subtitle?: string
   icon: LucideIcon
-  trend?: 'up' | 'down' | 'neutral'
-  color?: 'emerald' | 'blue' | 'violet' | 'amber' | 'rose' | 'cyan' | 'indigo'
+  trend?: StatTrend
+  color?: StatColor
 }
 
-const colorMap: Record<string, string> = {
+const colorMap: Record<StatColor, string> = {
   emerald: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
   blue: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
   violet: 'bg-violet-500/10 text-violet-400 border-violet-500/20',
@@ -19,13 +22,13 @@ const colorMap: Record<string, string> = {
   indigo: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
 }
 
-const trendIcon: Record<string, string> = {
+const trendIcon: Record<StatTrend, string> = {
   up: '↑',
   down: '↓',
   neutral: '→',
 }
 
-const trendColor: Record<string, string> = {
+const trendColor: Record<StatTrend, string> = {
   up: 'text-emerald-400',
   down: 'text-rose-400',
   neutral: 'text-zinc-400',

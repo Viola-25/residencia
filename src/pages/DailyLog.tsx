@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { CalendarCheck, Plus, Moon, Zap, Trash2, Edit, Eye, Brain, Clock, FileText, TrendingUp, Activity } from 'lucide-react'
 import { PageHeader } from '../components/PageHeader'
 import { StatCard } from '../components/StatCard'
@@ -20,6 +20,8 @@ export function DailyLog() {
   const [editLog, setEditLog] = useState<DailyLog | null>(null)
   const [viewLog, setViewLog] = useState<DailyLog | null>(null)
   const [quickErrorOpen, setQuickErrorOpen] = useState(false)
+
+  const mockTrend = useMemo(() => getMockTrend(mocks), [mocks])
 
   const handleQuickError = async (notes: string, area: MedicalArea) => {
     await addSmartError(notes, area)
@@ -144,9 +146,9 @@ export function DailyLog() {
             />
             <StatCard
               title="Tendência (último − 1º)"
-              value={`${getMockTrend(mocks) > 0 ? '+' : ''}${getMockTrend(mocks)}pp`}
+              value={`${mockTrend > 0 ? '+' : ''}${mockTrend}pp`}
               icon={TrendingUp}
-              color={getMockTrend(mocks) >= 0 ? 'emerald' : 'rose'}
+              color={mockTrend >= 0 ? 'emerald' : 'rose'}
             />
           </div>
           <MockEvolutionChart mocks={mocks} />

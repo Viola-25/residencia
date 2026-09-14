@@ -29,26 +29,6 @@ export function useErrorBank() {
     })()
   }, [user])
 
-  const toggleErrorReview = async (id: string) => {
-    const previousErrors = errors
-    setErrors((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, reviewed: !e.reviewed } : e))
-    )
-    const error = previousErrors.find((e) => e.id === id)
-    if (error) {
-      try {
-        const res = await supabase
-          .from('error_bank')
-          .update({ reviewed: !error.reviewed })
-          .eq('id', id)
-        if (res.error) throw res.error
-      } catch (err) {
-        setErrors(previousErrors)
-        console.error('Error toggling review:', err)
-      }
-    }
-  }
-
   const reviewErrorWithSRS = async (id: string, quality: 'easy' | 'good' | 'hard' | 'forgot') => {
     const previousErrors = errors
     const error = previousErrors.find((e) => e.id === id)
@@ -236,5 +216,5 @@ export function useErrorBank() {
     }
   }
 
-  return { errors, loading, toggleErrorReview, reviewErrorWithSRS, deleteError, addSmartError, addExtractedErrors, persistFlashcard }
+  return { errors, loading, reviewErrorWithSRS, deleteError, addSmartError, addExtractedErrors, persistFlashcard }
 }

@@ -20,8 +20,13 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const auth = supabase.auth as any
+const auth = supabase.auth as {
+  getSession(): Promise<{ data: { session: Session | null } }>
+  signInWithPassword(args: { email: string; password: string }): Promise<{ error: { message: string } | null }>
+  signUp(args: { email: string; password: string }): Promise<{ error: { message: string } | null }>
+  signOut(): Promise<void>
+  onAuthStateChange(callback: (event: string, session: Session | null) => void): { data: { subscription: { unsubscribe(): void } } }
+}
 
 function mapSession(session: Session | null): UserShape | null {
   return session?.user ? { id: session.user.id, email: session.user.email ?? undefined } : null

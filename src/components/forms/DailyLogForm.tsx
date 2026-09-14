@@ -143,16 +143,22 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
     defaultValues: defaultValues ? logToFormValues(defaultValues) : defaultFormValues(),
   })
 
-  const formValues = watch()
-  const totalQuestions = Object.values(formValues.areas).reduce((s, a) => s + (Number(a.questions_done) || 0), 0)
-  const totalCorrect = Object.values(formValues.areas).reduce((s, a) => s + (Number(a.correct) || 0), 0)
+  const watchRegistrationType = watch('registration_type')
+  const watchMood = watch('mood')
+  const watchEnergyLevel = watch('energy_level')
+  const watchAreas = watch('areas')
+  const watchPlatformAvgRate = watch('platform_avg_rate')
+  const watchPlatformTotalQuestions = watch('platform_total_questions')
+
+  const totalQuestions = Object.values(watchAreas).reduce((s, a) => s + (Number(a.questions_done) || 0), 0)
+  const totalCorrect = Object.values(watchAreas).reduce((s, a) => s + (Number(a.correct) || 0), 0)
   const hitRate = totalQuestions > 0
     ? Math.round((totalCorrect / totalQuestions) * 100 * 100) / 100
     : 0
 
-  const platformRaw = formValues.platform_avg_rate
-  const typedTotal = formValues.platform_total_questions != null && Number(formValues.platform_total_questions) > 0
-    ? Number(formValues.platform_total_questions)
+  const platformRaw = watchPlatformAvgRate
+  const typedTotal = watchPlatformTotalQuestions != null && Number(watchPlatformTotalQuestions) > 0
+    ? Number(watchPlatformTotalQuestions)
     : null
   const platformTotalQ = typedTotal ?? totalQuestions
   const platformAvgPct = platformRaw != null && Number(platformRaw) > 0 && platformTotalQ > 0
@@ -230,7 +236,7 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
               key={t.value}
               onClick={() => setValue('registration_type', t.value)}
               className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
-                formValues.registration_type === t.value
+                watchRegistrationType === t.value
                   ? registrationTypeColors[t.value] + ' text-zinc-100'
                   : 'border-zinc-700 bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
               }`}
@@ -448,7 +454,7 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
         )}
       </div>
 
-      {formValues.registration_type === 'simulado' && (
+      {watchRegistrationType === 'simulado' && (
         <div className="rounded-xl border border-emerald-500/10 bg-emerald-500/5 p-4">
           <p className="mb-3 text-sm font-medium text-emerald-400">Dados do Simulado</p>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -504,7 +510,7 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
               key={m.value}
               onClick={() => setValue('mood', m.value)}
               className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
-                formValues.mood === m.value
+                watchMood === m.value
                    ? MOOD_COLORS[m.value]
                   : 'border-zinc-700 bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
               }`}
@@ -517,7 +523,7 @@ export function DailyLogForm({ defaultValues, onSubmit, onCancel, submitLabel = 
 
       <div>
         <label className="mb-1 block text-xs font-medium text-zinc-400">
-          Nível de Energia: {formValues.energy_level}/10
+          Nível de Energia: {watchEnergyLevel}/10
         </label>
         <input
           type="range"

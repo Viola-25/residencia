@@ -1,6 +1,4 @@
 import { useMemo, useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
-import { useAuth } from '../contexts/AuthContext'
 import { useDailyLogs } from './domains/useDailyLogs'
 import { useErrorBank } from './domains/useErrorBank'
 import { useStudyConfig } from './domains/useStudyConfig'
@@ -22,7 +20,7 @@ import {
   calculateRecentMetrics,
   RECENT_WINDOW_DAYS,
 } from '../lib/calculations'
-import { getDaysUntil, getCurrentWeekStart, getTodayDateString } from '../lib/dates'
+import { getDaysUntil, getCurrentWeekStart } from '../lib/dates'
 import { extractErrorsFromNotesAI } from '../lib/groq'
 
 export const RECENT_WINDOW_OPTIONS = [30, 60, 90] as const
@@ -44,8 +42,6 @@ function logToMock(log: DailyLog): MockExam {
 }
 
 export function useData() {
-  const { user } = useAuth()
-
   const {
     logs,
     loading: logsLoading,
@@ -57,7 +53,6 @@ export function useData() {
   const {
     errors,
     loading: errorsLoading,
-    toggleErrorReview,
     reviewErrorWithSRS,
     deleteError,
     addSmartError,
@@ -89,25 +84,6 @@ export function useData() {
   useEffect(() => {
     localStorage.setItem('recentWindow', String(recentWindow))
   }, [recentWindow])
-
-  const saveAreaPerformance = async (area: MedicalArea, questions_done: number, correct: number) => {
-    if (!user) return
-    const hit_rate = questions_done > 0 ? roundTo2((correct / questions_done) * 100) : 0
-    try {
-      const res = await supabase.from('area_performance').upsert({
-        area,
-        questions_done,
-        correct,
-        hit_rate,
-        trend: 'stable',
-        date: getTodayDateString(),
-        user_id: user.id,
-      }, { onConflict: 'user_id,area' })
-      if (res.error) throw res.error
-    } catch (err) {
-      console.error('Error saving area performance:', err)
-    }
-  }
 
   const addDailyLog = async (formData: DailyLogFormData) => {
     const result = await addDailyLogRaw(formData)
@@ -248,14 +224,12 @@ export function useData() {
     recentWindow,
     setRecentWindow,
     addDailyLog,
-    toggleErrorReview,
     reviewErrorWithSRS,
     deleteDailyLog,
     updateDailyLog,
     deleteError,
     updateConfig,
     addSmartError,
-    saveAreaPerformance,
     persistFlashcard,
   }
 }
