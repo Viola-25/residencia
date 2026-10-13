@@ -13,6 +13,7 @@ interface UserShape {
 interface AuthContextType {
   user: UserShape | null
   loading: boolean
+  connectionError: string | null
   login: (email: string, password: string) => Promise<string | null>
   signup: (email: string, password: string) => Promise<string | null>
   logout: () => Promise<void>
@@ -28,6 +29,18 @@ const auth = supabase.auth as unknown as {
   onAuthStateChange(callback: (event: string, session: Session | null) => void): { data: { subscription: { unsubscribe(): void } } }
 }
 
+const STARTUP_TIMEOUT_MS = 10000
+const SIGNOUT_TIMEOUT_MS = 5000
+const UNREACHABLE_MSG = 'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.'
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error('timeout')), ms)
+  })
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer))
+}
+
 function mapSession(session: Session | null): UserShape | null {
   return session?.user ? { id: session.user.id, email: session.user.email ?? undefined } : null
 }
@@ -35,29 +48,46 @@ function mapSession(session: Session | null): UserShape | null {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserShape | null>(null)
   const [loading, setLoading] = useState(true)
+  const [connectionError, setConnectionError] = useState<string | null>(null)
 
   useEffect(() => {
+    let cancelled = false
     ;(async () => {
       try {
-        const { data: { session } } = await auth.getSession()
+        const { data: { session } } = await withTimeout(auth.getSession(), STARTUP_TIMEOUT_MS)
+        if (cancelled) return
         setUser(mapSession(session as Session | null))
+        setConnectionError(null)
       } catch {
-        // noop
+        if (cancelled) return
+        try {
+          await withTimeout(auth.signOut(), SIGNOUT_TIMEOUT_MS)
+        } catch {
+          // noop
+        }
+        if (cancelled) return
+        setUser(null)
+        setConnectionError(UNREACHABLE_MSG)
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     })()
 
-    const { data: { subscription } } = auth.onAuthStateChange((_event: unknown, session: Session | null) => {
+    const { data: { subscription } } = auth.onAuthStateChange((event: string, session: Session | null) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') setConnectionError(null)
       setUser(mapSession(session))
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      cancelled = true
+      subscription.unsubscribe()
+    }
   }, [])
 
   const login = async (email: string, password: string): Promise<string | null> => {
     try {
       const { error } = await auth.signInWithPassword({ email, password })
+      if (!error) setConnectionError(null)
       return error?.message ?? null
     } catch {
       return 'Erro ao conectar com o servidor'
@@ -67,6 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signup = async (email: string, password: string): Promise<string | null> => {
     try {
       const { error } = await auth.signUp({ email, password })
+      if (!error) setConnectionError(null)
       return error?.message ?? null
     } catch {
       return 'Erro ao conectar com o servidor'
@@ -74,12 +105,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = async () => {
-    await auth.signOut()
+    try {
+      await auth.signOut()
+    } catch {
+      // noop
+    }
     setUser(null)
+    setConnectionError(null)
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, loading, connectionError, login, signup, logout }}>
       {children}
     </AuthContext.Provider>
   )

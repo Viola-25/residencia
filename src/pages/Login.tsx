@@ -4,7 +4,7 @@ import { GraduationCap, LogIn, UserPlus, Eye, EyeOff, Loader2 } from 'lucide-rea
 import { useAuth } from '../contexts/AuthContext'
 
 export function Login() {
-  const { user, loading: authLoading, login, signup } = useAuth()
+  const { user, loading: authLoading, connectionError, login, signup } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -59,9 +59,9 @@ export function Login() {
             {isSignup ? 'Criar Conta' : 'Entrar'}
           </h2>
 
-          {error && (
+          {(error || connectionError) && (
             <div className="mb-4 rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-xs text-rose-400">
-              {error}
+              {error || connectionError}
             </div>
           )}
 
