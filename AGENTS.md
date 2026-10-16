@@ -29,7 +29,7 @@ App de estudo para residência médica (Brasil). Rastreia daily logs de estudo, 
 - `src/components/modals/ViewLogModal.tsx` — preview do log (plataforma + dificuldade + dados de simulado quando presentes)
 - `src/components/PlatformPerformance.tsx` — cards de comparação com média da plataforma + inferência estatística (compact no Dashboard, full no Performance)
 - `src/components/charts/MockEvolutionChart.tsx` — gráfico de evolução de simulados (dados de logs tipo simulado)
-- `supabase/migrations/` — migrações SQL versionadas (001–012)
+- `supabase/migrations/` — migrações SQL versionadas (001–015)
 
 ## Rotas
 `/` dashboard, `/diario`, `/desempenho`, `/erros`, `/radar`, `/estrategico`, `/ia`, `/configuracoes`, `/login`

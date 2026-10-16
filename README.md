@@ -27,7 +27,7 @@ Variáveis de ambiente (`.env`, veja `.env.example`):
 | `npm run dev` | dev server |
 | `npm run build` | typecheck (`tsc -b`) + build Vite |
 | `npm run lint` | eslint |
-| `npx tsc --noEmit` | typecheck rápido |
+| `npx tsc -b` | typecheck |
 | `npm run db:migrate` | aplicar migrações Supabase |
 | `npm run db:link` | linkar projeto Supabase |
 
@@ -42,7 +42,7 @@ Variáveis de ambiente (`.env`, veja `.env.example`):
 
 ## Rotas
 
-`/` dashboard, `/diario`, `/simulados`, `/desempenho`, `/erros`, `/radar`, `/estrategico`, `/ia`, `/configuracoes`, `/login`
+`/` dashboard, `/diario`, `/desempenho`, `/erros`, `/radar`, `/estrategico`, `/ia`, `/configuracoes`, `/login`
 
 ## Banco de dados
 

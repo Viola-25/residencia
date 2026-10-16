@@ -1,3 +1,6 @@
+# Export artifacts (relatorios TXT baixados pelo app)
+relatorio-*.txt
+
 # Logs
 logs
 *.log
