@@ -492,10 +492,19 @@ export function buildPerformanceReport(input: PerformanceReportInput): string {
   out.push('')
 
   out.push(LINE)
-  out.push('11. DETALHAMENTO DOS REGISTROS (CRONOLOGICO)')
+  out.push('11. DETALHAMENTO DOS REGISTROS (ULTIMOS ' + recentWindow + ' DIAS)')
   out.push(LINE)
-  if (sortedLogs.length === 0) {
-    out.push('Nenhum registro de estudo encontrado.')
+  const recentCutoff = new Date()
+  recentCutoff.setHours(0, 0, 0, 0)
+  recentCutoff.setDate(recentCutoff.getDate() - recentWindow)
+  const recentSortedLogs = sortedLogs.filter((l) => new Date(l.date + 'T00:00:00') >= recentCutoff)
+  const omittedCount = sortedLogs.length - recentSortedLogs.length
+  if (omittedCount > 0) {
+    out.push(omittedCount + ' registro(s) anterior(es) omitido(s). Ver evolucao semanal e global acima.')
+    out.push('')
+  }
+  if (recentSortedLogs.length === 0) {
+    out.push('Nenhum registro nos ultimos ' + recentWindow + ' dias.')
   } else {
     out.push(
       pad('Data', 12) +
@@ -509,7 +518,7 @@ export function buildPerformanceReport(input: PerformanceReportInput): string {
         'Plataforma'
     )
     out.push(THIN)
-    for (const l of sortedLogs) {
+    for (const l of recentSortedLogs) {
       const correct =
         l.areas_data && l.areas_data.length > 0
           ? l.areas_data.reduce((s, a) => s + a.correct, 0)
@@ -518,9 +527,10 @@ export function buildPerformanceReport(input: PerformanceReportInput): string {
         l.platform_avg_rate !== null && l.score_delta !== null
           ? l.platform_avg_rate + '% (delta ' + (l.score_delta > 0 ? '+' : '') + l.score_delta + ')'
           : '-'
+      const typeLabel = l.name ? registrationLabel(l.registration_type) + ' (' + l.name + ')' : registrationLabel(l.registration_type)
       out.push(
         pad(formatDateShort(l.date), 12) +
-          pad(registrationLabel(l.registration_type), 26) +
+          pad(typeLabel, 26) +
           pad(String(l.questions_done), 10) +
           pad(String(correct), 9) +
           pad(l.hit_rate + '%', 8) +
@@ -529,6 +539,9 @@ export function buildPerformanceReport(input: PerformanceReportInput): string {
           pad(String(l.energy_level), 9) +
           platform
       )
+      if (l.notes && l.notes.trim().length > 0) {
+        out.push('  Obs: ' + l.notes.trim().replace(/\s+/g, ' '))
+      }
     }
   }
   out.push('')
