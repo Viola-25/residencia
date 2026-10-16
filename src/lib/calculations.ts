@@ -519,13 +519,14 @@ export function calculateApprovalScore(
         )
       : 0
   )
-  const reviewedWithFlashcards = errors.filter(
+  const errorList = errors ?? []
+  const reviewedWithFlashcards = errorList.filter(
     (e) => e.reviewed && e.flashcard_front && e.flashcard_back
   ).length
   const reviewScore = Math.min(
     100,
-    errors.length > 0
-      ? Math.round((reviewedWithFlashcards / errors.length) * 100)
+    errorList.length > 0
+      ? Math.round((reviewedWithFlashcards / errorList.length) * 100)
       : 0
   )
   let errorBankScore = 0
@@ -617,7 +618,8 @@ export function calculateAreaTrendSlope(
     let data: { correct: number; total: number } | undefined
 
     if (log.areas_data && log.areas_data.length > 0) {
-      data = log.areas_data.find((ad) => normalizeArea(ad.area) === normalized)
+      const found = log.areas_data.find((ad) => normalizeArea(ad.area) === normalized)
+      data = found ? { correct: found.correct, total: found.questions_done } : undefined
     } else if (normalized === 'clinica_medica' && log.questions_done > 0) {
       data = {
         correct: Math.round(log.questions_done * (log.hit_rate / 100)),
