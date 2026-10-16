@@ -13,7 +13,7 @@ App de estudo para residência médica (Brasil). Rastreia daily logs de estudo, 
 - `npm run dev` — dev server
 - `npm run build` — tsc -b + vite build
 - `npm run lint` — eslint
-- `npx tsc --noEmit` — typecheck rápido
+- `npx tsc -b` — typecheck real (tsconfig raiz só tem references; `--noEmit` puro não checa nada)
 - `npm run db:migrate` / `db:link` — Supabase CLI
 
 ## Estrutura
