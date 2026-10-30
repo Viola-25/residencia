@@ -175,7 +175,7 @@ export function Performance() {
         <StatCard
           title={`Questões (${recentWindow} dias)`}
           value={windowQuestions.toLocaleString()}
-          subtitle={`${logs.length} registros no período`}
+          subtitle={`${windowLogs.length} registros no período`}
           icon={Target}
           color="blue"
         />
