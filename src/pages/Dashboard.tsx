@@ -4,12 +4,11 @@ import {
   Target,
   CheckCircle2,
   TrendingUp,
-  TrendingDown,
   BarChart3,
   LineChart,
   Clock,
   Brain,
-  RefreshCw,
+  Activity,
 } from 'lucide-react'
 
 import { PageHeader } from '../components/PageHeader'
@@ -21,6 +20,7 @@ import { MockEvolutionChart } from '../components/charts/MockEvolutionChart'
 import { AreaEvolutionChart } from '../components/charts/AreaEvolutionChart'
 import { PlatformPerformance } from '../components/PlatformPerformance'
 import { calculateGlobalHitRate, roundTo2, isErrorDue, filterRecentLogs } from '../lib/calculations'
+import { formatDateShort } from '../lib/dates'
 
 import { useData } from '../hooks/useData'
 
@@ -59,12 +59,12 @@ export function Dashboard() {
   const windowLogs = useMemo(() => filterRecentLogs(logs, recentWindow), [logs, recentWindow])
   const windowQuestions = recentMetrics.total_questions
   const windowCorrect = recentMetrics.total_correct
+  const enamedPassed = new Date(config.enamed_date + 'T00:00:00') < new Date(new Date().setHours(0, 0, 0, 0))
+  const firstExamPassed = new Date(config.first_exam_date + 'T00:00:00') < new Date(new Date().setHours(0, 0, 0, 0))
 
   const recentHitRate = recentMetrics.hit_rate
   const recentVsGlobal = roundTo2(recentHitRate - globalRate)
   const recentTrend = recentVsGlobal > 0 ? 'up' : recentVsGlobal < 0 ? 'down' : 'neutral'
-  const recentTrendColor = recentTrend === 'up' ? 'text-emerald-400' : recentTrend === 'down' ? 'text-rose-400' : 'text-zinc-400'
-  const RecentTrendIcon = recentTrend === 'up' ? TrendingUp : recentTrend === 'down' ? TrendingDown : RefreshCw
 
   if (loading) {
     return (
@@ -126,16 +126,26 @@ export function Dashboard() {
       <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Dias para ENAMED"
-          value={metrics.days_to_enamed}
+          value={enamedPassed ? '—' : metrics.days_to_enamed}
+          subtitle={
+            enamedPassed
+              ? `Foi em ${formatDateShort(config.enamed_date)} · atualize em Configurações`
+              : undefined
+          }
           icon={CalendarDays}
-          color="rose"
-          trend={metrics.days_to_enamed > 100 ? 'neutral' : 'down'}
+          color={enamedPassed ? 'blue' : 'rose'}
+          trend={enamedPassed ? 'neutral' : metrics.days_to_enamed > 100 ? 'neutral' : 'down'}
         />
         <StatCard
           title="Dias para 1ª Prova"
-          value={metrics.days_to_first_exam}
+          value={firstExamPassed ? '—' : metrics.days_to_first_exam}
+          subtitle={
+            firstExamPassed
+              ? `Foi em ${formatDateShort(config.first_exam_date)} · atualize em Configurações`
+              : undefined
+          }
           icon={Clock}
-          color="amber"
+          color={firstExamPassed ? 'blue' : 'amber'}
         />
         <StatCard
           title="Questões Acumuladas"
@@ -174,58 +184,19 @@ export function Dashboard() {
           color="cyan"
         />
         <StatCard
-          title="Evolução"
-          value={`${metrics.evolution_percentage > 0 ? '+' : ''}${metrics.evolution_percentage}%`}
-          icon={TrendingUp}
-          color={metrics.evolution_percentage > 0 ? 'emerald' : 'rose'}
-          trend={metrics.evolution_percentage > 0 ? 'up' : 'down'}
+          title="Constância"
+          value={`${metrics.current_streak} ${metrics.current_streak === 1 ? 'dia' : 'dias'}`}
+          subtitle={
+            metrics.days_without_study === 0
+              ? 'Estudou hoje'
+              : `Última atividade há ${metrics.days_without_study} dia(s)`
+          }
+          icon={Activity}
+          color={metrics.days_without_study >= 3 ? 'rose' : 'emerald'}
         />
       </div>
 
       <PlatformPerformance logs={windowLogs} compact examDate={new Date(config.first_exam_date)} windowDays={recentWindow} />
-
-      <div className="mb-8 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
-        <div className="mb-4 flex items-center gap-2">
-          <RefreshCw size={16} className="text-violet-400" />
-          <h3 className="text-sm font-semibold text-zinc-200">Recente ({recentWindow} dias) vs Global</h3>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div className="rounded-lg border border-zinc-800/50 bg-zinc-800/30 p-4">
-            <p className="text-xs text-zinc-500">Taxa de Acerto Global</p>
-            <p className="mt-1 text-2xl font-bold text-zinc-200">{globalRate}%</p>
-          </div>
-          <div className="rounded-lg border border-zinc-800/50 bg-zinc-800/30 p-4">
-            <p className="text-xs text-zinc-500">Taxa de Acerto Recente</p>
-            <p className="mt-1 text-2xl font-bold text-zinc-200">{recentHitRate}%</p>
-          </div>
-          <div className="rounded-lg border border-zinc-800/50 bg-zinc-800/30 p-4">
-            <p className="text-xs text-zinc-500">Diferença</p>
-            <div className="mt-1 flex items-center gap-2">
-              <p className={`text-2xl font-bold ${recentTrendColor}`}>
-                {recentVsGlobal > 0 ? '+' : ''}{recentVsGlobal}pp
-              </p>
-              <RecentTrendIcon size={20} className={recentTrendColor} />
-            </div>
-            <p className="mt-1 text-xs text-zinc-500">
-              {recentTrend === 'up' ? 'Melhorando' : recentTrend === 'down' ? 'Piorando' : 'Estável'} vs histórico
-            </p>
-          </div>
-        </div>
-        <div className="mt-4 grid gap-4 sm:grid-cols-3">
-          <div className="rounded-lg border border-zinc-800/50 bg-zinc-800/30 p-4">
-            <p className="text-xs text-zinc-500">Questões Recentes</p>
-            <p className="mt-1 text-2xl font-bold text-zinc-200">{recentMetrics.total_questions.toLocaleString()}</p>
-          </div>
-          <div className="rounded-lg border border-zinc-800/50 bg-zinc-800/30 p-4">
-            <p className="text-xs text-zinc-500">Acertos Recentes</p>
-            <p className="mt-1 text-2xl font-bold text-zinc-200">{recentMetrics.total_correct.toLocaleString()}</p>
-          </div>
-          <div className="rounded-lg border border-zinc-800/50 bg-zinc-800/30 p-4">
-            <p className="text-xs text-zinc-500">Sessões c/ Plataforma</p>
-            <p className="mt-1 text-2xl font-bold text-zinc-200">{recentMetrics.platform_comparison.logs_with_platform}</p>
-          </div>
-        </div>
-      </div>
 
       <div className="mb-8 grid gap-6 lg:grid-cols-2">
         <div className="min-w-0 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">

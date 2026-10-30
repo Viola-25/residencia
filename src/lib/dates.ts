@@ -41,7 +41,7 @@ export function formatDateShort(dateStr: string): string {
 
 export function getWeekLabel(weekStart: string): string {
   const d = new Date(weekStart + 'T00:00:00')
-  return `Sem ${d.getMonth() + 1}/${d.getDate()}`
+  return `Sem ${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
 export function getWeekStartKey(dateStr: string): string {
