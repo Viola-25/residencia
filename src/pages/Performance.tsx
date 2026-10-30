@@ -32,7 +32,7 @@ import { PlatformPerformance } from '../components/PlatformPerformance'
 import { getWeekLabel, getTodayDateString, getWeekStartKey } from '../lib/dates'
 import { AREA_LABELS, MEDICAL_AREAS } from '../types'
 import { tooltipStyle } from '../lib/chartStyles'
-import { getHitRateTrend, calculateGlobalHitRate, roundTo2, isErrorDue } from '../lib/calculations'
+import { getHitRateTrend, calculateGlobalHitRate, roundTo2, isErrorDue, filterRecentLogs } from '../lib/calculations'
 import { buildPerformanceReport, downloadPerformanceReport } from '../lib/report'
 import { useData } from '../hooks/useData'
 import type { MedicalArea } from '../types'
@@ -85,6 +85,13 @@ export function Performance() {
   }, [errors])
   const hitRate30d = useMemo(() => getHitRateTrend(logs, 30), [logs])
   const globalRate = useMemo(() => calculateGlobalHitRate(logs), [logs])
+
+  const windowLogs = useMemo(() => filterRecentLogs(logs, recentWindow), [logs, recentWindow])
+  const windowQuestions = recentMetrics.total_questions
+  const windowCorrect = recentMetrics.total_correct
+  const windowErrors = Math.max(0, windowQuestions - windowCorrect)
+  const windowRate = recentMetrics.hit_rate
+  const rateVsGlobal = roundTo2(windowRate - globalRate)
 
   const recentAreaPerf = recentMetrics.area_performance
   const globalAreaPerf = areaPerformance
@@ -143,11 +150,6 @@ export function Performance() {
       .slice(-12)
   }, [logs])
 
-  const totalErrors = useMemo(
-    () => weeklyChartData.reduce((s, w) => s + w.errors, 0),
-    [weeklyChartData]
-  )
-
   return (
     <div>
       <PageHeader
@@ -171,34 +173,35 @@ export function Performance() {
 
       <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Total de Questões"
-          value={dashboardMetrics.total_questions.toLocaleString()}
+          title={`Questões (${recentWindow} dias)`}
+          value={windowQuestions.toLocaleString()}
+          subtitle={`${logs.length} registros no período`}
           icon={Target}
           color="blue"
         />
         <StatCard
-          title="Total de Acertos"
-          value={dashboardMetrics.total_correct.toLocaleString()}
+          title={`Acertos (${recentWindow} dias)`}
+          value={windowCorrect.toLocaleString()}
           icon={CheckCircle2}
           color="emerald"
         />
         <StatCard
-          title="Total de Erros"
-          value={totalErrors.toLocaleString()}
+          title={`Erros (${recentWindow} dias)`}
+          value={windowErrors.toLocaleString()}
           icon={XCircle}
           color="rose"
         />
         <StatCard
-          title="Taxa de Acerto (30 dias)"
-          value={`${hitRate30d.currentRate}%`}
-          subtitle={`Global: ${globalRate}% | ${hitRate30d.diff > 0 ? '+' : ''}${hitRate30d.diff}% vs mês anterior`}
+          title={`Taxa de Acerto (${recentWindow} dias)`}
+          value={`${windowRate}%`}
+          subtitle={`Global: ${globalRate}% | ${rateVsGlobal > 0 ? '+' : ''}${rateVsGlobal}pp vs global`}
           icon={LineChart}
-          color={hitRate30d.currentRate >= globalRate ? 'emerald' : 'amber'}
+          color={windowRate >= globalRate ? 'emerald' : 'amber'}
           trend={hitRate30d.trend}
         />
       </div>
 
-      <PlatformPerformance logs={logs} examDate={new Date(config.first_exam_date)} />
+      <PlatformPerformance logs={windowLogs} examDate={new Date(config.first_exam_date)} windowDays={recentWindow} />
 
       <div className="mb-8 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
         <div className="mb-4 flex items-center gap-2">

@@ -58,6 +58,9 @@ function ComparisonBar({ userRate, platformAvg }: { userRate: number; platformAv
 function DifficultyRows({ logs, compact }: { logs: DailyLog[]; compact?: boolean }) {
   const breakdown = useMemo(() => calculateDifficultyBreakdown(logs), [logs])
   const hasData = breakdown.some((d) => d.total > 0)
+  const totalQuestions = useMemo(() => logs.reduce((s, l) => s + l.questions_done, 0), [logs])
+  const covered = breakdown.reduce((s, d) => s + d.total, 0)
+  const coverage = totalQuestions > 0 ? Math.round((covered / totalQuestions) * 100) : 0
 
   if (!hasData) {
     return (
@@ -92,13 +95,19 @@ function DifficultyRows({ logs, compact }: { logs: DailyLog[]; compact?: boolean
           </div>
         )
       })}
+      {!compact && coverage < 100 && (
+        <p className="text-[11px] text-zinc-600">
+          Cobertura: {coverage}% das questões ({covered} de {totalQuestions}) têm nível de dificuldade
+          registrado.
+        </p>
+      )}
     </div>
   )
 }
 
 function QuestionTypeRows({ logs }: { logs: DailyLog[] }) {
   const breakdown = useMemo(() => calculateQuestionTypeBreakdown(logs), [logs])
-  const visiveis = breakdown.filter((b) => b.questions > 0)
+  const visiveis = breakdown.filter((b) => b.questions > 0 && (b.key !== 'outros' || b.questions >= 5))
 
   if (!visiveis.length) {
     return (
@@ -122,7 +131,12 @@ function QuestionTypeRows({ logs }: { logs: DailyLog[] }) {
       {visiveis.map((b) => (
         <div key={b.key}>
           <div className="mb-1 flex items-center justify-between text-xs">
-            <span className="text-zinc-400">{b.label}</span>
+            <span className="text-zinc-400">
+              {b.label}
+              {b.questions < 30 && (
+                <span className="ml-1 text-[10px] text-zinc-600">(amostra pequena)</span>
+              )}
+            </span>
             <span className="font-medium text-zinc-200">
               {b.hit_rate !== null ? `${b.hit_rate}%` : '—'}
               <span className="ml-1 text-zinc-600">
@@ -157,6 +171,7 @@ interface PlatformPerformanceProps {
   logs: DailyLog[]
   compact?: boolean
   examDate?: Date
+  windowDays?: number
 }
 
 function formatP(p: number): string {
@@ -314,7 +329,7 @@ function InferenceCard({ logs, examDate }: { logs: DailyLog[]; examDate?: Date }
   )
 }
 
-export function PlatformPerformance({ logs, compact = false, examDate }: PlatformPerformanceProps) {
+export function PlatformPerformance({ logs, compact = false, examDate, windowDays }: PlatformPerformanceProps) {
   const comparison = useMemo(() => calculatePlatformComparison(logs), [logs])
 
   if (comparison.logs_with_platform === 0) {
@@ -441,10 +456,11 @@ export function PlatformPerformance({ logs, compact = false, examDate }: Platfor
           </div>
           <QuestionTypeRows logs={logs} />
           <p className="mt-4 text-xs text-zinc-600">
-            R1 = provas para especialidades de <strong className="text-zinc-500">acesso direto</strong>{' '}
-            (o que você presta). R+ = provas de <strong className="text-zinc-500">subespecialidade</strong>{' '}
-            (Cardio, Endócrino, Pneumo…), feitas depois da residência de área básica. As duas são provas
-            antigas — a barra mostra seu acerto e a média da plataforma nas mesmas questões.
+            {windowDays ? `Últimos ${windowDays} dias. ` : ''}R1 = provas para especialidades de{' '}
+            <strong className="text-zinc-500">acesso direto</strong> (o que você presta). R+ = provas de{' '}
+            <strong className="text-zinc-500">subespecialidade</strong> (Cardio, Endócrino, Pneumo…),
+            feitas depois da residência de área básica. As duas são provas antigas — a barra mostra seu
+            acerto e a média da plataforma nas mesmas questões.
           </p>
         </div>
       </div>

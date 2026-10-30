@@ -184,6 +184,32 @@ export function ViewLogModal({ log, onClose }: ViewLogModalProps) {
               </div>
             </div>
           )}
+          {log.question_types && Object.keys(log.question_types).length > 0 && (
+            <div className="border-b border-zinc-800 pb-2">
+              <div className="mb-1 text-zinc-400">Tipo de Questão</div>
+              <div className="space-y-0.5 text-xs">
+                {(['direto', 'rplus', 'outros'] as const).map((key) => {
+                  const t = log.question_types?.[key]
+                  if (!t || !t.q) return null
+                  const label =
+                    key === 'direto'
+                      ? 'Acesso Direto (R1)'
+                      : key === 'rplus'
+                        ? 'R+ (subespecialidade)'
+                        : 'Outros'
+                  const pct = Math.round((t.c / t.q) * 1000) / 10
+                  return (
+                    <div key={key} className="flex justify-between">
+                      <span className="text-zinc-500">{label}</span>
+                      <span className="text-zinc-200">
+                        {t.c}/{t.q} · {pct}%
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
         <button
           onClick={onClose}
