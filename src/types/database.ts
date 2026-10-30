@@ -30,6 +30,7 @@ export interface Database {
           ranking: number | null
           participants: number | null
           time_spent_minutes: number | null
+          question_types: Json | null
           created_at: string
           user_id: string
         }
@@ -59,6 +60,7 @@ export interface Database {
           ranking?: number | null
           participants?: number | null
           time_spent_minutes?: number | null
+          question_types?: Json | null
           created_at?: string
           user_id: string
         }

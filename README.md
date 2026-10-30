@@ -5,9 +5,10 @@ App de estudo para residência médica (Brasil). Rastreia daily logs de estudo, 
 ## Stack
 
 - React 19 + Vite 8 + TypeScript + Tailwind CSS 4
-- Supabase (PostgreSQL, auth via Clerk)
+- Supabase (PostgreSQL + auth)
 - react-router-dom, react-hook-form + zod, recharts, date-fns
 - groq-sdk para insights IA
+- Deploy: Vercel (push na `main` = produção)
 
 ## Como rodar
 
@@ -38,6 +39,7 @@ Variáveis de ambiente (`.env`, veja `.env.example`):
 - `src/hooks/` — composição de hooks por domínio (`useData`, `hooks/domains/`)
 - `src/pages/` — páginas das rotas
 - `src/components/` — componentes compartilhados, charts, forms, modals
+- `public/extensao/` — zip da extensão do Chrome (download em `/configuracoes`)
 - `supabase/migrations/` — migrações SQL versionadas
 
 ## Rotas
@@ -47,3 +49,11 @@ Variáveis de ambiente (`.env`, veja `.env.example`):
 ## Banco de dados
 
 Migrações em `supabase/migrations/NNN_nome.sql`, aplicadas via `supabase db push`. Mudança de coluna exige atualizar `src/types/database.ts` e `src/types/index.ts` em paralelo.
+
+## Extensão do Chrome
+
+Os testes do MedCof QBank chegam por uma extensão que lê a sessão já aberta no navegador (sem senha) e grava em `daily_logs` + `error_bank`.
+
+- Download: `/configuracoes` → "Extensão do Chrome" (arquivo em `public/extensao/`)
+- Instalação: `chrome://extensions` → Modo do desenvolvedor → Carregar sem compactação
+- Fonte: repo `revisor` (`extension/`), publicado aqui por `npm run ext:publish`
