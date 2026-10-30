@@ -1,10 +1,11 @@
 import { useMemo } from 'react'
-import { Activity, BarChart3, PieChart } from 'lucide-react'
+import { Activity, BarChart3, PieChart, Target } from 'lucide-react'
 import type { DailyLog } from '../types'
 import {
   calculatePlatformComparison,
   calculateDifficultyBreakdown,
   calculatePlatformInference,
+  calculateQuestionTypeBreakdown,
   ESTIMATED_PLATFORM_SIGMA,
 } from '../lib/calculations'
 
@@ -91,6 +92,63 @@ function DifficultyRows({ logs, compact }: { logs: DailyLog[]; compact?: boolean
           </div>
         )
       })}
+    </div>
+  )
+}
+
+function QuestionTypeRows({ logs }: { logs: DailyLog[] }) {
+  const breakdown = useMemo(() => calculateQuestionTypeBreakdown(logs), [logs])
+  const visiveis = breakdown.filter((b) => b.questions > 0)
+
+  if (!visiveis.length) {
+    return (
+      <div className="flex min-h-40 items-center justify-center text-center">
+        <p className="max-w-xs text-xs text-zinc-500">
+          A partir de agora os registros trazem a divisão entre questões de acesso direto (R1) e R+
+          (provas anteriores).
+        </p>
+      </div>
+    )
+  }
+
+  const cores: Record<string, string> = {
+    direto: 'bg-violet-500',
+    rplus: 'bg-amber-500',
+    outros: 'bg-zinc-500',
+  }
+
+  return (
+    <div className="space-y-4">
+      {visiveis.map((b) => (
+        <div key={b.key}>
+          <div className="mb-1 flex items-center justify-between text-xs">
+            <span className="text-zinc-400">{b.label}</span>
+            <span className="font-medium text-zinc-200">
+              {b.hit_rate !== null ? `${b.hit_rate}%` : '—'}
+              <span className="ml-1 text-zinc-600">
+                ({b.correct}/{b.questions})
+              </span>
+            </span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-zinc-800">
+            <div
+              className={`h-full rounded-full ${cores[b.key] ?? 'bg-zinc-500'}`}
+              style={{ width: `${Math.min(100, b.hit_rate ?? 0)}%` }}
+            />
+          </div>
+          <div className="mt-1 flex items-center justify-between text-[11px] text-zinc-600">
+            <span>
+              plataforma {b.platform_avg !== null ? `${b.platform_avg}%` : '—'}
+            </span>
+            {b.delta !== null && (
+              <span className={b.delta > 0 ? 'text-emerald-400' : b.delta < 0 ? 'text-rose-400' : 'text-zinc-500'}>
+                {b.delta > 0 ? '+' : ''}
+                {b.delta} pts
+              </span>
+            )}
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
@@ -299,7 +357,7 @@ export function PlatformPerformance({ logs, compact = false, examDate }: Platfor
 
   return (
     <div className="mb-8 space-y-6">
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-3">
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
           <div className="mb-4 flex items-center gap-2">
             <Activity size={16} className="text-violet-400" />
@@ -373,6 +431,18 @@ export function PlatformPerformance({ logs, compact = false, examDate }: Platfor
           <DifficultyRows logs={logs} />
           <p className="mt-4 text-xs text-zinc-600">
             Taxa de acerto conforme o nível de dificuldade das questões registradas.
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+          <div className="mb-4 flex items-center gap-2">
+            <Target size={16} className="text-violet-400" />
+            <h3 className="text-sm font-semibold text-zinc-200">Acesso Direto vs R+</h3>
+          </div>
+          <QuestionTypeRows logs={logs} />
+          <p className="mt-4 text-xs text-zinc-600">
+            R+ são questões de provas anteriores (mais difíceis). A barra mostra seu acerto e a média da
+            plataforma nas mesmas questões.
           </p>
         </div>
       </div>

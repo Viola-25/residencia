@@ -16,6 +16,17 @@ export type MotivoErro =
 
 export type RegistrationType = 'questoes' | 'simulado' | 'revisao'
 
+// Tipo de questão no MedCof: R1 Acesso Direto vs R+ (questões de provas anteriores)
+export type QuestionTypeKey = 'direto' | 'rplus' | 'outros'
+
+export interface QuestionTypeStat {
+  q: number
+  c: number
+  avg: number | null
+}
+
+export type QuestionTypesMap = Partial<Record<QuestionTypeKey, QuestionTypeStat>>
+
 export interface AreaDatum {
   area: MedicalArea
   questions_done: number
@@ -48,6 +59,7 @@ export interface DailyLog {
   ranking: number | null
   participants: number | null
   time_spent_minutes: number | null
+  question_types?: QuestionTypesMap | null
   created_at: string
 }
 

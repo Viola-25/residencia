@@ -111,6 +111,53 @@ export function calculateDifficultyBreakdown(logs: DailyLog[]): DifficultyBreakd
   })
 }
 
+export interface QuestionTypeBreakdown {
+  key: 'direto' | 'rplus' | 'outros'
+  label: string
+  questions: number
+  correct: number
+  hit_rate: number | null
+  platform_avg: number | null
+  delta: number | null
+}
+
+// Acesso Direto (R1) vs R+ (questões de provas anteriores), agregado pelos registros.
+export function calculateQuestionTypeBreakdown(logs: DailyLog[]): QuestionTypeBreakdown[] {
+  const tipos: { key: QuestionTypeBreakdown['key']; label: string }[] = [
+    { key: 'direto', label: 'Acesso Direto (R1)' },
+    { key: 'rplus', label: 'R+ (provas anteriores)' },
+    { key: 'outros', label: 'Outros' },
+  ]
+
+  return tipos.map(({ key, label }) => {
+    let questions = 0
+    let correct = 0
+    let avgWeighted = 0
+    let avgWeight = 0
+    for (const log of logs) {
+      const t = log.question_types?.[key]
+      if (!t || !t.q) continue
+      questions += t.q
+      correct += t.c ?? 0
+      if (t.avg !== null && t.avg !== undefined) {
+        avgWeighted += t.avg * t.q
+        avgWeight += t.q
+      }
+    }
+    const hit_rate = questions > 0 ? roundTo2((correct / questions) * 100) : null
+    const platform_avg = avgWeight > 0 ? roundTo2(avgWeighted / avgWeight) : null
+    return {
+      key,
+      label,
+      questions,
+      correct,
+      hit_rate,
+      platform_avg,
+      delta: hit_rate !== null && platform_avg !== null ? roundTo2(hit_rate - platform_avg) : null,
+    }
+  })
+}
+
 export interface PlatformComparison {
   logs_with_platform: number
   avg_score_delta: number | null
