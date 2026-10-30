@@ -77,11 +77,15 @@ export function Performance() {
   const srsStats = useMemo(() => {
     if (errors.length === 0) return null
     const total = errors.length
-    const consolidated = errors.filter((e) => e.repetitions >= 3 && e.interval_days >= 14 && e.reviewed).length
+    const comFlashcard = errors.filter((e) => e.reviewed && e.flashcard_front && e.flashcard_back).length
+    const revisadosSemCard = errors.filter(
+      (e) => e.reviewed && !(e.flashcard_front && e.flashcard_back),
+    ).length
     const pending = errors.filter((e) => !e.reviewed).length
     const dueNow = errors.filter((e) => isErrorDue(e)).length
-    const healthyRate = total > 0 ? Math.round((consolidated / total) * 100) : 0
-    return { total, consolidated, pending, dueNow, healthyRate }
+    const consolidados = errors.filter((e) => e.repetitions >= 3 && e.interval_days >= 14).length
+    const cobertura = total > 0 ? Math.round((comFlashcard / total) * 100) : 0
+    return { total, comFlashcard, revisadosSemCard, pending, dueNow, consolidados, cobertura }
   }, [errors])
   const hitRate30d = useMemo(() => getHitRateTrend(logs, 30), [logs])
   const globalRate = useMemo(() => calculateGlobalHitRate(logs), [logs])
@@ -108,6 +112,26 @@ export function Performance() {
       priority: 'red' as const,
     }
   }), [globalAreaPerf])
+
+  const attackList = useMemo(() => {
+    return recentAreaPerf
+      .map((r) => {
+        const g = globalAreaPerf.find((a) => a.area === r.area)
+        const delta = g ? roundTo2(r.hit_rate - g.hit_rate) : 0
+        const lost = delta < 0 ? Math.round((Math.abs(delta) / 100) * r.questions_done) : 0
+        return {
+          area: r.area,
+          recent: r.hit_rate,
+          global: g?.hit_rate ?? null,
+          delta,
+          questions: r.questions_done,
+          lost,
+        }
+      })
+      .filter((a) => a.lost > 0)
+      .sort((a, b) => b.lost - a.lost)
+      .slice(0, 3)
+  }, [recentAreaPerf, globalAreaPerf])
 
   const chartData = useMemo(() => allAreas.map((a) => {
     const recent = recentAreaPerf.find((r) => r.area === a.area)
@@ -247,42 +271,83 @@ export function Performance() {
         </div>
       </div>
 
+      {attackList.length > 0 && (
+        <div className="mb-8 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+          <div className="mb-1 flex items-center gap-2">
+            <TrendingDown size={16} className="text-rose-400" />
+            <h3 className="text-sm font-semibold text-zinc-200">Onde atacar primeiro</h3>
+          </div>
+          <p className="mb-4 text-xs text-zinc-500">
+            Queda vs global ({recentWindow} dias) ponderada pelo volume de questões — estimativa de
+            acertos a recuperar se você voltar ao seu patamar.
+          </p>
+          <div className="space-y-2">
+            {attackList.map((a, i) => (
+              <div key={a.area} className="flex items-center gap-3 rounded-lg bg-zinc-800/50 p-3">
+                <span className="w-6 text-xs font-medium text-zinc-600">{i + 1}º</span>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-zinc-200">
+                    {AREA_LABELS[a.area as MedicalArea]}
+                  </p>
+                  <p className="text-[11px] text-zinc-500">
+                    {a.questions} questões · {a.recent}% agora vs {a.global}% global ({a.delta > 0 ? '+' : ''}
+                    {a.delta}pp)
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-bold text-rose-400">≈{a.lost} acertos</p>
+                  <p className="text-[11px] text-zinc-600">a recuperar</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {srsStats && (
         <div className="mb-8 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
           <div className="mb-4 flex items-center gap-2">
             <Brain size={16} className="text-violet-400" />
             <h3 className="text-sm font-semibold text-zinc-200">Consolidação por Revisão Espacada</h3>
           </div>
-          <div className="grid gap-4 sm:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-lg bg-zinc-800/50 p-3">
               <p className="text-xs text-zinc-500">Total de Erros</p>
               <p className="text-xl font-bold text-zinc-200">{srsStats.total}</p>
             </div>
-            <div className="rounded-lg bg-emerald-500/10 p-3">
-              <p className="text-xs text-emerald-400">Consolidados</p>
-              <p className="text-xl font-bold text-emerald-400">{srsStats.consolidated}</p>
-            </div>
             <div className="rounded-lg bg-amber-500/10 p-3">
               <p className="text-xs text-amber-400">Pendentes</p>
-              <p className="text-xl font-bold text-amber-400">{srsStats.pending} ({srsStats.dueNow} atrasados)</p>
+              <p className="text-xl font-bold text-amber-400">{srsStats.pending}</p>
+              <p className="text-[11px] text-amber-500/70">{srsStats.dueNow} atrasados</p>
             </div>
-            <div className="rounded-lg bg-violet-500/10 p-3">
-              <p className="text-xs text-violet-400">Saúde do Banco</p>
-              <p className="text-xl font-bold text-violet-400">{srsStats.healthyRate}%</p>
+            <div className="rounded-lg bg-emerald-500/10 p-3">
+              <p className="text-xs text-emerald-400">Com Flashcard</p>
+              <p className="text-xl font-bold text-emerald-400">{srsStats.comFlashcard}</p>
+              <p className="text-[11px] text-emerald-500/70">{srsStats.cobertura}% do banco</p>
+            </div>
+            <div className="rounded-lg bg-rose-500/10 p-3">
+              <p className="text-xs text-rose-400">Revisados sem Card</p>
+              <p className="text-xl font-bold text-rose-400">{srsStats.revisadosSemCard}</p>
+              <p className="text-[11px] text-rose-500/70">saíram da fila sem estudar</p>
             </div>
           </div>
           <div className="mt-3 h-2 overflow-hidden rounded-full bg-zinc-800">
             <div
               className="h-full rounded-full bg-gradient-to-r from-amber-500 via-violet-500 to-emerald-500 transition-all"
-              style={{ width: `${srsStats.healthyRate}%` }}
+              style={{ width: `${srsStats.cobertura}%` }}
             />
           </div>
           <p className="mt-2 text-xs text-zinc-600">
-            {srsStats.healthyRate >= 70
-              ? 'Ótimo! A maioria dos conceitos já está consolidada na memória de longo prazo.'
-              : srsStats.healthyRate >= 40
-                ? 'Progresso consistente. Continue revisando para consolidar mais conceitos.'
-                : 'Foque em revisar os erros pendentes para consolidar o aprendizado.'}
+            {srsStats.revisadosSemCard > 0
+              ? `${srsStats.revisadosSemCard} erro(s) foram marcados como revisados sem gerar flashcard — nunca voltam para a fila. Reabra esses para não perder o conteúdo.`
+              : srsStats.cobertura >= 70
+                ? 'Ótimo! A maioria dos erros já tem flashcard e volta na revisão espaçada.'
+                : srsStats.cobertura >= 40
+                  ? 'Progresso consistente. Continue gerando flashcards para consolidar mais conceitos.'
+                  : 'Gere flashcards dos erros pendentes — é o que consolida de verdade.'}
+          </p>
+          <p className="mt-1 text-[11px] text-zinc-700">
+            Consolidados (SRS completo: 3+ repetições e intervalo ≥ 14 dias): {srsStats.consolidados}
           </p>
         </div>
       )}
