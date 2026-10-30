@@ -37,8 +37,13 @@ const componentLabels: Record<string, string> = {
   hit_rate_score: 'Acerto Global',
   mock_evolution_score: 'Evolução Simulados',
   consistency_score: 'Consistência Semanal',
-  review_score: 'Cobertura de Flashcards',
+  review_score: 'Revisão de Erros',
   error_bank_score: 'Banco de Erros',
+}
+
+const componentHints: Record<string, string> = {
+  review_score: '60% dos erros revisados + 40% com flashcard',
+  error_bank_score: 'erros em dia (sem atraso na data agendada)',
 }
 
 export function ApprovalRadar() {
@@ -137,6 +142,9 @@ export function ApprovalRadar() {
                       }}
                     />
                   </div>
+                  {componentHints[key] && (
+                    <p className="mt-1 text-[11px] text-zinc-600">{componentHints[key]}</p>
+                  )}
                 </div>
               )
             })}

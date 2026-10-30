@@ -567,13 +567,17 @@ export function calculateApprovalScore(
       : 0
   )
   const errorList = errors ?? []
+  const reviewedCount = errorList.filter((e) => e.reviewed).length
   const reviewedWithFlashcards = errorList.filter(
     (e) => e.reviewed && e.flashcard_front && e.flashcard_back
   ).length
   const reviewScore = Math.min(
     100,
     errorList.length > 0
-      ? Math.round((reviewedWithFlashcards / errorList.length) * 100)
+      ? Math.round(
+          (reviewedCount / errorList.length) * 60 +
+            (reviewedWithFlashcards / errorList.length) * 40
+        )
       : 0
   )
   let errorBankScore = 0

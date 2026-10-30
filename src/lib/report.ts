@@ -547,12 +547,16 @@ export function buildPerformanceReport(input: PerformanceReportInput): string {
   out.push('Consolidados (SRS):        ' + srsConsolidated)
   out.push('')
   out.push(
-    'Cobertura de flashcards no radar = erros revisados COM flashcard / total de erros = ' +
+    'Revisao de erros no radar = 60% revisados (' +
+      (srsTotal - srsPending) +
+      '/' +
+      srsTotal +
+      ') + 40% com flashcard (' +
       srsWithCard +
       '/' +
       srsTotal +
-      ' = ' +
-      srsCoverage +
+      ') = ' +
+      input.approvalScore.components.review_score +
       '%'
   )
   out.push('')
