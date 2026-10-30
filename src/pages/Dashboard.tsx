@@ -61,6 +61,18 @@ export function Dashboard() {
   const windowCorrect = recentMetrics.total_correct
   const enamedPassed = new Date(config.enamed_date + 'T00:00:00') < new Date(new Date().setHours(0, 0, 0, 0))
   const firstExamPassed = new Date(config.first_exam_date + 'T00:00:00') < new Date(new Date().setHours(0, 0, 0, 0))
+  const yearPace = useMemo(() => {
+    const hoje = new Date()
+    hoje.setHours(0, 0, 0, 0)
+    const fimDoAno = new Date(hoje.getFullYear(), 11, 31)
+    const diasRestantes = Math.max(0, Math.round((fimDoAno.getTime() - hoje.getTime()) / 86400000))
+    const faltam = Math.max(0, config.yearly_goal - metrics.total_questions)
+    return {
+      diasRestantes,
+      faltam,
+      porDia: diasRestantes > 0 ? Math.ceil(faltam / diasRestantes) : faltam,
+    }
+  }, [config.yearly_goal, metrics.total_questions])
 
   const recentHitRate = recentMetrics.hit_rate
   const recentVsGlobal = roundTo2(recentHitRate - globalRate)
@@ -172,9 +184,13 @@ export function Dashboard() {
         <StatCard
           title="Meta Anual"
           value={`${metrics.yearly_progress}%`}
-          subtitle={`${metrics.total_questions.toLocaleString()} / ${config.yearly_goal.toLocaleString()}`}
+          subtitle={
+            yearPace.faltam === 0
+              ? `Meta batida: ${metrics.total_questions.toLocaleString()} / ${config.yearly_goal.toLocaleString()}`
+              : `Faltam ${yearPace.faltam.toLocaleString()} em ${yearPace.diasRestantes} dias · ${yearPace.porDia}/dia`
+          }
           icon={BarChart3}
-          color="indigo"
+          color={metrics.yearly_progress >= 100 ? 'emerald' : 'indigo'}
         />
         <StatCard
           title="Meta Semanal"
