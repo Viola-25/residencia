@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Settings as SettingsIcon, Save, Calendar, Target, BookOpen, Clock, FileText, Loader2 } from 'lucide-react'
+import { Settings as SettingsIcon, Save, Calendar, Target, BookOpen, Clock, FileText, Loader2, Download } from 'lucide-react'
 import { PageHeader } from '../components/PageHeader'
 import { useData } from '../hooks/useData'
 
@@ -172,6 +172,54 @@ export function Settings() {
           )}
         </div>
       </form>
+
+      <div className="mt-6 max-w-2xl rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+        <h3 className="mb-1 flex items-center gap-2 text-sm font-semibold text-zinc-200">
+          <Download size={16} className="text-violet-400" />
+          Extensão do Chrome — sync em 1 clique
+        </h3>
+        <p className="mb-4 text-xs text-zinc-500">
+          Puxa os testes finalizados do MedCof e grava aqui sem terminal. Usa a sessão que já existe no
+          navegador — não pede senha.
+        </p>
+
+        <a
+          href="/extensao/medcof-extensao.zip"
+          download
+          className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-500"
+        >
+          <Download size={16} />
+          Baixar extensão (.zip)
+        </a>
+
+        <ol className="mt-4 space-y-1.5 text-xs text-zinc-400">
+          <li>
+            <span className="text-zinc-600">1.</span> Descompacte o zip num lugar fixo (ex.:{' '}
+            <code className="rounded bg-zinc-800 px-1 py-0.5 text-[11px] text-zinc-300">
+              C:\Users\voce\medcof-extensao
+            </code>
+            ). Não apague depois.
+          </li>
+          <li>
+            <span className="text-zinc-600">2.</span> Abra{' '}
+            <code className="rounded bg-zinc-800 px-1 py-0.5 text-[11px] text-zinc-300">
+              chrome://extensions
+            </code>{' '}
+            e ligue o <strong className="text-zinc-300">Modo do desenvolvedor</strong>.
+          </li>
+          <li>
+            <span className="text-zinc-600">3.</span>{' '}
+            <strong className="text-zinc-300">Carregar sem compactação</strong> → selecione a pasta
+            descompactada.
+          </li>
+        </ol>
+
+        <p className="mt-3 text-[11px] text-zinc-600">
+          O Chrome não permite instalar direto do site — é obrigatório passar por{' '}
+          <code>chrome://extensions</code>. Para atualizar, baixe o zip de novo e clique em{' '}
+          <strong className="text-zinc-500">Recarregar</strong> no card da extensão.
+        </p>
+      </div>
     </div>
   )
 }
