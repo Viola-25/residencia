@@ -331,6 +331,17 @@ function InferenceCard({ logs, examDate }: { logs: DailyLog[]; examDate?: Date }
 
 export function PlatformPerformance({ logs, compact = false, examDate, windowDays }: PlatformPerformanceProps) {
   const comparison = useMemo(() => calculatePlatformComparison(logs), [logs])
+  const base = useMemo(() => {
+    const withPlatform = logs.filter((l) => l.platform_avg_rate !== null && l.score_delta !== null)
+    const questions = withPlatform.reduce((s, l) => s + l.questions_done, 0)
+    const total = logs.reduce((s, l) => s + l.questions_done, 0)
+    return {
+      sessions: withPlatform.length,
+      questions,
+      total,
+      pct: total > 0 ? Math.round((questions / total) * 100) : 0,
+    }
+  }, [logs])
 
   if (comparison.logs_with_platform === 0) {
     return null
@@ -366,6 +377,11 @@ export function PlatformPerformance({ logs, compact = false, examDate, windowDay
           />
           <DifficultyRows logs={logs} compact />
         </div>
+        <p className="mt-3 text-[11px] text-zinc-600">
+          Base: {base.sessions} {base.sessions === 1 ? 'sessão' : 'sessões'} do MedCof ·{' '}
+          {base.questions.toLocaleString()} de {base.total.toLocaleString()} questões ({base.pct}%).
+          Só registros feitos na plataforma entram nessa comparação.
+        </p>
       </div>
     )
   }
@@ -414,7 +430,8 @@ export function PlatformPerformance({ logs, compact = false, examDate, windowDay
           <p className="mt-3 text-xs text-zinc-600">
             Comparação nas {comparison.logs_with_platform}{' '}
             {comparison.logs_with_platform === 1 ? 'sessão' : 'sessões'} com média da plataforma
-            registrada — não inclui o restante dos seus registros.
+            registrada ({base.questions.toLocaleString()} de {base.total.toLocaleString()} questões,{' '}
+            {base.pct}%) — não inclui o restante dos seus registros.
           </p>
 
           <div className="mt-5 grid grid-cols-2 gap-4 border-t border-zinc-800 pt-4">
