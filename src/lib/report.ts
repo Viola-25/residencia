@@ -18,6 +18,7 @@ import {
   calculateTotalQuestions,
   calculateTotalCorrect,
   calculateDifficultyBreakdown,
+  calculateQuestionTypeBreakdown,
   calculatePlatformComparison,
   calculatePlatformInference,
   getMockAverage,
@@ -88,6 +89,11 @@ export function buildPerformanceReport(input: PerformanceReportInput): string {
     return new Date(l.date + 'T00:00:00') >= cutoff
   })
   const recentDifficulty = calculateDifficultyBreakdown(recentLogs)
+  const questionTypes = calculateQuestionTypeBreakdown(logs)
+  const recentQuestionTypes = calculateQuestionTypeBreakdown(recentLogs)
+  const difficultyCovered = difficulty.reduce((s, d) => s + d.total, 0)
+  const difficultyCoverage =
+    globalTotal > 0 ? Math.round((difficultyCovered / globalTotal) * 100) : 0
 
   const weekMap = new Map<string, { questions: number; hits: number }>()
   for (const log of logs) {
@@ -125,7 +131,13 @@ export function buildPerformanceReport(input: PerformanceReportInput): string {
   ).length
   const srsPending = errors.filter((e) => !e.reviewed).length
   const srsDueNow = errors.filter((e) => isErrorDue(e)).length
-  const healthyRate = srsTotal > 0 ? Math.round((srsConsolidated / srsTotal) * 100) : 0
+  const srsWithCard = errors.filter(
+    (e) => e.reviewed && e.flashcard_front && e.flashcard_back
+  ).length
+  const srsReviewedNoCard = errors.filter(
+    (e) => e.reviewed && !(e.flashcard_front && e.flashcard_back)
+  ).length
+  const srsCoverage = srsTotal > 0 ? Math.round((srsWithCard / srsTotal) * 100) : 0
 
   const typeCounts = new Map<RegistrationType, number>()
   for (const l of logs) {
@@ -339,9 +351,42 @@ export function buildPerformanceReport(input: PerformanceReportInput): string {
     out.push(pad(difficultyLabels[d.level], 10) + pad(gText, 20) + rText)
   }
   out.push('')
+  out.push(
+    'Cobertura de dificuldade: ' +
+      difficultyCoverage +
+      '% (' +
+      difficultyCovered +
+      ' de ' +
+      globalTotal +
+      ' questoes com nivel registrado)'
+  )
+  out.push('')
 
   out.push(LINE)
-  out.push('7. DESEMPENHO POR GRANDE AREA (GLOBAL vs RECENTE)')
+  out.push('7. TIPO DE QUESTAO (ACESSO DIRETO vs R+)')
+  out.push(LINE)
+  out.push(
+    pad('Tipo', 26) + pad('Global', 18) + pad('Recente (' + recentWindow + 'd)', 22) + 'Plataforma'
+  )
+  out.push(THIN)
+  for (const t of questionTypes) {
+    const recent = recentQuestionTypes.find((r) => r.key === t.key)
+    if (t.questions === 0 && (!recent || recent.questions === 0)) continue
+    const gText =
+      t.questions > 0 ? t.correct + '/' + t.questions + ' (' + t.hit_rate + '%)' : 'sem dados'
+    const rText =
+      recent && recent.questions > 0
+        ? recent.correct + '/' + recent.questions + ' (' + recent.hit_rate + '%)'
+        : 'sem dados'
+    const pText = t.platform_avg !== null ? t.platform_avg + '%' : '-'
+    out.push(pad(t.label, 26) + pad(gText, 18) + pad(rText, 22) + pText)
+  }
+  out.push('')
+  out.push('R1 = provas de acesso direto | R+ = provas de subespecialidade')
+  out.push('')
+
+  out.push(LINE)
+  out.push('8. DESEMPENHO POR GRANDE AREA (GLOBAL vs RECENTE)')
   out.push(LINE)
   out.push(
     pad('Area', 24) +
@@ -401,9 +446,41 @@ export function buildPerformanceReport(input: PerformanceReportInput): string {
     )
   }
   out.push('')
+  const ataque = areaPerformance
+    .map((a) => {
+      const recent = recentMetrics.area_performance.find((r) => r.area === a.area)
+      const recentRate = recent ? recent.hit_rate : 0
+      const questions = recent ? recent.questions_done : 0
+      const delta = roundTo2(recentRate - a.hit_rate)
+      const lost = delta < 0 && questions > 0 ? Math.round((Math.abs(delta) / 100) * questions) : 0
+      return { area: a.area, recentRate, globalRate: a.hit_rate, delta, questions, lost }
+    })
+    .filter((a) => a.lost > 0)
+    .sort((a, b) => b.lost - a.lost)
+  if (ataque.length > 0) {
+    out.push('Onde atacar primeiro (queda vs global ponderada pelo volume da janela):')
+    for (const a of ataque) {
+      out.push(
+        '  - ' +
+          areaLabel(a.area) +
+          ': ' +
+          a.recentRate +
+          '% agora vs ' +
+          a.globalRate +
+          '% global (' +
+          a.delta +
+          ' pp em ' +
+          a.questions +
+          ' questoes) -> ~' +
+          a.lost +
+          ' acertos a recuperar'
+      )
+    }
+    out.push('')
+  }
 
   out.push(LINE)
-  out.push('8. SIMULADOS E PROVAS ANTIGAS')
+  out.push('9. SIMULADOS E PROVAS ANTIGAS')
   out.push(LINE)
   if (mockSorted.length === 0) {
     out.push('Nenhum simulado registrado.')
@@ -440,7 +517,7 @@ export function buildPerformanceReport(input: PerformanceReportInput): string {
   out.push('')
 
   out.push(LINE)
-  out.push('9. SCORE DE APROVACAO')
+  out.push('10. SCORE DE APROVACAO')
   out.push(LINE)
   out.push('Score: ' + input.approvalScore.score + ' - ' + input.approvalScore.label)
   out.push(
@@ -461,13 +538,23 @@ export function buildPerformanceReport(input: PerformanceReportInput): string {
   out.push('')
 
   out.push(LINE)
-  out.push('10. BANCO DE ERROS E REVISAO ESPACADA')
+  out.push('11. BANCO DE ERROS E REVISAO ESPACADA')
   out.push(LINE)
   out.push('Total de erros registrados: ' + srsTotal)
+  out.push('Pendentes de revisao:      ' + srsPending + ' (' + srsDueNow + ' atrasados)')
+  out.push('Revisados com flashcard:   ' + srsWithCard + ' (' + srsCoverage + '% do banco)')
+  out.push('Revisados sem flashcard:   ' + srsReviewedNoCard + ' (voltam pela data, mas sem card)')
   out.push('Consolidados (SRS):        ' + srsConsolidated)
-  out.push('Pendentes de revisao:      ' + srsPending)
-  out.push('Atrasados:                 ' + srsDueNow)
-  out.push('Saude do banco:            ' + healthyRate + '%')
+  out.push('')
+  out.push(
+    'Cobertura de flashcards no radar = erros revisados COM flashcard / total de erros = ' +
+      srsWithCard +
+      '/' +
+      srsTotal +
+      ' = ' +
+      srsCoverage +
+      '%'
+  )
   out.push('')
   if (reasonCounts.size > 0) {
     out.push('Distribuicao por motivo de erro:')
@@ -492,7 +579,7 @@ export function buildPerformanceReport(input: PerformanceReportInput): string {
   out.push('')
 
   out.push(LINE)
-  out.push('11. DETALHAMENTO DOS REGISTROS (ULTIMOS ' + recentWindow + ' DIAS)')
+  out.push('12. DETALHAMENTO DOS REGISTROS (ULTIMOS ' + recentWindow + ' DIAS)')
   out.push(LINE)
   const recentCutoff = new Date()
   recentCutoff.setHours(0, 0, 0, 0)
@@ -541,6 +628,22 @@ export function buildPerformanceReport(input: PerformanceReportInput): string {
       )
       if (l.notes && l.notes.trim().length > 0) {
         out.push('  Obs: ' + l.notes.trim().replace(/\s+/g, ' '))
+      }
+      if (l.question_types) {
+        const partes: string[] = []
+        const t = l.question_types
+        if (t.direto && t.direto.q > 0) {
+          partes.push('R1 ' + t.direto.c + '/' + t.direto.q)
+        }
+        if (t.rplus && t.rplus.q > 0) {
+          partes.push('R+ ' + t.rplus.c + '/' + t.rplus.q)
+        }
+        if (t.outros && t.outros.q > 0) {
+          partes.push('Outros ' + t.outros.c + '/' + t.outros.q)
+        }
+        if (partes.length > 0) {
+          out.push('  Tipos: ' + partes.join(' | '))
+        }
       }
     }
   }

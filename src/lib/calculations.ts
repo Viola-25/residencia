@@ -855,8 +855,7 @@ export function classifyErrorReason(text: string): MotivoErro {
 }
 
 export function isErrorDue(error: ErrorEntry, now: Date = new Date()): boolean {
-  if (error.reviewed) return false
-  if (!error.next_review_date) return true
+  if (!error.next_review_date) return !error.reviewed
   const reviewDate = new Date(error.next_review_date)
   reviewDate.setHours(0, 0, 0, 0)
   const today = new Date(now)

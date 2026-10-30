@@ -44,7 +44,7 @@ export function ErrorBank() {
   const { errors: rawErrors, loading, reviewErrorWithSRS, deleteError, persistFlashcard } = useData()
   const [search, setSearch] = useState('')
   const [filterReason, setFilterReason] = useState<MotivoErro | 'all'>('all')
-  const [filterReview, setFilterReview] = useState<'all' | 'pending' | 'reviewed'>('all')
+  const [filterReview, setFilterReview] = useState<'all' | 'due' | 'reviewed'>('all')
   const [reviewingId, setReviewingId] = useState<string | null>(null)
   const [flashcardQueue, setFlashcardQueue] = useState<ErrorEntry[] | null>(null)
   const [fcIndex, setFcIndex] = useState(0)
@@ -112,7 +112,7 @@ export function ErrorBank() {
       )
         return false
       if (filterReason !== 'all' && e.error_reason !== filterReason) return false
-      if (filterReview === 'pending' && e.reviewed) return false
+      if (filterReview === 'due' && !isErrorDue(e)) return false
       if (filterReview === 'reviewed' && !e.reviewed) return false
       return true
     })
@@ -538,12 +538,12 @@ export function ErrorBank() {
           <select
             value={filterReview}
             onChange={(e) =>
-              setFilterReview(e.target.value as 'all' | 'pending' | 'reviewed')
+              setFilterReview(e.target.value as 'all' | 'due' | 'reviewed')
             }
             className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 focus:border-violet-500 focus:outline-none max-sm:flex-1"
           >
             <option value="all">Todos</option>
-            <option value="pending">Pendentes</option>
+            <option value="due">Vencidos</option>
             <option value="reviewed">Revisados</option>
           </select>
         </div>

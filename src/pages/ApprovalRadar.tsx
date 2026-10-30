@@ -37,7 +37,7 @@ const componentLabels: Record<string, string> = {
   hit_rate_score: 'Acerto Global',
   mock_evolution_score: 'Evolução Simulados',
   consistency_score: 'Consistência Semanal',
-  review_score: 'Revisões Realizadas',
+  review_score: 'Cobertura de Flashcards',
   error_bank_score: 'Banco de Erros',
 }
 

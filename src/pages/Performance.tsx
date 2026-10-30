@@ -339,7 +339,7 @@ export function Performance() {
           </div>
           <p className="mt-2 text-xs text-zinc-600">
             {srsStats.revisadosSemCard > 0
-              ? `${srsStats.revisadosSemCard} erro(s) foram marcados como revisados sem gerar flashcard — nunca voltam para a fila. Reabra esses para não perder o conteúdo.`
+              ? `${srsStats.revisadosSemCard} erro(s) foram revisados sem flashcard — voltam pela data agendada, mas a revisão fica só no reconhecimento. Gere cards para consolidar.`
               : srsStats.cobertura >= 70
                 ? 'Ótimo! A maioria dos erros já tem flashcard e volta na revisão espaçada.'
                 : srsStats.cobertura >= 40
