@@ -105,7 +105,7 @@ function QuestionTypeRows({ logs }: { logs: DailyLog[] }) {
       <div className="flex min-h-40 items-center justify-center text-center">
         <p className="max-w-xs text-xs text-zinc-500">
           A partir de agora os registros trazem a divisão entre questões de acesso direto (R1) e R+
-          (provas anteriores).
+          (subespecialidade).
         </p>
       </div>
     )
@@ -441,8 +441,10 @@ export function PlatformPerformance({ logs, compact = false, examDate }: Platfor
           </div>
           <QuestionTypeRows logs={logs} />
           <p className="mt-4 text-xs text-zinc-600">
-            R+ são questões de provas anteriores (mais difíceis). A barra mostra seu acerto e a média da
-            plataforma nas mesmas questões.
+            R1 = provas para especialidades de <strong className="text-zinc-500">acesso direto</strong>{' '}
+            (o que você presta). R+ = provas de <strong className="text-zinc-500">subespecialidade</strong>{' '}
+            (Cardio, Endócrino, Pneumo…), feitas depois da residência de área básica. As duas são provas
+            antigas — a barra mostra seu acerto e a média da plataforma nas mesmas questões.
           </p>
         </div>
       </div>

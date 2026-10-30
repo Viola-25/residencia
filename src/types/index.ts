@@ -16,7 +16,7 @@ export type MotivoErro =
 
 export type RegistrationType = 'questoes' | 'simulado' | 'revisao'
 
-// Tipo de questão no MedCof: R1 Acesso Direto vs R+ (questões de provas anteriores)
+// Tipo de questão no MedCof: R1 Acesso Direto (especialidade) vs R+ (subespecialidade)
 export type QuestionTypeKey = 'direto' | 'rplus' | 'outros'
 
 export interface QuestionTypeStat {

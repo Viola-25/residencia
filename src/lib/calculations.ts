@@ -121,11 +121,11 @@ export interface QuestionTypeBreakdown {
   delta: number | null
 }
 
-// Acesso Direto (R1) vs R+ (questões de provas anteriores), agregado pelos registros.
+// Acesso Direto (R1) vs R+ (subespecialidade), agregado pelos registros. Ambos são provas antigas.
 export function calculateQuestionTypeBreakdown(logs: DailyLog[]): QuestionTypeBreakdown[] {
   const tipos: { key: QuestionTypeBreakdown['key']; label: string }[] = [
     { key: 'direto', label: 'Acesso Direto (R1)' },
-    { key: 'rplus', label: 'R+ (provas anteriores)' },
+    { key: 'rplus', label: 'R+ (subespecialidade)' },
     { key: 'outros', label: 'Outros' },
   ]
 
