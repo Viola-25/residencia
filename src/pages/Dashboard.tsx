@@ -20,7 +20,7 @@ import { WeeklyQuestionsChart } from '../components/charts/WeeklyQuestionsChart'
 import { MockEvolutionChart } from '../components/charts/MockEvolutionChart'
 import { AreaEvolutionChart } from '../components/charts/AreaEvolutionChart'
 import { PlatformPerformance } from '../components/PlatformPerformance'
-import { getHitRateTrend, calculateGlobalHitRate, roundTo2, isErrorDue } from '../lib/calculations'
+import { calculateGlobalHitRate, roundTo2, isErrorDue, filterRecentLogs } from '../lib/calculations'
 
 import { useData } from '../hooks/useData'
 
@@ -55,8 +55,10 @@ export function Dashboard() {
   }, [errors])
 
   const metrics = dashboardMetrics
-  const hitRate30d = useMemo(() => getHitRateTrend(logs, 30), [logs])
   const globalRate = useMemo(() => calculateGlobalHitRate(logs), [logs])
+  const windowLogs = useMemo(() => filterRecentLogs(logs, recentWindow), [logs, recentWindow])
+  const windowQuestions = recentMetrics.total_questions
+  const windowCorrect = recentMetrics.total_correct
 
   const recentHitRate = recentMetrics.hit_rate
   const recentVsGlobal = roundTo2(recentHitRate - globalRate)
@@ -138,22 +140,24 @@ export function Dashboard() {
         <StatCard
           title="Questões Acumuladas"
           value={metrics.total_questions.toLocaleString()}
+          subtitle={`+${windowQuestions.toLocaleString()} nos últimos ${recentWindow} dias`}
           icon={Target}
           color="blue"
         />
         <StatCard
           title="Acertos Acumulados"
           value={metrics.total_correct.toLocaleString()}
+          subtitle={`+${windowCorrect.toLocaleString()} nos últimos ${recentWindow} dias`}
           icon={CheckCircle2}
           color="emerald"
         />
         <StatCard
-          title="Taxa de Acerto (30 dias)"
-          value={`${hitRate30d.currentRate}%`}
-          subtitle={`Global: ${globalRate}% | ${hitRate30d.diff > 0 ? '+' : ''}${hitRate30d.diff}% vs mês anterior`}
+          title={`Taxa de Acerto (${recentWindow} dias)`}
+          value={`${recentHitRate}%`}
+          subtitle={`Global: ${globalRate}% | ${recentVsGlobal > 0 ? '+' : ''}${recentVsGlobal}pp vs global`}
           icon={TrendingUp}
-          color={hitRate30d.currentRate >= globalRate ? 'emerald' : 'amber'}
-          trend={hitRate30d.trend}
+          color={recentHitRate >= globalRate ? 'emerald' : 'amber'}
+          trend={recentTrend}
         />
         <StatCard
           title="Meta Anual"
@@ -178,7 +182,7 @@ export function Dashboard() {
         />
       </div>
 
-      <PlatformPerformance logs={logs} compact examDate={new Date(config.first_exam_date)} />
+      <PlatformPerformance logs={windowLogs} compact examDate={new Date(config.first_exam_date)} windowDays={recentWindow} />
 
       <div className="mb-8 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
         <div className="mb-4 flex items-center gap-2">
