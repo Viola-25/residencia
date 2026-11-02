@@ -49,6 +49,7 @@ App de estudo para residência médica (Brasil). Rastreia daily logs de estudo, 
 - **question_types** (migração 016, JSONB em `daily_logs`): `{ direto | rplus | outros: { q, c, avg } }` — `q` questões, `c` acertos, `avg` média da plataforma (%) nas mesmas questões. Preenchido pelo sync do MedCof (repo `revisor`). UI: `calculateQuestionTypeBreakdown()` + card "Acesso Direto vs R+" em `PlatformPerformance`
 - **Revisão de questões** (migração 017): `error_bank` guarda a questão errada completa — `statement_html`, `alternatives` JSONB (`[{ id, letter, text, comment, is_correct }]`), `correct_answer_id`, `chosen_answer_id`, `tags TEXT[]`, `question_identifier`, `exam_name`, `take_home_message`, `platform_difficulty`, `success_rate`. `review_attempts` registra cada resposta (`result`, `rating`, `chosen_answer_id`, intervalo/ease/repetições resultantes)
 - **SRS de questões**: `calculateNextQuestionSRSState(state, result, rating)`. Errou = qualidade 1 (volta 1 dia); acertou + chutei = 2 (reset 1 dia); difícil = 3; médio = 4; fácil = 5. `correct_count`/`review_count`/`lapses` agregados em `error_bank`
+- **Pesos do Radar** (`APPROVAL_WEIGHTS` em `calculations.ts`): acerto 30%, evolução simulados 25%, consistência 20%, revisão de questões 20%, banco de erros 5%
 - **Flashcards removidos**: colunas `flashcard_front/back` ficam só por legado; UI, prompts e cálculo de aprovação não usam mais
 - Áreas: `ginecologia`/`obstetricia` → alias para `ginecologia_obstetricia` via `normalizeArea`
 - UI inteira em pt-BR (labels, placeholders, prompts de IA)

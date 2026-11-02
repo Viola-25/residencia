@@ -211,6 +211,16 @@ describe('calculateApprovalScore', () => {
     expect(score.components.review_score).toBe(75)
   })
 
+  it('pesos do radar: revisão 20% + banco de erros 5%', () => {
+    const errors = [
+      makeError({ reviewed: true, review_count: 1, correct_count: 1, next_review_date: daysFromNow(5) }),
+    ]
+    const score = calculateApprovalScore([], [], [], errors)
+    expect(score.components.review_score).toBe(100)
+    expect(score.components.error_bank_score).toBe(100)
+    expect(score.score).toBe(25)
+  })
+
   it('banco de erros desconta os vencidos', () => {
     const errors = [
       makeError({ reviewed: true, next_review_date: daysFromNow(-2) }),

@@ -7,6 +7,14 @@ export const RECENT_WINDOW_DAYS = 90
 
 export const APPROVAL_WINDOW_DAYS = 30
 
+export const APPROVAL_WEIGHTS = {
+  hit_rate_score: 0.3,
+  mock_evolution_score: 0.25,
+  consistency_score: 0.2,
+  review_score: 0.2,
+  error_bank_score: 0.05,
+} as const
+
 export function filterRecentLogs(logs: DailyLog[], days: number = RECENT_WINDOW_DAYS): DailyLog[] {
   const cutoff = new Date()
   cutoff.setHours(0, 0, 0, 0)
@@ -588,11 +596,11 @@ export function calculateApprovalScore(
   }
 
   const score = Math.round(
-    hitRateScore * 0.3 +
-      mockEvolutionScore * 0.25 +
-      consistencyScore * 0.2 +
-      reviewScore * 0.15 +
-      errorBankScore * 0.1
+    hitRateScore * APPROVAL_WEIGHTS.hit_rate_score +
+      mockEvolutionScore * APPROVAL_WEIGHTS.mock_evolution_score +
+      consistencyScore * APPROVAL_WEIGHTS.consistency_score +
+      reviewScore * APPROVAL_WEIGHTS.review_score +
+      errorBankScore * APPROVAL_WEIGHTS.error_bank_score
   )
 
   let label: ApprovalScore['label']

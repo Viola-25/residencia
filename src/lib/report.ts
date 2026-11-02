@@ -26,6 +26,7 @@ import {
   calculateRecentMetrics,
   roundTo2,
   isErrorDue,
+  APPROVAL_WEIGHTS,
 } from './calculations'
 import { formatDate, formatDateShort, getWeekStartKey } from './dates'
 
@@ -523,19 +524,34 @@ export function buildPerformanceReport(input: PerformanceReportInput): string {
   out.push(LINE)
   out.push('Score: ' + input.approvalScore.score + ' - ' + input.approvalScore.label)
   out.push(
-    '  Taxa de acerto (30%):        ' + input.approvalScore.components.hit_rate_score
+    '  Taxa de acerto (' +
+      Math.round(APPROVAL_WEIGHTS.hit_rate_score * 100) +
+      '%):        ' +
+      input.approvalScore.components.hit_rate_score
   )
   out.push(
-    '  Evolucao simulados (25%):    ' + input.approvalScore.components.mock_evolution_score
+    '  Evolucao simulados (' +
+      Math.round(APPROVAL_WEIGHTS.mock_evolution_score * 100) +
+      '%):    ' +
+      input.approvalScore.components.mock_evolution_score
   )
   out.push(
-    '  Consistencia (20%):          ' + input.approvalScore.components.consistency_score
+    '  Consistencia (' +
+      Math.round(APPROVAL_WEIGHTS.consistency_score * 100) +
+      '%):          ' +
+      input.approvalScore.components.consistency_score
   )
   out.push(
-    '  Revisao do nucleo (15%):     ' + input.approvalScore.components.review_score
+    '  Revisao de questoes (' +
+      Math.round(APPROVAL_WEIGHTS.review_score * 100) +
+      '%):  ' +
+      input.approvalScore.components.review_score
   )
   out.push(
-    '  Banco de erros (10%):        ' + input.approvalScore.components.error_bank_score
+    '  Banco de erros (' +
+      Math.round(APPROVAL_WEIGHTS.error_bank_score * 100) +
+      '%):        ' +
+      input.approvalScore.components.error_bank_score
   )
   out.push('')
 
@@ -550,7 +566,9 @@ export function buildPerformanceReport(input: PerformanceReportInput): string {
   out.push('Consolidados (SRS):        ' + srsConsolidated)
   out.push('')
   out.push(
-    'Revisao no radar = 50% revisados (' +
+    'Revisao no radar (peso ' +
+      Math.round(APPROVAL_WEIGHTS.review_score * 100) +
+      '%) = 50% revisados (' +
       (srsTotal - srsPending) +
       '/' +
       srsTotal +

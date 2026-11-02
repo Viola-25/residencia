@@ -1,6 +1,7 @@
 import { Target, TrendingUp, CalendarCheck, BookOpen, AlertTriangle } from 'lucide-react'
 import { PageHeader } from '../components/PageHeader'
 import { useData } from '../hooks/useData'
+import { APPROVAL_WEIGHTS } from '../lib/calculations'
 
 const labelConfig: Record<string, { color: string; bg: string; desc: string }> = {
   'Abaixo do esperado': {
@@ -33,12 +34,15 @@ const componentIcons: Record<string, typeof Target> = {
   error_bank_score: AlertTriangle,
 }
 
+const weight = (key: keyof typeof APPROVAL_WEIGHTS) =>
+  `${Math.round(APPROVAL_WEIGHTS[key] * 100)}%`
+
 const componentLabels: Record<string, string> = {
-  hit_rate_score: 'Acerto Global',
-  mock_evolution_score: 'Evolução Simulados',
-  consistency_score: 'Consistência Semanal',
-  review_score: 'Revisão de Erros',
-  error_bank_score: 'Banco de Erros',
+  hit_rate_score: `Acerto Global (${weight('hit_rate_score')})`,
+  mock_evolution_score: `Evolução Simulados (${weight('mock_evolution_score')})`,
+  consistency_score: `Consistência Semanal (${weight('consistency_score')})`,
+  review_score: `Revisão de Questões (${weight('review_score')})`,
+  error_bank_score: `Banco de Erros (${weight('error_bank_score')})`,
 }
 
 const componentHints: Record<string, string> = {
