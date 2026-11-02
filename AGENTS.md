@@ -77,4 +77,5 @@ Regras que o site depende (não quebrar):
 - `error_bank.question` guarda **só o enunciado** (texto puro). O snapshot completo da questão vai em `statement_html` + `alternatives` + `correct_answer_id`; `history_notes` fica por legado.
 - A extensão precisa estar sincronizada com o schema: ela envia `statement_html`, `alternatives`, `tags`, `question_identifier` etc. Aplique a migração 017 antes de usar a versão nova.
 - **Erros só entram quando o daily log é novo.** Se o log já existe (mesma assinatura de data/questões/acertos/áreas), o sync marca o teste como visto e não reprocessa erros antigos.
+- **Janela de sync**: 7/14/30 dias (padrão 7). O corte real é `min(hoje − janela, último sync bem-sucedido)` para não abrir buraco se ficar semanas sem sincronizar. O estado ainda pula testes já vistos.
 - O sync só faz `INSERT`; `UPDATE`/`DELETE` são exceções deliberadas (reincidência atualiza contagem e snapshot).
