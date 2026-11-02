@@ -113,7 +113,7 @@ export function Dashboard() {
 
       {dueForReview.length > 0 && (
         <a
-          href="/erros"
+          href="/revisao"
           className="group mb-8 flex flex-col items-start justify-between gap-4 rounded-xl border border-violet-500/20 bg-gradient-to-r from-violet-500/10 to-transparent p-5 transition-all hover:border-violet-500/40 hover:from-violet-500/20 sm:flex-row sm:items-center"
         >
           <div className="flex items-center gap-4">
@@ -122,10 +122,10 @@ export function Dashboard() {
             </div>
             <div>
               <h3 className="text-base font-semibold text-violet-200">
-                Warm-up: {dueForReview.length} conceito{dueForReview.length > 1 ? 's' : ''} para revisar hoje
+                Warm-up: {dueForReview.length} questão{dueForReview.length > 1 ? 'ões' : ''} para revisar hoje
               </h3>
               <p className="text-sm text-zinc-500">
-                Reveja os erros pendentes antes de começar os estudos — são só alguns minutos
+                Responda as questões que você errou, veja o comentário e diga como foi
               </p>
             </div>
           </div>

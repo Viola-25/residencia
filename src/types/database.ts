@@ -88,6 +88,26 @@ export interface Database {
           history_notes: string[] | null
           flashcard_front: string | null
           flashcard_back: string | null
+          statement_html: string | null
+          alternatives: Json | null
+          correct_answer_id: string | null
+          chosen_answer_id: string | null
+          tags: string[] | null
+          question_identifier: string | null
+          exam_name: string | null
+          exam_identifier: string | null
+          institution: string | null
+          question_year: string | null
+          take_home_message: string | null
+          overall_comment: string | null
+          platform_difficulty: string | null
+          success_rate: number | null
+          last_result: string | null
+          last_rating: string | null
+          last_reviewed_at: string | null
+          review_count: number
+          correct_count: number
+          lapses: number
           created_at: string
           user_id: string
         }
@@ -113,8 +133,54 @@ export interface Database {
           history_notes?: string[] | null
           flashcard_front?: string | null
           flashcard_back?: string | null
+          statement_html?: string | null
+          alternatives?: Json | null
+          correct_answer_id?: string | null
+          chosen_answer_id?: string | null
+          tags?: string[] | null
+          question_identifier?: string | null
+          exam_name?: string | null
+          exam_identifier?: string | null
+          institution?: string | null
+          question_year?: string | null
+          take_home_message?: string | null
+          overall_comment?: string | null
+          platform_difficulty?: string | null
+          success_rate?: number | null
+          last_result?: string | null
+          last_rating?: string | null
+          last_reviewed_at?: string | null
+          review_count?: number
+          correct_count?: number
+          lapses?: number
           created_at?: string
           user_id: string
+        }
+      }
+      review_attempts: {
+        Row: {
+          id: string
+          user_id: string
+          error_id: string
+          result: string
+          rating: string
+          chosen_answer_id: string | null
+          interval_after: number
+          ease_after: number
+          repetitions_after: number
+          answered_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          error_id: string
+          result: string
+          rating: string
+          chosen_answer_id?: string | null
+          interval_after?: number
+          ease_after?: number
+          repetitions_after?: number
+          answered_at?: string
         }
       }
       area_performance: {

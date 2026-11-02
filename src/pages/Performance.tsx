@@ -77,15 +77,16 @@ export function Performance() {
   const srsStats = useMemo(() => {
     if (errors.length === 0) return null
     const total = errors.length
-    const comFlashcard = errors.filter((e) => e.reviewed && e.flashcard_front && e.flashcard_back).length
-    const revisadosSemCard = errors.filter(
-      (e) => e.reviewed && !(e.flashcard_front && e.flashcard_back),
-    ).length
+    const withAlternatives = errors.filter((e) => (e.alternatives?.length || 0) > 0).length
+    const revisados = errors.filter((e) => e.review_count > 0).length
     const pending = errors.filter((e) => !e.reviewed).length
     const dueNow = errors.filter((e) => isErrorDue(e)).length
     const consolidados = errors.filter((e) => e.repetitions >= 3 && e.interval_days >= 14).length
-    const cobertura = total > 0 ? Math.round((comFlashcard / total) * 100) : 0
-    return { total, comFlashcard, revisadosSemCard, pending, dueNow, consolidados, cobertura }
+    const cobertura = total > 0 ? Math.round((withAlternatives / total) * 100) : 0
+    const totalReviews = errors.reduce((sum, e) => sum + (e.review_count || 0), 0)
+    const totalCorrect = errors.reduce((sum, e) => sum + (e.correct_count || 0), 0)
+    const accuracy = totalReviews > 0 ? Math.round((totalCorrect / totalReviews) * 100) : null
+    return { total, withAlternatives, revisados, pending, dueNow, consolidados, cobertura, accuracy, totalReviews }
   }, [errors])
   const hitRate30d = useMemo(() => getHitRateTrend(logs, 30), [logs])
   const globalRate = useMemo(() => calculateGlobalHitRate(logs), [logs])
@@ -321,14 +322,18 @@ export function Performance() {
               <p className="text-[11px] text-amber-500/70">{srsStats.dueNow} atrasados</p>
             </div>
             <div className="rounded-lg bg-emerald-500/10 p-3">
-              <p className="text-xs text-emerald-400">Com Flashcard</p>
-              <p className="text-xl font-bold text-emerald-400">{srsStats.comFlashcard}</p>
+              <p className="text-xs text-emerald-400">Com alternativas</p>
+              <p className="text-xl font-bold text-emerald-400">{srsStats.withAlternatives}</p>
               <p className="text-[11px] text-emerald-500/70">{srsStats.cobertura}% do banco</p>
             </div>
             <div className="rounded-lg bg-rose-500/10 p-3">
-              <p className="text-xs text-rose-400">Revisados sem Card</p>
-              <p className="text-xl font-bold text-rose-400">{srsStats.revisadosSemCard}</p>
-              <p className="text-[11px] text-rose-500/70">saíram da fila sem estudar</p>
+              <p className="text-xs text-rose-400">Acerto real</p>
+              <p className="text-xl font-bold text-rose-400">
+                {srsStats.accuracy !== null ? `${srsStats.accuracy}%` : '-'}
+              </p>
+              <p className="text-[11px] text-rose-500/70">
+                {srsStats.totalReviews} revisões · {srsStats.revisados} questões
+              </p>
             </div>
           </div>
           <div className="mt-3 h-2 overflow-hidden rounded-full bg-zinc-800">
@@ -338,13 +343,9 @@ export function Performance() {
             />
           </div>
           <p className="mt-2 text-xs text-zinc-600">
-            {srsStats.revisadosSemCard > 0
-              ? `${srsStats.revisadosSemCard} erro(s) foram revisados sem flashcard — voltam pela data agendada, mas a revisão fica só no reconhecimento. Gere cards para consolidar.`
-              : srsStats.cobertura >= 70
-                ? 'Ótimo! A maioria dos erros já tem flashcard e volta na revisão espaçada.'
-                : srsStats.cobertura >= 40
-                  ? 'Progresso consistente. Continue gerando flashcards para consolidar mais conceitos.'
-                  : 'Gere flashcards dos erros pendentes — é o que consolida de verdade.'}
+            {srsStats.cobertura < 100
+              ? `${srsStats.total - srsStats.withAlternatives} questão(ões) antiga(s) ainda sem alternativas — voltam só por reconhecimento. As novas chegam completas pelo MedCof.`
+              : 'Todas as questões têm alternativas e comentários. A revisão testa resposta de verdade.'}
           </p>
           <p className="mt-1 text-[11px] text-zinc-700">
             Consolidados (SRS completo: 3+ repetições e intervalo ≥ 14 dias): {srsStats.consolidados}

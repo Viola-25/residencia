@@ -131,13 +131,15 @@ export function buildPerformanceReport(input: PerformanceReportInput): string {
   ).length
   const srsPending = errors.filter((e) => !e.reviewed).length
   const srsDueNow = errors.filter((e) => isErrorDue(e)).length
-  const srsWithCard = errors.filter(
-    (e) => e.reviewed && e.flashcard_front && e.flashcard_back
+  const srsWithAlternatives = errors.filter(
+    (e) => (e.alternatives?.length || 0) > 0
   ).length
-  const srsReviewedNoCard = errors.filter(
-    (e) => e.reviewed && !(e.flashcard_front && e.flashcard_back)
-  ).length
-  const srsCoverage = srsTotal > 0 ? Math.round((srsWithCard / srsTotal) * 100) : 0
+  const srsReviewed = errors.filter((e) => e.review_count > 0).length
+  const srsCoverage = srsTotal > 0 ? Math.round((srsWithAlternatives / srsTotal) * 100) : 0
+  const srsTotalReviews = errors.reduce((sum, e) => sum + (e.review_count || 0), 0)
+  const srsTotalCorrect = errors.reduce((sum, e) => sum + (e.correct_count || 0), 0)
+  const srsAccuracy =
+    srsTotalReviews > 0 ? Math.round((srsTotalCorrect / srsTotalReviews) * 100) : null
 
   const typeCounts = new Map<RegistrationType, number>()
   for (const l of logs) {
@@ -542,19 +544,18 @@ export function buildPerformanceReport(input: PerformanceReportInput): string {
   out.push(LINE)
   out.push('Total de erros registrados: ' + srsTotal)
   out.push('Pendentes de revisao:      ' + srsPending + ' (' + srsDueNow + ' atrasados)')
-  out.push('Revisados com flashcard:   ' + srsWithCard + ' (' + srsCoverage + '% do banco)')
-  out.push('Revisados sem flashcard:   ' + srsReviewedNoCard + ' (voltam pela data, mas sem card)')
+  out.push('Questoes com alternativas: ' + srsWithAlternatives + ' (' + srsCoverage + '% do banco)')
+  out.push('Questoes ja revisadas:     ' + srsReviewed + ' (' + srsTotalReviews + ' revisoes)')
+  out.push('Acerto real na revisao:    ' + (srsAccuracy !== null ? srsAccuracy + '%' : 'sem dados'))
   out.push('Consolidados (SRS):        ' + srsConsolidated)
   out.push('')
   out.push(
-    'Revisao de erros no radar = 60% revisados (' +
+    'Revisao no radar = 50% revisados (' +
       (srsTotal - srsPending) +
       '/' +
       srsTotal +
-      ') + 40% com flashcard (' +
-      srsWithCard +
-      '/' +
-      srsTotal +
+      ') + 50% acerto real (' +
+      (srsAccuracy !== null ? srsAccuracy + '%' : 'sem dados') +
       ') = ' +
       input.approvalScore.components.review_score +
       '%'

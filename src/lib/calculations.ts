@@ -1,6 +1,6 @@
 import { startOfWeek, format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import type { DailyLog, MockExam, WeeklySummary, AreaPerformance, ApprovalScore, MedicalArea, MotivoErro, ErrorEntry } from '../types'
+import type { DailyLog, MockExam, WeeklySummary, AreaPerformance, ApprovalScore, MedicalArea, MotivoErro, ErrorEntry, ReviewResult, ReviewRating } from '../types'
 import { MEDICAL_AREAS } from '../types'
 
 export const RECENT_WINDOW_DAYS = 90
@@ -568,15 +568,14 @@ export function calculateApprovalScore(
   )
   const errorList = errors ?? []
   const reviewedCount = errorList.filter((e) => e.reviewed).length
-  const reviewedWithFlashcards = errorList.filter(
-    (e) => e.reviewed && e.flashcard_front && e.flashcard_back
-  ).length
+  const totalReviews = errorList.reduce((sum, e) => sum + (e.review_count || 0), 0)
+  const totalCorrect = errorList.reduce((sum, e) => sum + (e.correct_count || 0), 0)
+  const reviewAccuracy = totalReviews > 0 ? totalCorrect / totalReviews : 0
   const reviewScore = Math.min(
     100,
     errorList.length > 0
       ? Math.round(
-          (reviewedCount / errorList.length) * 60 +
-            (reviewedWithFlashcards / errorList.length) * 40
+          (reviewedCount / errorList.length) * 50 + reviewAccuracy * 50
         )
       : 0
   )
@@ -874,22 +873,28 @@ const SRS_QUALITY_MAP: Record<'easy' | 'good' | 'hard' | 'forgot', number> = {
   easy: 5,
 }
 
+const QUESTION_RATING_QUALITY: Record<ReviewRating, number> = {
+  guess: 2,
+  hard: 3,
+  medium: 4,
+  easy: 5,
+}
+
 const EASY_LADDER = [7, 21, 45, 90]
 const GOOD_LADDER = [2, 6, 15, 30]
 
-export function calculateNextSRSState(currentState: {
+function applySRSQuality(currentState: {
   interval_days: number
   ease_factor: number
   repetitions: number
-}, quality: 'easy' | 'good' | 'hard' | 'forgot') {
+}, q: number) {
   let { interval_days, ease_factor, repetitions } = currentState
-  const q = SRS_QUALITY_MAP[quality]
 
   if (q < 3) {
     repetitions = 0
     interval_days = 1
   } else {
-    const ladder = quality === 'easy' ? EASY_LADDER : GOOD_LADDER
+    const ladder = q >= 5 ? EASY_LADDER : GOOD_LADDER
     if (repetitions < ladder.length) {
       interval_days = ladder[repetitions]
     } else {
@@ -912,6 +917,23 @@ export function calculateNextSRSState(currentState: {
     repetitions,
     next_review_date: nextReviewDate.toISOString(),
   }
+}
+
+export function calculateNextSRSState(currentState: {
+  interval_days: number
+  ease_factor: number
+  repetitions: number
+}, quality: 'easy' | 'good' | 'hard' | 'forgot') {
+  return applySRSQuality(currentState, SRS_QUALITY_MAP[quality])
+}
+
+export function calculateNextQuestionSRSState(currentState: {
+  interval_days: number
+  ease_factor: number
+  repetitions: number
+}, result: ReviewResult, rating: ReviewRating) {
+  const quality = result === 'incorrect' ? 1 : QUESTION_RATING_QUALITY[rating]
+  return applySRSQuality(currentState, quality)
 }
 
 export interface FatigueIndicator {

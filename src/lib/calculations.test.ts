@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   isErrorDue,
   calculateNextSRSState,
+  calculateNextQuestionSRSState,
   calculateApprovalScore,
   calculateQuestionTypeBreakdown,
 } from './calculations'
@@ -37,6 +38,26 @@ function makeError(overrides: Partial<ErrorEntry> = {}): ErrorEntry {
     history_notes: null,
     flashcard_front: null,
     flashcard_back: null,
+    statement_html: null,
+    alternatives: null,
+    correct_answer_id: null,
+    chosen_answer_id: null,
+    tags: null,
+    question_identifier: null,
+    exam_name: null,
+    exam_identifier: null,
+    institution: null,
+    question_year: null,
+    take_home_message: null,
+    overall_comment: null,
+    platform_difficulty: null,
+    success_rate: null,
+    last_result: null,
+    last_rating: null,
+    last_reviewed_at: null,
+    review_count: 0,
+    correct_count: 0,
+    lapses: 0,
     created_at: new Date().toISOString(),
     ...overrides,
   } as ErrorEntry
@@ -133,16 +154,61 @@ describe('calculateNextSRSState', () => {
   })
 })
 
+describe('calculateNextQuestionSRSState', () => {
+  it('errou volta para 1 dia e zera repetições, independente da nota', () => {
+    const r = calculateNextQuestionSRSState(
+      { interval_days: 30, ease_factor: 2.5, repetitions: 4 },
+      'incorrect',
+      'easy'
+    )
+    expect(r.interval_days).toBe(1)
+    expect(r.repetitions).toBe(0)
+  })
+
+  it('chutei acertando também reinicia', () => {
+    const r = calculateNextQuestionSRSState(
+      { interval_days: 30, ease_factor: 2.5, repetitions: 4 },
+      'correct',
+      'guess'
+    )
+    expect(r.interval_days).toBe(1)
+    expect(r.repetitions).toBe(0)
+  })
+
+  it('difícil avança devagar, médio segue a escada normal e fácil usa a longa', () => {
+    const hard = calculateNextQuestionSRSState(
+      { interval_days: 0, ease_factor: 2.5, repetitions: 0 },
+      'correct',
+      'hard'
+    )
+    const medium = calculateNextQuestionSRSState(
+      { interval_days: 0, ease_factor: 2.5, repetitions: 0 },
+      'correct',
+      'medium'
+    )
+    const easy = calculateNextQuestionSRSState(
+      { interval_days: 0, ease_factor: 2.5, repetitions: 0 },
+      'correct',
+      'easy'
+    )
+    expect(hard.interval_days).toBe(2)
+    expect(medium.interval_days).toBe(2)
+    expect(easy.interval_days).toBe(7)
+    expect(hard.ease_factor).toBeLessThan(medium.ease_factor)
+    expect(medium.ease_factor).toBeLessThan(easy.ease_factor)
+  })
+})
+
 describe('calculateApprovalScore', () => {
-  it('revisão de erros = 60% revisados + 40% com flashcard', () => {
+  it('revisão = 50% revisados + 50% acerto real', () => {
     const errors = [
-      makeError({ reviewed: true, flashcard_front: 'f', flashcard_back: 'b', next_review_date: daysFromNow(5) }),
-      makeError({ reviewed: true, flashcard_front: 'f', flashcard_back: 'b', next_review_date: daysFromNow(5) }),
-      makeError({ reviewed: true, flashcard_front: null, flashcard_back: null, next_review_date: daysFromNow(5) }),
+      makeError({ reviewed: true, review_count: 2, correct_count: 2, next_review_date: daysFromNow(5) }),
+      makeError({ reviewed: true, review_count: 2, correct_count: 1, next_review_date: daysFromNow(5) }),
+      makeError({ reviewed: true, review_count: 0, correct_count: 0, next_review_date: daysFromNow(5) }),
       makeError({ reviewed: false, next_review_date: daysFromNow(5) }),
     ]
     const score = calculateApprovalScore([], [], [], errors)
-    expect(score.components.review_score).toBe(65)
+    expect(score.components.review_score).toBe(75)
   })
 
   it('banco de erros desconta os vencidos', () => {

@@ -52,12 +52,12 @@ export function useData() {
 
   const {
     errors,
+    attempts,
     loading: errorsLoading,
-    reviewErrorWithSRS,
+    submitReview,
     deleteError,
     addSmartError,
     addExtractedErrors,
-    persistFlashcard,
   } = useErrorBank()
 
   const {
@@ -116,6 +116,26 @@ export function useData() {
         history_notes: null,
         flashcard_front: null,
         flashcard_back: null,
+        statement_html: null,
+        alternatives: null,
+        correct_answer_id: null,
+        chosen_answer_id: null,
+        tags: null,
+        question_identifier: null,
+        exam_name: null,
+        exam_identifier: null,
+        institution: null,
+        question_year: null,
+        take_home_message: null,
+        overall_comment: null,
+        platform_difficulty: null,
+        success_rate: null,
+        last_result: null,
+        last_rating: null,
+        last_reviewed_at: null,
+        review_count: 0,
+        correct_count: 0,
+        lapses: 0,
         created_at: new Date().toISOString(),
       }))
 
@@ -215,6 +235,7 @@ export function useData() {
     logs,
     mocks,
     errors,
+    attempts,
     areaPerformance,
     config,
     dashboardMetrics,
@@ -224,12 +245,11 @@ export function useData() {
     recentWindow,
     setRecentWindow,
     addDailyLog,
-    reviewErrorWithSRS,
+    submitReview,
     deleteDailyLog,
     updateDailyLog,
     deleteError,
     updateConfig,
     addSmartError,
-    persistFlashcard,
   }
 }

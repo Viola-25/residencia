@@ -179,8 +179,13 @@ export function Settings() {
           Extensão do Chrome — sync em 1 clique
         </h3>
         <p className="mb-4 text-xs text-zinc-500">
-          Puxa os testes finalizados do MedCof e grava aqui sem terminal. Usa a sessão que já existe no
-          navegador — não pede senha.
+          Puxa os testes finalizados do MedCof, as questões erradas completas (enunciado, alternativas,
+          tags e comentários) e grava aqui sem terminal. Usa a sessão que já existe no navegador — não
+          pede senha.
+        </p>
+        <p className="mb-4 text-xs text-zinc-600">
+          O zip no site é sempre a versão mais recente. Se já instalou, baixe de novo, substitua a pasta
+          e clique em <strong className="text-zinc-400">Recarregar</strong> em chrome://extensions.
         </p>
 
         <a

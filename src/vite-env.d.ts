@@ -24,6 +24,7 @@ declare module 'lucide-react' {
   export const CalendarDays: Icon
   export const CheckCircle2: Icon
   export const CheckSquare: Icon
+  export const ChevronDown: Icon
   export const ChevronLeft: Icon
   export const ChevronRight: Icon
   export const ClipboardList: Icon
@@ -59,11 +60,13 @@ declare module 'lucide-react' {
   export const Plus: Icon
   export const Radio: Icon
   export const RefreshCw: Icon
+  export const RotateCcw: Icon
   export const Save: Icon
   export const Search: Icon
   export const Settings: Icon
   export const Share2: Icon
   export const Shield: Icon
+  export const Shuffle: Icon
   export const Sliders: Icon
   export const Sparkles: Icon
   export const Star: Icon

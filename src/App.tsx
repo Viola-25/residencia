@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { Layout } from './components/Layout'
@@ -9,7 +9,7 @@ const Login = lazy(() => import('./pages/Login').then((m) => ({ default: m.Login
 const Dashboard = lazy(() => import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })))
 const DailyLog = lazy(() => import('./pages/DailyLog').then((m) => ({ default: m.DailyLog })))
 const Performance = lazy(() => import('./pages/Performance').then((m) => ({ default: m.Performance })))
-const ErrorBank = lazy(() => import('./pages/ErrorBank').then((m) => ({ default: m.ErrorBank })))
+const Review = lazy(() => import('./pages/Review').then((m) => ({ default: m.Review })))
 const ApprovalRadar = lazy(() => import('./pages/ApprovalRadar').then((m) => ({ default: m.ApprovalRadar })))
 const StrategicPanel = lazy(() => import('./pages/StrategicPanel').then((m) => ({ default: m.StrategicPanel })))
 const AIInsights = lazy(() => import('./pages/AIInsights').then((m) => ({ default: m.AIInsights })))
@@ -46,7 +46,8 @@ export default function App() {
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/diario" element={<DailyLog />} />
                   <Route path="/desempenho" element={<Performance />} />
-                  <Route path="/erros" element={<ErrorBank />} />
+                  <Route path="/revisao" element={<Review />} />
+                  <Route path="/erros" element={<Navigate to="/revisao" replace />} />
                   <Route path="/radar" element={<ApprovalRadar />} />
                   <Route path="/estrategico" element={<StrategicPanel />} />
                   <Route path="/ia" element={<AIInsights />} />

@@ -100,6 +100,30 @@ export interface MockExam {
   created_at: string
 }
 
+export type ReviewResult = 'correct' | 'incorrect'
+
+export type ReviewRating = 'easy' | 'medium' | 'hard' | 'guess'
+
+export interface QuestionAlternative {
+  id: string
+  letter: string
+  text: string
+  comment: string | null
+  is_correct: boolean
+}
+
+export interface ReviewAttempt {
+  id: string
+  error_id: string
+  result: ReviewResult
+  rating: ReviewRating
+  chosen_answer_id: string | null
+  interval_after: number
+  ease_after: number
+  repetitions_after: number
+  answered_at: string
+}
+
 export interface ErrorEntry {
   id: string
   question: string
@@ -122,6 +146,26 @@ export interface ErrorEntry {
   history_notes: string[] | null
   flashcard_front: string | null
   flashcard_back: string | null
+  statement_html: string | null
+  alternatives: QuestionAlternative[] | null
+  correct_answer_id: string | null
+  chosen_answer_id: string | null
+  tags: string[] | null
+  question_identifier: string | null
+  exam_name: string | null
+  exam_identifier: string | null
+  institution: string | null
+  question_year: string | null
+  take_home_message: string | null
+  overall_comment: string | null
+  platform_difficulty: 'EASY' | 'MEDIUM' | 'HARD' | null
+  success_rate: number | null
+  last_result: ReviewResult | null
+  last_rating: ReviewRating | null
+  last_reviewed_at: string | null
+  review_count: number
+  correct_count: number
+  lapses: number
   created_at: string
 }
 
@@ -253,3 +297,16 @@ export const ERROR_REASONS: { value: MotivoErro; label: string }[] = [
   { value: 'Pegadinha', label: 'Pegadinha' },
   { value: 'Dificuldade de interpretação', label: 'Dificuldade de interpretação' },
 ]
+
+export const REVIEW_RATINGS: { value: ReviewRating; label: string }[] = [
+  { value: 'easy', label: 'Fácil' },
+  { value: 'medium', label: 'Médio' },
+  { value: 'hard', label: 'Difícil' },
+  { value: 'guess', label: 'Chutei' },
+]
+
+export const PLATFORM_DIFFICULTY_LABELS: Record<'EASY' | 'MEDIUM' | 'HARD', string> = {
+  EASY: 'Fácil',
+  MEDIUM: 'Média',
+  HARD: 'Difícil',
+}

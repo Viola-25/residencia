@@ -42,7 +42,7 @@ const componentLabels: Record<string, string> = {
 }
 
 const componentHints: Record<string, string> = {
-  review_score: '60% dos erros revisados + 40% com flashcard',
+  review_score: '50% dos erros revisados + 50% de acerto real na revisão',
   error_bank_score: 'erros em dia (sem atraso na data agendada)',
 }
 

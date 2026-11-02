@@ -1,47 +1,73 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
-import type { ErrorEntry, MedicalArea } from '../../types'
-import { calculateNextSRSState, classifyErrorReason } from '../../lib/calculations'
+import type {
+  ErrorEntry,
+  MedicalArea,
+  ReviewAttempt,
+  ReviewRating,
+  ReviewResult,
+} from '../../types'
+import { calculateNextQuestionSRSState, classifyErrorReason } from '../../lib/calculations'
 import { analyzeAndClusterError } from '../../lib/groq'
 
 export function useErrorBank() {
   const { user } = useAuth()
   const [errors, setErrors] = useState<ErrorEntry[]>([])
+  const [attempts, setAttempts] = useState<ReviewAttempt[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!user) return
     ;(async () => {
       try {
-        const res = await supabase
-          .from('error_bank')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-        if (res.error) throw res.error
-        if (res.data) setErrors(res.data as ErrorEntry[])
+        const [errorsRes, attemptsRes] = await Promise.all([
+          supabase
+            .from('error_bank')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('review_attempts')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('answered_at', { ascending: false })
+            .limit(500),
+        ])
+        if (errorsRes.error) throw errorsRes.error
+        if (errorsRes.data) setErrors(errorsRes.data as ErrorEntry[])
+        if (attemptsRes.data) setAttempts(attemptsRes.data as ReviewAttempt[])
       } catch (err) {
-        console.error('Error fetching errors:', err)
+        console.error('Error fetching review data:', err)
       } finally {
         setLoading(false)
       }
     })()
   }, [user])
 
-  const reviewErrorWithSRS = async (id: string, quality: 'easy' | 'good' | 'hard' | 'forgot') => {
+  const submitReview = async (
+    id: string,
+    result: ReviewResult,
+    rating: ReviewRating,
+    chosenAnswerId: string | null = null
+  ) => {
     const previousErrors = errors
     const error = previousErrors.find((e) => e.id === id)
-    if (!error) return
+    if (!error) return null
 
-    const srsState = calculateNextSRSState(
+    const srsState = calculateNextQuestionSRSState(
       {
         interval_days: error.interval_days,
         ease_factor: error.ease_factor,
         repetitions: error.repetitions,
       },
-      quality
+      result,
+      rating
     )
+    const reviewedAt = new Date().toISOString()
+    const reviewCount = (error.review_count || 0) + 1
+    const correctCount = (error.correct_count || 0) + (result === 'correct' ? 1 : 0)
+    const lapses = (error.lapses || 0) + (result === 'incorrect' ? 1 : 0)
 
     setErrors((prev) =>
       prev.map((e) =>
@@ -53,6 +79,12 @@ export function useErrorBank() {
               interval_days: srsState.interval_days,
               ease_factor: srsState.ease_factor,
               repetitions: srsState.repetitions,
+              last_result: result,
+              last_rating: rating,
+              last_reviewed_at: reviewedAt,
+              review_count: reviewCount,
+              correct_count: correctCount,
+              lapses,
             }
           : e
       )
@@ -67,12 +99,43 @@ export function useErrorBank() {
           interval_days: srsState.interval_days,
           ease_factor: srsState.ease_factor,
           repetitions: srsState.repetitions,
+          last_result: result,
+          last_rating: rating,
+          last_reviewed_at: reviewedAt,
+          review_count: reviewCount,
+          correct_count: correctCount,
+          lapses,
         })
         .eq('id', id)
       if (res.error) throw res.error
+
+      const attempt: ReviewAttempt = {
+        id: crypto.randomUUID(),
+        error_id: id,
+        result,
+        rating,
+        chosen_answer_id: chosenAnswerId,
+        interval_after: srsState.interval_days,
+        ease_after: srsState.ease_factor,
+        repetitions_after: srsState.repetitions,
+        answered_at: reviewedAt,
+      }
+      setAttempts((prev) => [attempt, ...prev])
+
+      if (user) {
+        const attemptRes = await supabase
+          .from('review_attempts')
+          .insert({ ...attempt, user_id: user.id })
+        if (attemptRes.error) {
+          console.error('Error inserting review attempt:', attemptRes.error)
+        }
+      }
+
+      return srsState
     } catch (err) {
       setErrors(previousErrors)
       console.error('Error updating SRS state:', err)
+      return null
     }
   }
 
@@ -111,13 +174,14 @@ export function useErrorBank() {
         const newCount = (currentError?.occurrence_count || 1) + 1
         const newHistory = [...(currentError?.history_notes || []), notes]
 
-        const srsState = calculateNextSRSState(
+        const srsState = calculateNextQuestionSRSState(
           {
             interval_days: currentError?.interval_days ?? 0,
             ease_factor: currentError?.ease_factor ?? 2.5,
             repetitions: currentError?.repetitions ?? 0,
           },
-          'forgot'
+          'incorrect',
+          'hard'
         )
 
         const { error: updErr } = await supabase
@@ -171,6 +235,26 @@ export function useErrorBank() {
           history_notes: [notes],
           flashcard_front: null,
           flashcard_back: null,
+          statement_html: null,
+          alternatives: null,
+          correct_answer_id: null,
+          chosen_answer_id: null,
+          tags: null,
+          question_identifier: null,
+          exam_name: null,
+          exam_identifier: null,
+          institution: null,
+          question_year: null,
+          take_home_message: null,
+          overall_comment: null,
+          platform_difficulty: null,
+          success_rate: null,
+          last_result: null,
+          last_rating: null,
+          last_reviewed_at: null,
+          review_count: 0,
+          correct_count: 0,
+          lapses: 0,
           created_at: new Date().toISOString(),
         }
 
@@ -201,20 +285,13 @@ export function useErrorBank() {
     }
   }
 
-  const persistFlashcard = async (id: string, front: string, back: string) => {
-    setErrors((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, flashcard_front: front, flashcard_back: back } : e))
-    )
-    try {
-      const res = await supabase
-        .from('error_bank')
-        .update({ flashcard_front: front, flashcard_back: back })
-        .eq('id', id)
-      if (res.error) throw res.error
-    } catch (err) {
-      console.error('Error persisting flashcard:', err)
-    }
+  return {
+    errors,
+    attempts,
+    loading,
+    submitReview,
+    deleteError,
+    addSmartError,
+    addExtractedErrors,
   }
-
-  return { errors, loading, reviewErrorWithSRS, deleteError, addSmartError, addExtractedErrors, persistFlashcard }
 }

@@ -8,7 +8,7 @@ const pageTitles: Record<string, string> = {
   '/': 'Painel de Performance',
   '/diario': 'Diário de Estudos',
   '/desempenho': 'Desempenho por Área',
-  '/erros': 'Banco de Erros',
+  '/revisao': 'Revisão',
   '/radar': 'Radar de Aprovação',
   '/estrategico': 'Painel Estratégico',
   '/ia': 'Insights de IA',
