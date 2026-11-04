@@ -34,7 +34,7 @@ export function QuestionContent({
             const isSelected = selectedId === alt.id
             const showCorrect = revealed && alt.is_correct
             const showWrong = revealed && isSelected && !alt.is_correct
-            const showComment = revealed && (showCorrect || showWrong) && alt.comment
+            const showComment = revealed && alt.comment
 
             return (
               <div key={alt.id}>
@@ -76,7 +76,9 @@ export function QuestionContent({
                     className={`ml-9 mt-1.5 rounded-lg border p-3 ${
                       showCorrect
                         ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-100/80'
-                        : 'border-rose-500/20 bg-rose-500/5 text-rose-100/80'
+                        : showWrong
+                          ? 'border-rose-500/20 bg-rose-500/5 text-rose-100/80'
+                          : 'border-zinc-700/40 bg-zinc-800/30 text-zinc-300'
                     }`}
                   >
                     <RichText value={alt.comment} className="text-xs [&_p]:mb-1" />

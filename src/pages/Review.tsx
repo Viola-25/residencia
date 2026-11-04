@@ -485,8 +485,8 @@ export function Review() {
       )}
 
       {detail && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4 sm:items-center">
-          <div className="w-full max-w-3xl rounded-xl border border-zinc-700 bg-zinc-900 p-5 shadow-2xl sm:p-6">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4 sm:p-6 md:p-8">
+          <div className="my-auto w-full max-w-3xl rounded-xl border border-zinc-700 bg-zinc-900 p-5 shadow-2xl sm:p-6">
             <div className="mb-4 flex items-start justify-between gap-4">
               <div>
                 <p className="text-sm font-semibold text-zinc-100">{detail.topic}</p>

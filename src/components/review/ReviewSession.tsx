@@ -73,8 +73,8 @@ export function ReviewSession({ queue, onExit, onSubmit }: ReviewSessionProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4 sm:items-center">
-      <div className="w-full max-w-3xl rounded-xl border border-zinc-700 bg-zinc-900 p-5 shadow-2xl sm:p-6">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4 sm:p-6 md:p-8">
+      <div className="my-auto w-full max-w-3xl rounded-xl border border-zinc-700 bg-zinc-900 p-5 shadow-2xl sm:p-6">
         {finished ? (
           <div className="flex flex-col items-center py-6">
             <CheckCircle2 size={48} className="mb-4 text-emerald-400" />
